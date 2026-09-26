@@ -55,9 +55,10 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
 
 - **Routing entry point is `routes/web.js`**, mounted at `/` from `app.js`. It wires every module's
   middleware chain (auth + tenant + plan-feature + permission) and requires from `routes/tenant/*.js` and
-  `routes/admin/*.js`. **The `*-backup.js` / `*-refactored.js` files sitting directly under `routes/` are
-  dead leftovers from a refactor and are not required anywhere** — don't edit them expecting effect; the
-  live route file for e.g. facturas is `routes/tenant/facturas.js`, not `routes/facturas-refactored.js`.
+  `routes/admin/*.js`. The few files directly under `routes/` (`auth`, `onboarding`, `qr`, `qr_api`,
+  `webhooks`) are the public/unauthenticated routers, also wired from `web.js`. Page JS lives in
+  `public/js/modulos/` (not in `views/*/_scripts.ejs` — the old inline copies were deleted in 2026-09;
+  don't reintroduce page logic inside EJS).
 - Controllers live under `app/Http/Controllers/{Admin,Tenant,Public,Webhooks}/`, request validation under
   `app/Http/Requests/{Admin,Auth,Tenant}/`. Controllers orchestrate services and either `res.render(...)`
   (EJS view) or `res.json(...)` — the same controller/route commonly serves both a page and its `/api/...`
