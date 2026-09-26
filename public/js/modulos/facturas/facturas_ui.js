@@ -26,13 +26,13 @@ $(function () {
       it.subtotal = mod.subtotalLinea(it);
       mod.totalFactura += it.subtotal;
       tbody.append(`<tr>
-        <td>${it.nombre} ${badgeDescuento(it)}</td>
+        <td>${GF.escapeHtml(it.nombre)} ${badgeDescuento(it)}</td>
         <td class="text-center text-nowrap">
           <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCant(${idx},-1)"><i class="bi bi-dash"></i></button>
           <input type="number" class="form-control form-control-sm text-center d-inline-block mx-1" style="width: 70px;" value="${it.cantidad}" onchange="setCant(${idx}, this.value)" min="1">
           <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCant(${idx},1)"><i class="bi bi-plus"></i></button>
         </td>
-        <td>${it.unidad}</td>
+        <td>${GF.escapeHtml(it.unidad)}</td>
         <td class="text-end">$${it.precio.toLocaleString('es-CO')}</td>
         <td class="text-end">$${it.subtotal.toLocaleString('es-CO')}</td>
         <td class="text-center">
@@ -50,7 +50,7 @@ $(function () {
     let html = '';
     mod.productosFactura.forEach((it, idx) => {
       html += `<div class="producto-mobile-card p-2 mb-2 bg-white border rounded">
-        <div class="fw-bold small">${it.nombre} ${badgeDescuento(it)}</div>
+        <div class="fw-bold small">${GF.escapeHtml(it.nombre)} ${badgeDescuento(it)}</div>
         <div class="d-flex align-items-center gap-2 my-1">
           <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCant(${idx},-1)"><i class="bi bi-dash"></i></button>
           <input type="number" class="form-control form-control-sm text-center d-inline-block" style="width: 60px;" value="${it.cantidad}" onchange="setCant(${idx}, this.value)" min="1">

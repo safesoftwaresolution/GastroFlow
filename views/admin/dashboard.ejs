@@ -29,7 +29,7 @@
     <%- include('dashboard/_plan_breakdown', { ...locals, stats }) %>
 
 <!-- Datos para los gráficos (Safe inject) -->
-<script type="application/json" id="chartData"><%- JSON.stringify({ ventasDiarias: (stats && stats.ventasDiariasMes) || [], ventasDiariasAnt: (stats && stats.ventasDiariasMesAnterior) || [], ventasPorTenant: (stats && stats.ventasDiariasPorTenant) || [], ventasEventos: (stats && stats.ventasEventosDiariasMes) || [] }) %></script>
+<script type="application/json" id="chartData"><%- jsonSeguro({ ventasDiarias: (stats && stats.ventasDiariasMes) || [], ventasDiariasAnt: (stats && stats.ventasDiariasMesAnterior) || [], ventasPorTenant: (stats && stats.ventasDiariasPorTenant) || [], ventasEventos: (stats && stats.ventasEventosDiariasMes) || [] }) %></script>
 
 <%- include('_shell/_close', {
     extraScripts: '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/js/admin/dashboard.js?v=5"></script>'

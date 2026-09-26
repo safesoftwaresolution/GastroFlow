@@ -1,3 +1,4 @@
+const jsonSeguro = require('../../../../utils/jsonSeguro');
 const PlanService = require('../../../../services/Admin/PlanService');
 const AddonService = require('../../../../services/Admin/AddonService');
 const TenantService = require('../../../../services/Admin/TenantService');
@@ -20,7 +21,7 @@ class PlanesController {
 
             const openTenantId = req.query.tenantId ? Number(req.query.tenantId) : null;
 
-            const serverData = JSON.stringify({
+            const serverData = jsonSeguro({
                 addons,
                 plans,
                 openTenantId,

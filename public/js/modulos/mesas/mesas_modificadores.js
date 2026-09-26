@@ -54,15 +54,15 @@ window.MESAS_MODIFICADORES = {
                 <label class="pos-mod-opcion">
                     <span>
                         <input type="${inputType}" name="mesa-mod-grupo-${g.id}" value="${o.id}"
-                            data-precio="${o.precio_adicional}" data-nombre="${o.nombre}" class="form-check-input me-2">
-                        ${o.nombre}
+                            data-precio="${o.precio_adicional}" data-nombre="${GF.escapeHtml(o.nombre)}" class="form-check-input me-2">
+                        ${GF.escapeHtml(o.nombre)}
                     </span>
                     <span class="text-muted small">${Number(o.precio_adicional) > 0 ? '+$' + Number(o.precio_adicional).toLocaleString('es-CO') : ''}</span>
                 </label>`).join('');
             const maximo = g.tipo_seleccion === 'multiple' ? (g.maximo_selecciones || 0) : 0;
             return `<div class="pos-mod-grupo mb-3" data-grupo-id="${g.id}" data-obligatorio="${g.obligatorio ? 1 : 0}" data-minimo="${g.minimo_selecciones || 0}" data-maximo="${maximo}">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <strong>${g.nombre}</strong> ${hint}
+                    <strong>${GF.escapeHtml(g.nombre)}</strong> ${hint}
                 </div>
                 <div class="text-muted small mb-2">${subHint}</div>
                 ${opcionesHtml}

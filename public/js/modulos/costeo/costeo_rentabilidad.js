@@ -61,8 +61,8 @@
         const tbody = document.getElementById('tbodyRentabilidad');
         tbody.innerHTML = productos.map(p => `
             <tr>
-                <td><span class="fw-medium">${p.producto_nombre || '—'}</span>
-                    ${p.producto_codigo ? '<small class="text-muted d-block">' + p.producto_codigo + '</small>' : ''}
+                <td><span class="fw-medium">${GF.escapeHtml(p.producto_nombre || '—')}</span>
+                    ${p.producto_codigo ? '<small class="text-muted d-block">' + GF.escapeHtml(p.producto_codigo) + '</small>' : ''}
                 </td>
                 <td class="text-end">${GF.dinero(p.precio_venta)}</td>
                 <td class="text-end">${GF.dinero(p.cvu_porcion)}</td>

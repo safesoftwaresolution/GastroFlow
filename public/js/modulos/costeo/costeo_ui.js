@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tr.innerHTML = `
           <td>${GF.escapeHtml(ing.insumo_codigo || '')} - ${GF.escapeHtml(ing.insumo_nombre || '')}</td>
           <td>${ing.cantidad}</td>
-          <td>${ing.unidad}</td>
+          <td>${GF.escapeHtml(ing.unidad)}</td>
           <td>${mod.canEdit ? `<button type="button" class="btn btn-sm btn-outline-danger btnQuitarIng" data-idx="${idx}">Quitar</button>` : ''}</td>`;
         tbody.appendChild(tr);
       });

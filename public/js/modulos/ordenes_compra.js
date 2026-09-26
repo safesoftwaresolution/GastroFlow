@@ -84,8 +84,8 @@
                     (i) => `
                 <tr>
                     <td>${GF.escapeHtml(i.insumo_nombre)}</td>
-                    <td class="text-end">${i.cantidad_pedida} ${i.unidad_base || ''}</td>
-                    <td class="text-end">${i.cantidad_recibida !== null ? i.cantidad_recibida + ' ' + (i.unidad_base || '') : '-'}</td>
+                    <td class="text-end">${i.cantidad_pedida} ${GF.escapeHtml(i.unidad_base || '')}</td>
+                    <td class="text-end">${i.cantidad_recibida !== null ? i.cantidad_recibida + ' ' + GF.escapeHtml(i.unidad_base || '') : '-'}</td>
                     <td class="text-end">${i.costo_unitario_estimado !== null ? GF.dinero(i.costo_unitario_estimado, 2) : '-'}</td>
                 </tr>
             `
@@ -109,7 +109,7 @@
                     (i) => `
                 <tr data-item-id="${i.id}">
                     <td>${GF.escapeHtml(i.insumo_nombre)}</td>
-                    <td class="text-end">${i.cantidad_pedida} ${i.unidad_base || ''}</td>
+                    <td class="text-end">${i.cantidad_pedida} ${GF.escapeHtml(i.unidad_base || '')}</td>
                     <td class="text-end">
                         <input type="number" class="form-control form-control-sm text-end recibir-cantidad"
                             min="0" step="0.001" value="${i.cantidad_pedida}">

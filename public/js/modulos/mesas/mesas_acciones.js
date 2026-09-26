@@ -255,7 +255,7 @@ $(function () {
             <label class="list-group-item list-group-item-action d-flex align-items-center">
               <input class="form-check-input me-3 item-to-move" type="checkbox" value="${it.id}" style="width: 1.5rem; height: 1.5rem;">
               <div class="flex-grow-1">
-                <div class="fw-bold">${it.producto_nombre || it.nombre}</div>
+                <div class="fw-bold">${GF.escapeHtml(it.producto_nombre || it.nombre)}</div>
                 <div class="small text-muted">Cantidad: ${it.cantidad} — ${mod.formatear(it.subtotal)}</div>
               </div>
             </label>`;

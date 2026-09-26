@@ -123,7 +123,7 @@
                                 </div>
                         </div>
 
-                        <script type="application/json" id="modificadores-insumos-data"><%- JSON.stringify(typeof insumos !== 'undefined' ? insumos : []) %></script>
+                        <script type="application/json" id="modificadores-insumos-data"><%- jsonSeguro(typeof insumos !== 'undefined' ? insumos : []) %></script>
                         <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">Cancelar</button>

@@ -15,7 +15,7 @@ function addIngredienteRow(insumoId = '', cantidad = '', unidad = 'g') {
     tr.innerHTML = `
         <td><select class="form-select form-select-sm insumo-select">${insumosList.map(i => `<option value="${i.id}" ${i.id == insumoId ? 'selected' : ''}>${GF.escapeHtml(i.nombre)} (${GF.escapeHtml(i.unidad_base || 'g')})</option>`).join('')}</select></td>
         <td><input type="number" step="0.0001" class="form-control form-control-sm cantidad-input" placeholder="Cantidad" value="${cantidad}"></td>
-        <td><input type="text" class="form-control form-control-sm unidad-input" placeholder="g" value="${unidad}"></td>
+        <td><input type="text" class="form-control form-control-sm unidad-input" placeholder="g" value="${GF.escapeHtml(unidad)}"></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger quitar-ing" title="Quitar"><i class="bi bi-trash"></i></button></td>
     `;
     tr.querySelector('.quitar-ing').onclick = () => tr.remove();

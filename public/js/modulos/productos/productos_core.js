@@ -44,7 +44,7 @@ async function cargarParametrosCosteoParaEdicion(id, paramContainer) {
     allParams.forEach(p => {
       const label = document.createElement('label');
       label.className = 'd-block me-3';
-      label.innerHTML = `<input type="checkbox" class="form-check-input me-2 producto-parametro-cb" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${p.name}`;
+      label.innerHTML = `<input type="checkbox" class="form-check-input me-2 producto-parametro-cb" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${GF.escapeHtml(p.name)}`;
       div.appendChild(label);
     });
   } catch (e) {

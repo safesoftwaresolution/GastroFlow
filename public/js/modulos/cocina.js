@@ -63,14 +63,14 @@ function cardItem(it) {
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="producto">${it.producto_nombre}</span>
+                            <span class="producto">${GF.escapeHtml(it.producto_nombre)}</span>
                             ${estadoBadge}
-                            <span class="badge bg-dark cantidad-badge">${it.cantidad} ${it.unidad_medida || 'UND'}</span>
+                            <span class="badge bg-dark cantidad-badge">${it.cantidad} ${GF.escapeHtml(it.unidad_medida || 'UND')}</span>
                         </div>
                         ${it.nota ? `
                         <div class="nota-especial">
                             <strong>Instrucciones Especiales:</strong>
-                            <span>${it.nota}</span>
+                            <span>${GF.escapeHtml(it.nota)}</span>
                         </div>` : ''}
                         ${it.modificadores?.length ? `
                         <div class="nota-especial">
@@ -428,7 +428,7 @@ $(function () {
                     <div class="card h-100 resumen-item shadow-none">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <span class="producto-nombre">${pNombre}</span>
+                                <span class="producto-nombre">${GF.escapeHtml(pNombre)}</span>
                                 <span class="total-badge">${pData.total} <small>${unidadStr}</small></span>
                             </div>
                             <div class="variaciones-list border-top pt-2">
@@ -450,9 +450,9 @@ $(function () {
                         <div class="d-flex flex-column flex-sm-row gap-1">
                         ${vData.enviado > 0 ? `
                             <button class="btn btn-xs btn-primary flex-fill px-1 py-1 btn-preparar-lote"
-                                data-nombre="${pNombre}"
-                                data-nota="${vData.nota}"
-                                data-mods-hash="${vData.modificadoresHash}"
+                                data-nombre="${GF.escapeHtml(pNombre)}"
+                                data-nota="${GF.escapeHtml(vData.nota)}"
+                                data-mods-hash="${GF.escapeHtml(vData.modificadoresHash)}"
                                 data-estado="preparando"
                                 title="Iniciar preparación">
                                 <i class="bi bi-play-fill"></i> Iniciar (${vData.enviado})
@@ -461,9 +461,9 @@ $(function () {
 
                         ${vData.preparando > 0 ? `
                             <button class="btn btn-xs btn-success flex-fill px-1 py-1 btn-preparar-lote"
-                                data-nombre="${pNombre}"
-                                data-nota="${vData.nota}"
-                                data-mods-hash="${vData.modificadoresHash}"
+                                data-nombre="${GF.escapeHtml(pNombre)}"
+                                data-nota="${GF.escapeHtml(vData.nota)}"
+                                data-mods-hash="${GF.escapeHtml(vData.modificadoresHash)}"
                                 data-estado="listo"
                                 title="Marcar todos como listos">
                                 <i class="bi bi-check-all"></i> Listo (${vData.preparando})

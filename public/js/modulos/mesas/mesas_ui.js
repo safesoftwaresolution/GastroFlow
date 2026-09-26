@@ -309,14 +309,14 @@ function crearItemResultadoProducto(mod, list, p) {
   // aviso. Se activa sola al agregar la unidad que complete el mínimo (el precio
   // se resuelve de nuevo en el servidor, ver AgregarItemService).
   const promoRegla = p.promocion_regla
-    ? ` <span class="badge bg-info-subtle text-info-emphasis">${p.promocion_regla.nombre}: desde ${p.promocion_regla.cantidad_minima}u</span>`
+    ? ` <span class="badge bg-info-subtle text-info-emphasis">${GF.escapeHtml(p.promocion_regla.nombre)}: desde ${p.promocion_regla.cantidad_minima}u</span>`
     : '';
   const item = $(`
     <a href="#" class="list-group-item list-group-item-action">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <div class="fw-bold text-primary">${p.codigo}</div>
-          <div class="text-dark">${p.nombre}${p.promocion_nombre ? ' <span class=\"badge bg-warning-subtle text-warning-emphasis\">' + p.promocion_nombre + '</span>' : ''}${promoRegla}</div>
+          <div class="fw-bold text-primary">${GF.escapeHtml(p.codigo)}</div>
+          <div class="text-dark">${GF.escapeHtml(p.nombre)}${p.promocion_nombre ? ' <span class=\"badge bg-warning-subtle text-warning-emphasis\">' + GF.escapeHtml(p.promocion_nombre) + '</span>' : ''}${promoRegla}</div>
         </div>
         <div class="text-end">
             ${precioHtml}

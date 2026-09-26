@@ -42,7 +42,7 @@ window.POS_UI = {
             const btn = document.createElement('button');
             btn.className = 'pos-cat-chip';
             btn.dataset.cat = cat.id;
-            btn.innerHTML = `<span class="pos-cat-dot" style="background:${color}"></span>${cat.nombre}`;
+            btn.innerHTML = `<span class="pos-cat-dot" style="background:${color}"></span>${GF.escapeHtml(cat.nombre)}`;
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.pos-cat-chip').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -91,13 +91,13 @@ window.POS_UI = {
                 : `<span class="ppc-price">${GF.dinero(p.precio_unidad)}</span>`;
             let promoBadge = '';
             if (p.precio_promocion != null) {
-                promoBadge = `<span class="ppc-promo-badge" title="${p.promocion_nombre || 'Promoción'}"><i class="bi bi-percent"></i></span>`;
+                promoBadge = `<span class="ppc-promo-badge" title="${GF.escapeHtml(p.promocion_nombre || 'Promoción')}"><i class="bi bi-percent"></i></span>`;
             } else if (p.promocion_regla) {
                 // Promo "por cantidad" (ej. desde 2 unidades): todavía no se sabe si el
                 // cliente va a llevar suficientes, así que no se muestra un precio
                 // rebajado -- solo el aviso. Se activa sola al agregar la 2da unidad
                 // (ver POS.recalcularPromocionesPorCantidad).
-                promoBadge = `<span class="ppc-promo-badge" style="background:#0dcaf0" title="${p.promocion_regla.nombre}: desde ${p.promocion_regla.cantidad_minima} unidades"><i class="bi bi-percent"></i></span>`;
+                promoBadge = `<span class="ppc-promo-badge" style="background:#0dcaf0" title="${GF.escapeHtml(p.promocion_regla.nombre)}: desde ${p.promocion_regla.cantidad_minima} unidades"><i class="bi bi-percent"></i></span>`;
             }
             return `<button class="pos-product-card${inCartClass}" data-pid="${p.id}">
                 ${badge}
@@ -105,8 +105,8 @@ window.POS_UI = {
                 <span class="ppc-icon" style="background:${soft};color:${color}">
                     <i class="bi ${catIcon(p.categoria_nombre)}"></i>
                 </span>
-                <span class="ppc-cat-label" style="color:${color}">${p.categoria_nombre || 'Sin cat.'}</span>
-                <span class="ppc-name">${p.nombre}</span>
+                <span class="ppc-cat-label" style="color:${color}">${GF.escapeHtml(p.categoria_nombre || 'Sin cat.')}</span>
+                <span class="ppc-name">${GF.escapeHtml(p.nombre)}</span>
                 ${precioHtml}
             </button>`;
         }).join('');
@@ -156,11 +156,11 @@ window.POS_UI = {
                     : (item.descuento_porcentaje > 0
                         ? `<span class="pci-disc-badge">-${item.descuento_porcentaje}%</span>` : '');
                 const modText = (item.modificadores_preview && item.modificadores_preview.length)
-                    ? `<div class="pci-mods">${item.modificadores_preview.map(m => m.opcion_nombre).join(', ')}</div>` : '';
+                    ? `<div class="pci-mods">${GF.escapeHtml(item.modificadores_preview.map(m => m.opcion_nombre).join(', '))}</div>` : '';
                 return `<div class="pos-cart-item">
                     <div class="pci-body">
                         <div class="pci-info">
-                            <div class="pci-name">${item.nombre}${descBadge}</div>
+                            <div class="pci-name">${GF.escapeHtml(item.nombre)}${descBadge}</div>
                             ${modText}
                             <div class="pci-unit">${GF.dinero(item.precio + (item.modificadores_total || 0))} c/u</div>
                         </div>
@@ -257,8 +257,8 @@ window.POS_UI = {
         POS_UI._clienteCache = lista;
         dropdown.innerHTML = lista.map((c, idx) => `
             <div class="pos-customer-item" data-cli-idx="${idx}">
-                <span class="fw-semibold">${c.nombre}</span>
-                <span class="text-muted small">${c.telefono || ''}</span>
+                <span class="fw-semibold">${GF.escapeHtml(c.nombre)}</span>
+                <span class="text-muted small">${GF.escapeHtml(c.telefono || '')}</span>
             </div>`).join('');
         dropdown.querySelectorAll('[data-cli-idx]').forEach(el => {
             el.addEventListener('click', () => {
@@ -302,7 +302,7 @@ window.POS_UI = {
         POS_UI._serviciosCache = servicios;
         cont.innerHTML = servicios.map((s, idx) => `
             <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" data-serv-idx="${idx}">
-                <span>${s.nombre}</span>
+                <span>${GF.escapeHtml(s.nombre)}</span>
                 <span class="fw-bold">${GF.dinero(s.precio)}</span>
             </button>`).join('');
 
@@ -344,7 +344,7 @@ window.POS_UI = {
             const total = GF.dinero(b.total || 0);
             const hora = new Date(b.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
             return `<tr>
-                <td>${b.nombre_cliente || 'Consumidor final'}</td>
+                <td>${GF.escapeHtml(b.nombre_cliente || 'Consumidor final')}</td>
                 <td>${n} ítem${n !== 1 ? 's' : ''}</td>
                 <td class="fw-semibold">${total}</td>
                 <td class="text-muted small">${hora}</td>
@@ -366,7 +366,7 @@ window.POS_UI = {
             return `<div class="pos-borrador-card">
                 <div class="d-flex justify-content-between align-items-start gap-2">
                     <div class="pos-borrador-card-info">
-                        <div class="fw-semibold">${b.nombre_cliente || 'Consumidor final'}</div>
+                        <div class="fw-semibold">${GF.escapeHtml(b.nombre_cliente || 'Consumidor final')}</div>
                         <div class="text-muted small">${hora} · ${n} ítem${n !== 1 ? 's' : ''}</div>
                     </div>
                     <span class="fw-bold text-nowrap">${total}</span>

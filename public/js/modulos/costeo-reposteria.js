@@ -194,7 +194,7 @@
         tbody.innerHTML = '';
         calcIngredientes.forEach(function (ing, idx) {
             const tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + (ing.insumo_codigo || '') + ' - ' + (ing.insumo_nombre || '') + '</td><td>' + ing.cantidad + '</td><td>' + (ing.unidad || 'g') + '</td><td class="text-end">' + GF.dinero(ing.costo) + '</td><td><button type="button" class="btn btn-sm btn-outline-danger calcQuitarIng" data-idx="' + idx + '">×</button></td>';
+            tr.innerHTML = '<td>' + GF.escapeHtml(ing.insumo_codigo || '') + ' - ' + GF.escapeHtml(ing.insumo_nombre || '') + '</td><td>' + ing.cantidad + '</td><td>' + GF.escapeHtml(ing.unidad || 'g') + '</td><td class="text-end">' + GF.dinero(ing.costo) + '</td><td><button type="button" class="btn btn-sm btn-outline-danger calcQuitarIng" data-idx="' + idx + '">×</button></td>';
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.calcQuitarIng').forEach(function (btn) {

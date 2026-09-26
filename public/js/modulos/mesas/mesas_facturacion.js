@@ -188,7 +188,7 @@ $(function () {
               <input type="checkbox" class="form-check-input check-item" data-id="${it.id}" style="transform: scale(1.1);">
             </td>
             <td style="text-align: left; padding: 10px 8px; min-width: 140px;">
-              <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${nombre}">${nombre}</div>
+              <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${GF.escapeHtml(nombre)}">${GF.escapeHtml(nombre)}</div>
               <small class="text-muted fs-7" style="white-space: nowrap;">${mod.formatear(precio)} c/u</small>
             </td>
             <td class="text-center" style="padding: 10px 8px; width: 85px; min-width: 85px; white-space: nowrap;">

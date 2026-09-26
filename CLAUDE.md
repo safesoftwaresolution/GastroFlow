@@ -118,6 +118,24 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   requests (POST/PUT/PATCH/DELETE) that carry an `Idempotency-Key` header, caching the response for 30 min
   and returning 409 on a concurrent in-flight duplicate. Only applies when the header is present.
 
+- **Frontend core — `public/js/core/gf.js` (`window.GF`)**, loaded on every page from the navbar partial and
+  the superadmin shell (pages without them — login, registro, QR menu — include it explicitly). Use it
+  instead of rewriting helpers per module: `GF.api(url, opts, mensajeError)` (+ `.get/.post/.put/.patch/
+  .delete`, and `.getOr(url, porDefecto)` that never throws) for every call to our own backend — it sends
+  JSON, throws `Error` with the server's `error`/`message` and `.status`, and doesn't blow up on HTML
+  responses; `GF.dinero(n)` for money ("$ 12.345", no cents); `GF.escapeHtml` for ANY DB/user text put
+  into HTML (innerHTML, `.html()`, template literals, `data-*` attributes); `GF.toast/alerta/exito/error/
+  confirmar`; `GF.cargando(btn, bool)`; `GF.tiempoReal.on(evento, fn)` (one shared SSE connection per
+  page). Raw `fetch` is only for non-JSON (blob) or third-party APIs (Wompi). Also reusable:
+  `core/modules/{FormManager,SearchManager,TableManager}.js`, `core/tablas-responsive.js` (tables become
+  cards on mobile automatically; opt out with `.no-stack`), `core/money-input.js`.
+
+- **XSS**: product names, client names, order notes (writable by anonymous QR customers!) and restaurant
+  names (chosen at self-registration) are untrusted. Escape them client-side with `GF.escapeHtml`, and
+  embed server data in `<script>` only via `<%- jsonSeguro(data) %>` (`utils/jsonSeguro.js`, exposed as
+  `app.locals.jsonSeguro`) — never `<%- JSON.stringify(...) %>`, which a `</script>` inside the data breaks.
+  Don't store the JWT in localStorage (the session is the httpOnly `auth_token` cookie).
+
 - **PDFs** are generated with `pdfmake` (`services/Shared/PdfMaker.js`, docDefinition → Buffer, no
   Chromium). Puppeteer is only used by `scripts/generate-og-image.js` (a screenshot, not a PDF) — don't
   reach for Puppeteer for report/invoice PDFs.
