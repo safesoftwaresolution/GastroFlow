@@ -60,5 +60,5 @@
 </div>
 
 <script>
-    window.GastroFlowRolePresets = <%- JSON.stringify(rolePresets || {}) %>;
+    window.GastroFlowRolePresets = <%- jsonSeguro(rolePresets || {}) %>;
 </script>

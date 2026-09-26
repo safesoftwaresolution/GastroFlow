@@ -38,6 +38,9 @@ jest.mock('../../../services/Shared/CacheService', () => ({
 
 jest.mock('../../../services/Shared/RealtimeEvents', () => ({
     emit: jest.fn(),
+    emitPedido: jest.fn(),
+    emitVentaRegistrada: jest.fn(),
+    emitMesasChanged: jest.fn(),
     on: jest.fn(),
     removeListener: jest.fn(),
     setMaxListeners: jest.fn()
@@ -406,8 +409,7 @@ describe('FacturarPedidoService', () => {
         expect(mockConn.release).toHaveBeenCalled();
 
         // Verificar que se emitió el evento SSE
-        expect(RealtimeEvents.emit).toHaveBeenCalledWith(
-            'orderCreated',
+        expect(RealtimeEvents.emitPedido).toHaveBeenCalledWith(
             expect.objectContaining({
                 tenantId: 1,
                 pedidoId: 10,

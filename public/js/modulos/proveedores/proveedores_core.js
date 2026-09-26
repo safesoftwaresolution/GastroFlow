@@ -23,8 +23,7 @@ window.cargarHistorial = async function(proveedorId) {
   tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando historial...</td></tr>';
 
   try {
-    const res = await fetch(`/proveedores/${proveedorId}/historial-costos`);
-    const data = await res.json();
+    const data = await GF.api(`/proveedores/${proveedorId}/historial-costos`);
 
     tbody.innerHTML = '';
     if (!data || data.length === 0) {
@@ -35,13 +34,13 @@ window.cargarHistorial = async function(proveedorId) {
     msgVacio?.classList.add('d-none');
     data.forEach(h => {
       const fecha = new Date(h.fecha).toLocaleDateString();
-      const monto = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(h.costo_unitario);
-      const subtotal = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(h.subtotal);
+      const monto = GF.dinero(h.costo_unitario, 2);
+      const subtotal = GF.dinero(h.subtotal);
 
       const tr = `
         <tr>
           <td class="small">${fecha}</td>
-          <td class="fw-medium">${h.insumo}</td>
+          <td class="fw-medium">${GF.escapeHtml(h.insumo)}</td>
           <td class="text-end">${Number.parseFloat(h.cantidad).toFixed(2)}</td>
           <td class="text-end fw-bold">${monto}</td>
           <td class="text-end text-muted">${subtotal}</td>
@@ -63,8 +62,7 @@ window.resetForm = function() {
 
 window.editProveedor = async function(id) {
   try {
-    const res = await fetch(`/proveedores/${id}`);
-    const p = await res.json();
+    const p = await GF.api(`/proveedores/${id}`, {}, 'No se pudo cargar el proveedor');
 
     document.getElementById('modalTitle').innerText = 'Editar Proveedor';
     document.getElementById('p_id').value = p.id;
@@ -97,16 +95,11 @@ window.deleteProveedor = async function(id) {
 
   if (result.isConfirmed) {
     try {
-      const res = await fetch(`/proveedores/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        Swal.fire('Eliminado', 'Proveedor eliminado correctamente.', 'success')
-          .then(() => location.reload());
-      } else {
-        const err = await res.json();
-        Swal.fire('Error', err.error || 'No se pudo eliminar', 'error');
-      }
+      await GF.api.delete(`/proveedores/${id}`, 'No se pudo eliminar');
+      Swal.fire('Eliminado', 'Proveedor eliminado correctamente.', 'success')
+        .then(() => location.reload());
     } catch (error) {
-      Swal.fire('Error', 'Error de conexión', 'error');
+      GF.error(error.message);
     }
   }
 };
@@ -130,8 +123,7 @@ window.cargarFacturas = async function(proveedorId) {
   if (containerMovil) containerMovil.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
 
   try {
-    const res = await fetch(`/proveedores/${proveedorId}/facturas`);
-    const facturas = await res.json();
+    const facturas = await GF.api(`/proveedores/${proveedorId}/facturas`);
 
     tbody.innerHTML = '';
     if (containerMovil) containerMovil.innerHTML = '';
@@ -144,12 +136,12 @@ window.cargarFacturas = async function(proveedorId) {
     msgVacio?.classList.add('d-none');
     facturas.forEach(f => {
       const fecha = f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString() : 'N/A';
-      const monto = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(f.monto_total);
+      const monto = GF.dinero(f.monto_total);
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="small">${fecha}</td>
-        <td class="fw-bold">${f.numero_factura || '-'}</td>
+        <td class="fw-bold">${GF.escapeHtml(f.numero_factura || '-')}</td>
         <td class="text-end fw-bold text-dark">${monto}</td>
         <td class="text-center">
           <a href="/proveedores/facturas/${f.id}/ver" target="_blank" class="btn btn-sm btn-light border" title="Ver archivo">
@@ -174,7 +166,7 @@ window.cargarFacturas = async function(proveedorId) {
               </div>
               <div class="d-flex justify-content-between align-items-center">
                 <div class="small fw-bold text-dark">
-                  <i class="bi bi-file-earmark-text me-1"></i>${f.numero_factura || 'S/N'}
+                  <i class="bi bi-file-earmark-text me-1"></i>${GF.escapeHtml(f.numero_factura || 'S/N')}
                 </div>
                 <div class="btn-group">
                   <a href="/proveedores/facturas/${f.id}/ver" target="_blank" class="btn btn-sm btn-white border shadow-sm px-3">
@@ -209,13 +201,9 @@ window.eliminarFactura = async function(facturaId, proveedorId) {
 
   if (result.isConfirmed) {
     try {
-      const res = await fetch(`/proveedores/facturas/${facturaId}`, { method: 'DELETE' });
-      if (res.ok) {
-        await window.cargarFacturas(proveedorId);
-        Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1000, showConfirmButton: false });
-      } else {
-        throw new Error('No se pudo eliminar');
-      }
+      await GF.api.delete(`/proveedores/facturas/${facturaId}`, 'No se pudo eliminar');
+      await window.cargarFacturas(proveedorId);
+      Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1000, showConfirmButton: false });
     } catch (error) {
       Swal.fire('Error', error.message, 'error');
     }

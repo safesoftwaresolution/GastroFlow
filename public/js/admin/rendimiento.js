@@ -32,9 +32,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return TENANT_COLOR_PALETTE[hash % TENANT_COLOR_PALETTE.length];
     }
 
-    function money(v) {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v || 0);
-    }
 
     // ─── Selector de periodo ────────────────────────────────────────────────
     const periodoSelect = document.getElementById('periodoSelect');
@@ -107,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         borderWidth: 1,
                         callbacks: {
                             label: function (ctx) {
-                                if (ctx.dataset.label === 'Ventas') return 'Ventas: ' + money(ctx.parsed.y);
+                                if (ctx.dataset.label === 'Ventas') return 'Ventas: ' + GF.dinero(ctx.parsed.y);
                                 return 'Facturas: ' + ctx.parsed.y;
                             }
                         }
@@ -119,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         beginAtZero: true,
                         position: 'left',
                         grid: { color: chartGridColor },
-                        ticks: { font: { size: 11 }, callback: function (v) { return money(v); } }
+                        ticks: { font: { size: 11 }, callback: function (v) { return GF.dinero(v); } }
                     },
                     y1: {
                         beginAtZero: true,
@@ -162,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         callbacks: {
                             label: function (ctx) {
                                 const facturas = data.crecimientoMensual[ctx.dataIndex].facturas;
-                                return [money(ctx.parsed.y), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
+                                return [GF.dinero(ctx.parsed.y), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
                             }
                         }
                     }
@@ -172,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     y: {
                         beginAtZero: true,
                         grid: { color: chartGridColor },
-                        ticks: { font: { size: 11 }, callback: function (v) { return money(v); } }
+                        ticks: { font: { size: 11 }, callback: function (v) { return GF.dinero(v); } }
                     }
                 }
             }
@@ -211,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         callbacks: {
                             label: function (ctx) {
                                 const facturas = data.porRestaurante[ctx.dataIndex].facturas;
-                                return [money(ctx.parsed.x), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
+                                return [GF.dinero(ctx.parsed.x), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
                             }
                         }
                     }
@@ -220,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     x: {
                         beginAtZero: true,
                         grid: { color: chartGridColor },
-                        ticks: { font: { size: 11 }, callback: function (v) { return money(v); } }
+                        ticks: { font: { size: 11 }, callback: function (v) { return GF.dinero(v); } }
                     },
                     y: { grid: { display: false }, ticks: { font: { size: 12, weight: '600' } } }
                 }

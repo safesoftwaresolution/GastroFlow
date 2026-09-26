@@ -85,7 +85,7 @@
             infoDiv.appendChild(descD);
             var priceDiv = document.createElement('div');
             priceDiv.className = 'addon-price';
-            priceDiv.textContent = fmtCOP(a.precio);
+            priceDiv.textContent = GF.dinero(a.precio);
             d.appendChild(chkDiv);
             d.appendChild(infoDiv);
             d.appendChild(priceDiv);
@@ -111,8 +111,8 @@
         var pPlan = plan ? (plan[keyP] || 0) : 0;
         var act = ALL_ADDONS.filter(function (a) { return (addonMap[mTid] || new Set()).has(a.id); });
         var pAd = act.reduce(function (s, a) { return s + a.precio; }, 0);
-        document.getElementById('mTotal').textContent = fmtCOP(pPlan + pAd);
-        document.getElementById('mBreak').textContent = 'Plan: ' + fmtCOP(pPlan) + '  +  Add-ons: ' + fmtCOP(pAd);
+        document.getElementById('mTotal').textContent = GF.dinero(pPlan + pAd);
+        document.getElementById('mBreak').textContent = 'Plan: ' + GF.dinero(pPlan) + '  +  Add-ons: ' + GF.dinero(pAd);
     }
 
     document.getElementById('btnGuardar').addEventListener('click', async function () {
@@ -186,9 +186,9 @@
             planEl.innerHTML = '';
             planEl.appendChild(planBadgeEl(plan));
         }
-        setText('tb-total-' + tid, fmtCOP(pPlan + pAd));
-        setText('tb-pp-' + tid, fmtCOP(pPlan));
-        setText('tb-pa-' + tid, fmtCOP(pAd));
+        setText('tb-total-' + tid, GF.dinero(pPlan + pAd));
+        setText('tb-pp-' + tid, GF.dinero(pPlan));
+        setText('tb-pa-' + tid, GF.dinero(pAd));
         var labels = { pequeno: 'Pequeno', mediano: 'Mediano', grande: 'Grande' };
         setText('tb-tam-' + tid, labels[tamano] || tamano);
     }
@@ -244,19 +244,9 @@
         }
     }
 
-    async function localFetch(url, method, body) {
-        var opts = { method: method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
-        if (body && method !== 'GET') opts.body = JSON.stringify(body);
-        var resp = await fetch(url, opts);
-        if (!resp.ok) {
-            var e = await resp.json().catch(function () { return {}; });
-            throw new Error(e.error || 'HTTP ' + resp.status);
-        }
-        if (method === 'DELETE') return null;
-        return resp.json().catch(function () { return null; });
+    function localFetch(url, method, body) {
+        return GF.api(url, { method: method || 'GET', body: method && method !== 'GET' ? body : undefined });
     }
-
-    function fmtCOP(n) { return '$' + Number(n || 0).toLocaleString('es-CO'); }
     function setText(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
 
     async function cobrarAhoraTenant(tid) {

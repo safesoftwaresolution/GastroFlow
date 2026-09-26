@@ -5,7 +5,8 @@
  */
 
 const db = require('../../config/database');
-const { toFechaISOUtc } = require('../../utils/dateHelpers');
+const NumeracionRepository = require('./NumeracionRepository');
+const { SQL_COLOMBIA, toFechaISOUtc } = require('../../utils/dateHelpers');
 const TaxService = require('../../services/Shared/TaxService');
 const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
@@ -82,11 +83,7 @@ class FacturaRepository {
             await FacturaRepository.acomodarNumeracionSiFalta(connection, tenantId);
 
             const evento_id = facturaData.evento_id || null;
-            const [rowsNum] = await connection.query(
-                'SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM facturas WHERE tenant_id = ?',
-                [tenantId]
-            );
-            const numero = (rowsNum && rowsNum[0] && rowsNum[0].siguiente) || 1;
+            const numero = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
             const fechaEmisionUtc = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
             // Buscar sesión de caja abierta para vincular la venta
@@ -471,7 +468,7 @@ class FacturaRepository {
         const [rows] = await db.query(
             `SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.forma_pago, f.total, f.propina,
                     f.monto_efectivo, f.monto_transferencia,
-                    DATE_FORMAT(CONVERT_TZ(f.fecha, '+00:00', '-05:00'), '%Y-%m-%dT%H:%i') AS fecha,
+                    DATE_FORMAT(${SQL_COLOMBIA.aColombia('f.fecha')}, '%Y-%m-%dT%H:%i') AS fecha,
                     c.nombre AS cliente_nombre, t.nombre AS tenant_nombre
              FROM facturas f
              JOIN tenants t ON f.tenant_id = t.id
@@ -524,7 +521,7 @@ class FacturaRepository {
 
         const [result] = await db.query(
             `UPDATE facturas SET cliente_id = COALESCE(?, cliente_id), forma_pago = ?, total = ?, propina = ?,
-                    fecha = CONVERT_TZ(?, '-05:00', '+00:00'), monto_efectivo = ?, monto_transferencia = ? WHERE id = ?`,
+                    fecha = ${SQL_COLOMBIA.aUtc()}, monto_efectivo = ?, monto_transferencia = ? WHERE id = ?`,
             [
                 clienteId,
                 data.forma_pago,

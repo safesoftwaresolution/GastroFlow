@@ -24,22 +24,7 @@ $(document).ready(function () {
         $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creando...');
 
         try {
-            const token = localStorage.getItem('auth_token') || '';
-
-            const response = await fetch('/api/mesas/crear-masivas', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ cantidad, prefijo: prefijo || null })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Error al crear mesas');
-            }
+            const data = await GF.api.post('/api/mesas/crear-masivas', { cantidad, prefijo: prefijo || null }, 'Error al crear mesas');
 
             modalCrearMasivas.hide();
 
@@ -100,15 +85,8 @@ $(document).ready(function () {
             return;
         }
 
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'bottom-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: false
-        });
-
-        Toast.fire(getNotificationDetails(isCancelled, isQR, data.pedidoId));
+        const aviso = getNotificationDetails(isCancelled, isQR, data.pedidoId);
+        GF.toast(aviso.title, aviso.icon, { text: aviso.text, position: 'bottom-end', timer: 2000, timerProgressBar: false });
 
         if (!isQR || isCancelled) {
             setTimeout(() => {
@@ -122,48 +100,23 @@ $(document).ready(function () {
             ? `Mesa ${data.mesaNumero}: el cliente pide la cuenta`
             : `Mesa ${data.mesaNumero}: el cliente llama al mesero`;
 
-        Swal.mixin({
-            toast: true,
-            position: 'top-end',
+        GF.toast(texto, data.tipo === 'cuenta' ? 'warning' : 'info', {
             showConfirmButton: true,
             confirmButtonText: 'Entendido',
-            timer: 15000,
-            timerProgressBar: true
-        }).fire({
-            icon: data.tipo === 'cuenta' ? 'warning' : 'info',
-            title: texto
+            timer: 15000
         });
     }
 
-    const source = new EventSource('/api/notifications/subscribe');
-
-    source.addEventListener('message', function (e) {
-        try {
-            const data = JSON.parse(e.data);
-            // Cualquier cambio de pedidos/mesas refresca la grilla (reemplaza el
-            // polling de 3 s). 'connected' también: tras una reconexión del SSE
-            // pudimos habernos perdido eventos.
-            if (['orderCreated', 'mesasChanged', 'connected'].includes(data.event)
-                && typeof window.scheduleRefreshMesas === 'function') {
-                window.scheduleRefreshMesas();
-            }
-            if (data.event === 'orderCreated') {
-                handleOrderCreated(data);
-            } else if (data.event === 'mesaSolicitud') {
-                handleMesaSolicitud(data);
-            }
-        } catch (err) {
-            console.error('Error procesando notificación:', err);
-        }
-    }, false);
-
-    source.addEventListener('error', function (e) {
-        if (e.readyState === EventSource.CLOSED) {
-            console.log('SSE connection closed');
-        }
-    }, false);
-
-    window.addEventListener('beforeunload', () => {
-        source.close();
+    // Cualquier cambio de pedidos/mesas refresca la grilla (reemplaza el polling
+    // de 3 s). 'connected' también: tras una reconexión pudimos perdernos eventos.
+    const refrescarGrilla = () => {
+        if (typeof window.scheduleRefreshMesas === 'function') window.scheduleRefreshMesas();
+    };
+    GF.tiempoReal.on('connected', refrescarGrilla);
+    GF.tiempoReal.on('mesasChanged', refrescarGrilla);
+    GF.tiempoReal.on('orderCreated', data => {
+        refrescarGrilla();
+        handleOrderCreated(data);
     });
+    GF.tiempoReal.on('mesaSolicitud', handleMesaSolicitud);
 })();

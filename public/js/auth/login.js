@@ -8,10 +8,9 @@ toggleBtn.addEventListener('click', () => {
     toggleIcon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
 });
 
-if (document.getElementById('mensajeTenant')) {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-}
+// Tokens que versiones anteriores guardaban en localStorage: se borran siempre.
+localStorage.removeItem('auth_token');
+localStorage.removeItem('user');
 
 function showError(msg) {
     const box = document.getElementById('errorAlert');
@@ -25,14 +24,7 @@ function hideError() {
 }
 
 function setLoading(loading) {
-    const btn = document.getElementById('btnLogin');
-    if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Verificando...';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Iniciar sesión';
-    }
+    GF.cargando(document.getElementById('btnLogin'), loading, 'Verificando...');
 }
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
@@ -50,23 +42,14 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     setLoading(true);
 
     try {
-        const response = await fetch('/auth/login', {
+        const data = await GF.api('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
+            body: { username, password }
+        }, 'Error al iniciar sesión');
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al iniciar sesión');
-        }
-
-        if (data.token) {
-            localStorage.setItem('auth_token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-        }
-
+        // La sesión va en la cookie httpOnly que pone el servidor. El token ya no
+        // se guarda en localStorage: nada lo lee y ahí quedaba expuesto a cualquier
+        // script inyectado (XSS). Al cargar esta página se limpian los que quedaron.
         const rol = (data.user.rol || '').toString().toLowerCase();
         const isSuperadmin = rol === 'superadmin';
 

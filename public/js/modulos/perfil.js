@@ -52,26 +52,16 @@ document.getElementById('perfilForm').addEventListener('submit', async function 
     }
 
     try {
-        const response = await fetch('/perfil/actualizar', {
-            method: 'POST',
-            body: fd
+        const result = await GF.api('/perfil/actualizar', { method: 'POST', body: fd }, 'Error al guardar');
+        Swal.fire({
+            icon: 'success',
+            title: '¡Actualizado!',
+            text: result.message,
+            timer: 2500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.reload();
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: '¡Actualizado!',
-                text: result.message,
-                timer: 2500,
-                showConfirmButton: false
-            }).then(() => {
-                window.location.reload();
-            });
-        } else {
-            throw new Error(result.message || 'Error al guardar');
-        }
     } catch (error) {
         Swal.fire({
             icon: 'error',
@@ -95,12 +85,7 @@ async function testReport() {
     btn.disabled = true;
 
     try {
-        const response = await fetch('/perfil/test-report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mes, anio })
-        });
-        const result = await response.json();
+        const result = await GF.api.post('/perfil/test-report', { mes, anio }, 'No se pudo enviar el reporte');
 
         if (result.success) {
             if (result.pdfBase64) {

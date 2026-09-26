@@ -8,9 +8,6 @@
     let chartTendencia = null;
     let chartMensual = null;
 
-    function money(v) {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v || 0);
-    }
 
     function fmtInt(v) {
         return Number(v || 0).toLocaleString('es-CO');
@@ -42,7 +39,7 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <span class="small text-muted d-block">Ventas del periodo</span>
-                        <div class="fs-4 fw-bold text-success mt-1">${money(k.ventasPeriodo)}</div>
+                        <div class="fs-4 fw-bold text-success mt-1">${GF.dinero(k.ventasPeriodo)}</div>
                         <span class="badge ${pctBadgeClass(k.crecimientoVentasPct)} mt-1">
                             <i class="bi ${pctIcon(k.crecimientoVentasPct)}"></i> ${fmtPct(k.crecimientoVentasPct)}
                         </span>
@@ -64,7 +61,7 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <span class="small text-muted d-block">Ticket promedio</span>
-                        <div class="fs-4 fw-bold mt-1">${money(k.ticketPromedio)}</div>
+                        <div class="fs-4 fw-bold mt-1">${GF.dinero(k.ticketPromedio)}</div>
                     </div>
                 </div>
             </div>
@@ -133,7 +130,7 @@
                         tooltip: {
                             callbacks: {
                                 label: function (ctx) {
-                                    if (ctx.dataset.label === 'Ventas') return 'Ventas: ' + money(ctx.parsed.y);
+                                    if (ctx.dataset.label === 'Ventas') return 'Ventas: ' + GF.dinero(ctx.parsed.y);
                                     return 'Facturas: ' + ctx.parsed.y;
                                 }
                             }
@@ -144,7 +141,7 @@
                         y: {
                             beginAtZero: true,
                             position: 'left',
-                            ticks: { callback: function (v) { return money(v); } }
+                            ticks: { callback: function (v) { return GF.dinero(v); } }
                         },
                         y1: {
                             beginAtZero: true,
@@ -181,14 +178,14 @@
                             callbacks: {
                                 label: function (ctx) {
                                     const facturas = stats.crecimientoMensual[ctx.dataIndex].facturas;
-                                    return [money(ctx.parsed.y), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
+                                    return [GF.dinero(ctx.parsed.y), facturas + ' factura' + (facturas !== 1 ? 's' : '')];
                                 }
                             }
                         }
                     },
                     scales: {
                         x: { grid: { display: false } },
-                        y: { beginAtZero: true, ticks: { callback: function (v) { return money(v); } } }
+                        y: { beginAtZero: true, ticks: { callback: function (v) { return GF.dinero(v); } } }
                     }
                 }
             });
@@ -200,9 +197,7 @@
         document.getElementById('crecimientoContent').style.display = 'none';
         document.getElementById('crecimientoError').style.display = 'none';
         try {
-            const res = await fetch(`/perfil/api/crecimiento?periodo=${periodo || 30}`, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const stats = await res.json();
+            const stats = await GF.api(`/perfil/api/crecimiento?periodo=${periodo || 30}`);
             renderKpis(stats);
             renderCharts(stats);
             document.getElementById('crecimientoContent').style.display = '';

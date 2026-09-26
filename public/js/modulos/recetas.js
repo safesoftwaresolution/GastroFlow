@@ -2,22 +2,20 @@ const base = '/recetas';
 let insumosList = [];
 
 async function loadProductos() {
-    const r = await fetch(base + '/api/productos', { credentials: 'same-origin' });
-    const data = await r.json();
+    const data = await GF.api.getOr(base + '/api/productos', []);
     const sel = document.getElementById('recetaProductoId');
-    sel.innerHTML = '<option value="">-- Seleccionar producto --</option>' + (data || []).map(p => `<option value="${p.id}">${p.nombre} (${p.codigo || ''})</option>`).join('');
+    sel.innerHTML = '<option value="">-- Seleccionar producto --</option>' + data.map(p => `<option value="${p.id}">${GF.escapeHtml(p.nombre)} (${GF.escapeHtml(p.codigo || '')})</option>`).join('');
 }
 async function loadInsumos() {
-    const r = await fetch(base + '/api/insumos', { credentials: 'same-origin' });
-    insumosList = await r.json();
+    insumosList = await GF.api.getOr(base + '/api/insumos', []);
 }
 function addIngredienteRow(insumoId = '', cantidad = '', unidad = 'g') {
     const tbody = document.getElementById('recetaIngredientesContainer');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td><select class="form-select form-select-sm insumo-select">${insumosList.map(i => `<option value="${i.id}" ${i.id == insumoId ? 'selected' : ''}>${i.nombre} (${i.unidad_base || 'g'})</option>`).join('')}</select></td>
+        <td><select class="form-select form-select-sm insumo-select">${insumosList.map(i => `<option value="${i.id}" ${i.id == insumoId ? 'selected' : ''}>${GF.escapeHtml(i.nombre)} (${GF.escapeHtml(i.unidad_base || 'g')})</option>`).join('')}</select></td>
         <td><input type="number" step="0.0001" class="form-control form-control-sm cantidad-input" placeholder="Cantidad" value="${cantidad}"></td>
-        <td><input type="text" class="form-control form-control-sm unidad-input" placeholder="g" value="${unidad}"></td>
+        <td><input type="text" class="form-control form-control-sm unidad-input" placeholder="g" value="${GF.escapeHtml(unidad)}"></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger quitar-ing" title="Quitar"><i class="bi bi-trash"></i></button></td>
     `;
     tr.querySelector('.quitar-ing').onclick = () => tr.remove();
@@ -44,8 +42,13 @@ document.getElementById('btnGuardarReceta').addEventListener('click', async () =
     const payload = { producto_id: Number.parseInt(producto_id, 10), nombre_receta, porciones, ingredientes };
     const url = id ? base + '/api/recetas/' + id : base + '/api/recetas';
     const method = id ? 'PUT' : 'POST';
-    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(id ? { nombre_receta, porciones, ingredientes } : payload), credentials: 'same-origin' });
-    if (r.ok) { bootstrap.Modal.getInstance(document.getElementById('modalReceta')).hide(); location.reload(); } else { const e = await r.json(); Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo guardar la receta' }); }
+    try {
+        await GF.api(url, { method, body: id ? { nombre_receta, porciones, ingredientes } : payload }, 'No se pudo guardar la receta');
+        GF.cerrarModal('modalReceta');
+        location.reload();
+    } catch (e) {
+        GF.error(e.message);
+    }
 });
 
 document.getElementById('modalReceta').addEventListener('show.bs.modal', async (e) => {
@@ -67,9 +70,8 @@ document.getElementById('modalReceta').addEventListener('show.bs.modal', async (
 });
 
 async function editarReceta(recetaId) {
-    const r = await fetch(base + '/api/recetas/' + recetaId, { credentials: 'same-origin' });
-    const rec = await r.json();
-    if (!rec) return;
+    const rec = await GF.api.getOr(base + '/api/recetas/' + recetaId, null);
+    if (!rec) return GF.error('No se pudo cargar la receta');
     document.getElementById('recetaId').value = rec.id;
     document.getElementById('modalRecetaTitulo').textContent = 'Editar receta';
     await loadProductos();
@@ -83,7 +85,7 @@ async function editarReceta(recetaId) {
     new bootstrap.Modal(document.getElementById('modalReceta')).show();
 }
 
-function eliminarReceta(idOrBtn, nombre) {
+async function eliminarReceta(idOrBtn, nombre) {
     let id, nom;
     if (typeof idOrBtn === 'object' && idOrBtn && idOrBtn.getAttribute) {
         id = idOrBtn.dataset.id;
@@ -92,8 +94,14 @@ function eliminarReceta(idOrBtn, nombre) {
         id = idOrBtn;
         nom = nombre || '';
     }
-    if (!confirm('¿Eliminar la receta "' + nom + '"?')) return;
-    fetch(base + '/api/recetas/' + id, { method: 'DELETE', credentials: 'same-origin' }).then(r => { if (r.ok) location.reload(); else r.json().then(e => alert(e.error)); });
+    const ok = await GF.confirmar('Se eliminará la receta "' + nom + '".', { titulo: '¿Eliminar receta?', confirmar: 'Sí, eliminar', peligro: true });
+    if (!ok) return;
+    try {
+        await GF.api.delete(base + '/api/recetas/' + id, 'No se pudo eliminar la receta');
+        location.reload();
+    } catch (e) {
+        GF.error(e.message);
+    }
 }
 
 document.addEventListener('click', function (e) {

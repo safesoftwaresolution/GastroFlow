@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const NumeracionRepository = require('../../../repositories/Tenant/NumeracionRepository');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
 const CajaRepository = require('../../../repositories/Tenant/CajaRepository');
 const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoRepository');
@@ -7,6 +8,7 @@ const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
 const InventarioService = require('../InventarioService');
 const TaxService = require('../../Shared/TaxService');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class FacturarPedidoService {
     /**
@@ -447,11 +449,7 @@ class FacturarPedidoService {
     }
 
     static async _obtenerNumeroYCajaSesion(connection, tenantId) {
-        const [rowsNum] = await connection.query(
-            'SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM facturas WHERE tenant_id = ?',
-            [tenantId]
-        );
-        const numeroFactura = rowsNum?.[0]?.siguiente || 1;
+        const numeroFactura = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
 
         const [sesiones] = await connection.query(
             'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
@@ -529,18 +527,13 @@ class FacturarPedidoService {
             console.error('Error opcional al encolar factura electrónica:', feErr);
         }
 
-        try {
-            const RealtimeEvents = require('../../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId,
-                mesaId,
-                action: 'billed'
-            });
-            RealtimeEvents.emitVentaRegistrada(tenantId);
-        } catch (err) {
-            console.error('Error al emitir evento de facturación SSE:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId,
+            mesaId,
+            action: 'billed'
+        });
+        RealtimeEvents.emitVentaRegistrada(tenantId);
 
         try {
             const FinanzasService = require('../FinanzasService');

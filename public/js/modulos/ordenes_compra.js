@@ -5,22 +5,18 @@
 (function () {
     let insumosCache = null;
 
-    function money(valor) {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(valor || 0);
-    }
 
     async function cargarInsumos() {
         if (insumosCache) {
             return insumosCache;
         }
-        const res = await fetch('/inventario/api/insumos');
-        const data = await res.json();
+        const data = await GF.api('/inventario/api/insumos', {}, 'No se pudieron cargar los insumos');
         insumosCache = Array.isArray(data) ? data : data.insumos || [];
         return insumosCache;
     }
 
     function opcionesInsumosHtml(insumos) {
-        return insumos.map((i) => `<option value="${i.id}" data-unidad="${i.unidad_base || ''}">${i.nombre} (${i.codigo})</option>`).join('');
+        return insumos.map((i) => `<option value="${i.id}" data-unidad="${GF.escapeHtml(i.unidad_base || '')}">${GF.escapeHtml(i.nombre)} (${GF.escapeHtml(i.codigo)})</option>`).join('');
     }
 
     async function agregarLinea() {
@@ -65,15 +61,10 @@
         }
 
         try {
-            const res = await fetch('/ordenes-compra', {
+            const data = await GF.api('/ordenes-compra', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ proveedor_id: Number.parseInt(proveedorId, 10), notas, items })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo crear la orden');
-            }
+                body: { proveedor_id: Number.parseInt(proveedorId, 10), notas, items }
+            }, 'No se pudo crear la orden');
             await Swal.fire('Creada', 'La orden de compra se creó correctamente.', 'success');
             location.reload();
         } catch (error) {
@@ -83,11 +74,7 @@
 
     async function verDetalle(id) {
         try {
-            const res = await fetch(`/ordenes-compra/${id}`);
-            const orden = await res.json();
-            if (!res.ok) {
-                throw new Error(orden.error || 'No se pudo cargar la orden');
-            }
+            const orden = await GF.api(`/ordenes-compra/${id}`, {}, 'No se pudo cargar la orden');
 
             document.getElementById('detalleOrdenTitulo').textContent = `#${orden.id} · ${orden.proveedor_nombre}`;
             document.getElementById('detalleNotas').textContent = orden.notas || '';
@@ -96,10 +83,10 @@
                 .map(
                     (i) => `
                 <tr>
-                    <td>${i.insumo_nombre}</td>
-                    <td class="text-end">${i.cantidad_pedida} ${i.unidad_base || ''}</td>
-                    <td class="text-end">${i.cantidad_recibida !== null ? i.cantidad_recibida + ' ' + (i.unidad_base || '') : '-'}</td>
-                    <td class="text-end">${i.costo_unitario_estimado !== null ? money(i.costo_unitario_estimado) : '-'}</td>
+                    <td>${GF.escapeHtml(i.insumo_nombre)}</td>
+                    <td class="text-end">${i.cantidad_pedida} ${GF.escapeHtml(i.unidad_base || '')}</td>
+                    <td class="text-end">${i.cantidad_recibida !== null ? i.cantidad_recibida + ' ' + GF.escapeHtml(i.unidad_base || '') : '-'}</td>
+                    <td class="text-end">${i.costo_unitario_estimado !== null ? GF.dinero(i.costo_unitario_estimado, 2) : '-'}</td>
                 </tr>
             `
                 )
@@ -113,11 +100,7 @@
 
     async function abrirRecibir(id) {
         try {
-            const res = await fetch(`/ordenes-compra/${id}`);
-            const orden = await res.json();
-            if (!res.ok) {
-                throw new Error(orden.error || 'No se pudo cargar la orden');
-            }
+            const orden = await GF.api(`/ordenes-compra/${id}`, {}, 'No se pudo cargar la orden');
 
             document.getElementById('recibirOrdenTitulo').textContent = `#${orden.id} · ${orden.proveedor_nombre}`;
             const tbody = document.getElementById('recibirLineasTbody');
@@ -125,8 +108,8 @@
                 .map(
                     (i) => `
                 <tr data-item-id="${i.id}">
-                    <td>${i.insumo_nombre}</td>
-                    <td class="text-end">${i.cantidad_pedida} ${i.unidad_base || ''}</td>
+                    <td>${GF.escapeHtml(i.insumo_nombre)}</td>
+                    <td class="text-end">${i.cantidad_pedida} ${GF.escapeHtml(i.unidad_base || '')}</td>
                     <td class="text-end">
                         <input type="number" class="form-control form-control-sm text-end recibir-cantidad"
                             min="0" step="0.001" value="${i.cantidad_pedida}">
@@ -154,15 +137,10 @@
         }));
 
         try {
-            const res = await fetch(`/ordenes-compra/${ordenId}/recibir`, {
+            const data = await GF.api(`/ordenes-compra/${ordenId}/recibir`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo recibir la orden');
-            }
+                body: { items }
+            }, 'No se pudo recibir la orden');
             await Swal.fire('Recibida', data.message, 'success');
             location.reload();
         } catch (error) {
@@ -183,11 +161,7 @@
             return;
         }
         try {
-            const res = await fetch(`/ordenes-compra/${id}/cancelar`, { method: 'PUT' });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo cancelar');
-            }
+            const data = await GF.api(`/ordenes-compra/${id}/cancelar`, { method: 'PUT' }, 'No se pudo cancelar');
             location.reload();
         } catch (error) {
             Swal.fire('Error', error.message, 'error');

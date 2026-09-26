@@ -120,10 +120,7 @@ $(function () {
       if (filters.desde) params.append('desde', filters.desde);
       if (filters.hasta) params.append('hasta', filters.hasta);
 
-      const response = await fetch(`/api/dashboard/stats?${params.toString()}`);
-      if (!response.ok) throw new Error('Error al cargar estadísticas');
-
-      const stats = await response.json();
+      const stats = await GF.api(`/api/dashboard/stats?${params.toString()}`, {}, 'Error al cargar estadísticas');
       mod.lastStats = stats;
 
       updateStatsUI(stats);
@@ -469,18 +466,7 @@ $(function () {
       statsTimer = setTimeout(window.applyFilters, delay);
     };
 
-    if (window.EventSource) {
-      const source = new EventSource('/api/notifications/subscribe');
-      source.addEventListener('message', e => {
-        try {
-          const data = JSON.parse(e.data);
-          if (data.event === 'ventaRegistrada') scheduleStatsRefresh(1500);
-        } catch (err) {
-          console.warn('Error SSE dashboard:', err);
-        }
-      });
-      window.addEventListener('beforeunload', () => source.close());
-    }
+    GF.tiempoReal.on('ventaRegistrada', () => scheduleStatsRefresh(1500));
 
     setInterval(() => {
       if (document.visibilityState === 'visible') window.applyFilters();
@@ -496,9 +482,7 @@ $(function () {
       btn.html('<i class="spinner-border spinner-border-sm me-2"></i>Generando...').prop('disabled', true);
 
       try {
-        const resp = await fetch('/api/dashboard/test-reporte-mensual', { method: 'POST' });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Error al generar.');
+        const data = await GF.api('/api/dashboard/test-reporte-mensual', { method: 'POST' }, 'Error al generar.');
 
         let htmlMsg = `Reporte generado correctamente y enviado al correo registrado.<br>`;
         if (data.result?.previewUrl) {

@@ -10,22 +10,9 @@ document.getElementById('soporteForm').addEventListener('submit', async (e) => {
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        const response = await fetch('/soporte/enviar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-
-        const resData = await response.json();
-
-        if (resData.success) {
-            await Swal.fire('¡Enviado!', resData.message, 'success');
-            window.location.reload();
-        } else {
-            throw new Error(resData.message || 'Error desconocido');
-        }
+        const resData = await GF.api.post('/soporte/enviar', data, 'No se pudo enviar el ticket');
+        await Swal.fire('¡Enviado!', resData.message, 'success');
+        window.location.reload();
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
         btn.disabled = false;

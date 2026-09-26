@@ -2,7 +2,6 @@
     const el = document.getElementById('analitica-data');
     if (!el) return;
     const d = JSON.parse(el.textContent);
-    const fmtCOP = function (v) { return Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }); };
 
     const mesesData = d.meses;
     if (mesesData.length && document.getElementById('chartMensual')) {
@@ -43,7 +42,7 @@
                         callbacks: {
                             label: function (ctx) {
                                 return ctx.datasetIndex === 0
-                                    ? ' ' + fmtCOP(ctx.parsed.y)
+                                    ? ' ' + GF.dinero(ctx.parsed.y)
                                     : ' ' + ctx.parsed.y + ' facturas';
                             }
                         }
@@ -53,7 +52,7 @@
                     y: {
                         type: 'linear',
                         position: 'left',
-                        ticks: { callback: function (v) { return fmtCOP(v); } },
+                        ticks: { callback: function (v) { return GF.dinero(v); } },
                         grid: { color: 'rgba(0,0,0,0.05)' }
                     },
                     y2: {
@@ -101,17 +100,17 @@
                                 const isLast = ctx.dataIndex === valores.length - 1;
                                 if (isLast) {
                                     return [
-                                        ' Estimado: ' + fmtCOP(predValor),
-                                        ' Rango: ' + fmtCOP(predMin) + ' – ' + fmtCOP(predMax)
+                                        ' Estimado: ' + GF.dinero(predValor),
+                                        ' Rango: ' + GF.dinero(predMin) + ' – ' + GF.dinero(predMax)
                                     ];
                                 }
-                                return [' ' + fmtCOP(ctx.parsed.y)];
+                                return [' ' + GF.dinero(ctx.parsed.y)];
                             }
                         }
                     }
                 },
                 scales: {
-                    y: { ticks: { callback: function (v) { return fmtCOP(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    y: { ticks: { callback: function (v) { return GF.dinero(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
                 }
             }
         });

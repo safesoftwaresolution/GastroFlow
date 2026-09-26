@@ -1,5 +1,6 @@
 const POSRepository = require('../../repositories/Tenant/POSRepository');
 const PromocionService = require('./PromocionService');
+const RealtimeEvents = require('../Shared/RealtimeEvents');
 
 class POSService {
     static async getProductosForPOS(tenantId) {
@@ -152,8 +153,7 @@ class POSService {
                 clienteId
             });
             if (result) {
-                const RealtimeEvents = require('../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
+                RealtimeEvents.emitPedido({
                     tenantId,
                     pedidoId: result.pedidoId,
                     mesaId: result.mesaId,
@@ -175,23 +175,16 @@ class POSService {
      * Best-effort igual que enviarACocina.
      */
     static async resincronizarPedido(tenantId, pedidoCocinaId, productos, puedeUsarModificadores = true) {
-        try {
-            const itemsResueltos = await this._resolverItems(tenantId, productos, puedeUsarModificadores);
-            const result = await POSRepository.resincronizarItemsPedido(tenantId, pedidoCocinaId, itemsResueltos);
-            if (result) {
-                const RealtimeEvents = require('../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
-                    tenantId,
-                    pedidoId: result.pedidoId,
-                    action: 'items_updated'
-                });
-            }
-            return result;
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al reenviar pedido POS corregido a cocina:', err);
-            return null;
+        const itemsResueltos = await this._resolverItems(tenantId, productos, puedeUsarModificadores);
+        const result = await POSRepository.resincronizarItemsPedido(tenantId, pedidoCocinaId, itemsResueltos);
+        if (result) {
+            RealtimeEvents.emitPedido({
+                tenantId,
+                pedidoId: result.pedidoId,
+                action: 'items_updated'
+            });
         }
+        return result;
     }
 }
 

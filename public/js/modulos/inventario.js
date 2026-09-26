@@ -33,8 +33,7 @@ async function verMovimientos(id, nombre) {
     new bootstrap.Modal(document.getElementById('modalMovimientos')).show();
 
     try {
-        const r = await fetch(base + '/api/movimientos?insumo_id=' + id);
-        const movs = await r.json();
+        const movs = await GF.api(base + '/api/movimientos?insumo_id=' + id, {}, 'No se pudo cargar el historial');
         tbody.innerHTML = '';
         if (!movs || movs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3">No hay movimientos registrados.</td></tr>';
@@ -46,8 +45,8 @@ async function verMovimientos(id, nombre) {
                     <td class="ps-3 small">${new Date(m.created_at).toLocaleString()}</td>
                     <td><span class="badge ${badge}">${m.tipo.toUpperCase()}</span></td>
                     <td class="text-end fw-bold ${color}">${signo}${Number.parseFloat(m.cantidad).toLocaleString('es-CO')}</td>
-                    <td class="small">${m.documento_referencia || m.referencia || '-'}</td>
-                    <td class="small">${m.proveedor_nombre || '-'}</td>
+                    <td class="small">${GF.escapeHtml(m.documento_referencia || m.referencia || '-')}</td>
+                    <td class="small">${GF.escapeHtml(m.proveedor_nombre || '-')}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -88,21 +87,16 @@ document.getElementById('btnCrearInsumo').addEventListener('click', async () => 
     });
     if (!valid) return;
     const btn = document.getElementById('btnCrearInsumo');
-    setLoading(btn, true);
+    GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/insumos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoInsumo')).hide();
-            await Swal.fire({ icon: 'success', title: 'Insumo creado', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo crear el insumo' });
-        }
+        await GF.api(base + '/api/insumos', { method: 'POST', body: payload }, 'No se pudo crear el insumo');
+        GF.cerrarModal('modalNuevoInsumo');
+        await Swal.fire({ icon: 'success', title: 'Insumo creado', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Error de conexión', text: err.message });
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
-        setLoading(btn, false);
+        GF.cargando(btn, false);
     }
 });
 
@@ -191,47 +185,40 @@ document.getElementById('btnConfirmarEntrada').addEventListener('click', async (
     const provId = document.getElementById('entradaProveedorId').value;
     const nFactura = document.getElementById('entradaFactura').value;
     const btn = document.getElementById('btnConfirmarEntrada');
-    setLoading(btn, true);
+    GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/entrada', {
+        await GF.api(base + '/api/movimientos/entrada', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: {
                 insumo_id: id,
                 cantidad,
                 costo_unitario: costo ? Number.parseFloat(costo) : null,
                 referencia: ref || null,
                 proveedor_id: provId || null,
                 documento_referencia: nFactura || null
-            }),
-            credentials: 'same-origin'
-        });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEntrada')).hide();
-
-            if (modoCompraRapida && colaInsumosCompra.length > 0) {
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Entrada registrada',
-                    text: 'Cargando siguiente insumo...',
-                    timer: 800,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end'
-                });
-                procesarSiguienteInsumo();
-            } else {
-                await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
-                location.reload();
             }
+        }, 'No se pudo registrar la entrada');
+        GF.cerrarModal('modalEntrada');
+
+        if (modoCompraRapida && colaInsumosCompra.length > 0) {
+            await Swal.fire({
+                icon: 'success',
+                title: 'Entrada registrada',
+                text: 'Cargando siguiente insumo...',
+                timer: 800,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+            procesarSiguienteInsumo();
         } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo registrar' });
+            await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
+            location.reload();
         }
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
-        setLoading(btn, false);
+        GF.cargando(btn, false);
     }
 });
 
@@ -278,21 +265,16 @@ document.getElementById('btnConfirmarSalida').addEventListener('click', async ()
     }
     fCant.classList.remove('is-invalid');
     const btn = document.getElementById('btnConfirmarSalida');
-    setLoading(btn, true);
+    GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/salida', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ insumo_id: id, cantidad, referencia: ref || null }), credentials: 'same-origin' });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSalida')).hide();
-            await Swal.fire({ icon: 'success', title: 'Salida registrada', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo registrar' });
-        }
+        await GF.api(base + '/api/movimientos/salida', { method: 'POST', body: { insumo_id: id, cantidad, referencia: ref || null } }, 'No se pudo registrar');
+        GF.cerrarModal('modalSalida');
+        await Swal.fire({ icon: 'success', title: 'Salida registrada', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
-        setLoading(btn, false);
+        GF.cargando(btn, false);
     }
 });
 
@@ -315,29 +297,19 @@ document.getElementById('btnConfirmarAjuste').addEventListener('click', async ()
 
     fCant.classList.remove('is-invalid');
     const btn = document.getElementById('btnConfirmarAjuste');
-    setLoading(btn, true);
+    GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/ajuste', {
+        await GF.api(base + '/api/movimientos/ajuste', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                insumo_id: id,
-                cantidad,
-                referencia: ref || 'Ajuste manual'
-            })
-        });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAjuste')).hide();
-            await Swal.fire({ icon: 'success', title: 'Ajuste aplicado', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo aplicar' });
-        }
+            body: { insumo_id: id, cantidad, referencia: ref || 'Ajuste manual' }
+        }, 'No se pudo aplicar');
+        GF.cerrarModal('modalAjuste');
+        await Swal.fire({ icon: 'success', title: 'Ajuste aplicado', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
-        setLoading(btn, false);
+        GF.cargando(btn, false);
     }
 });
 
@@ -371,11 +343,11 @@ async function abrirEditarInsumo(id) {
     });
 
     try {
-        const item = await apiFetch(`${base}/api/insumos/${id}`);
+        const item = await GF.api(`${base}/api/insumos/${id}`);
         Swal.close();
 
         if (!item) {
-            alertError('Error', 'No se encontró la información del insumo.');
+            GF.error('Error', 'No se encontró la información del insumo.');
             return;
         }
 
@@ -419,11 +391,11 @@ async function abrirEditarInsumo(id) {
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();
         } else {
-            alertError('Error', 'El modal de edición no está disponible.');
+            GF.error('Error', 'El modal de edición no está disponible.');
         }
     } catch (e) {
         Swal.close();
-        alertError('Error', 'No se pudo cargar la información del insumo: ' + e.message);
+        GF.error('Error', 'No se pudo cargar la información del insumo: ' + e.message);
     }
 }
 
@@ -455,19 +427,19 @@ document.getElementById('btnActualizarInsumo').addEventListener('click', async (
     }
 
     if (!payload.nombre || !payload.codigo) {
-        alertError('Campos requeridos', 'Por favor completa el nombre y el código.');
+        GF.error('Campos requeridos', 'Por favor completa el nombre y el código.');
         return;
     }
 
-    setLoading(btn, true);
+    GF.cargando(btn, true);
     try {
-        await apiFetch(`${base}/api/insumos/${id}`, 'PUT', payload);
-        alertSuccess('Insumo actualizado', 'modalEditarInsumo');
+        await GF.api(`${base}/api/insumos/${id}`, { method: 'PUT', body: payload });
+        GF.toast('Insumo actualizado', 'success'); GF.cerrarModal('modalEditarInsumo');
         setTimeout(() => location.reload(), 1000);
     } catch (e) {
-        alertError('Error al actualizar', e.message);
+        GF.error('Error al actualizar', e.message);
     } finally {
-        setLoading(btn, false);
+        GF.cargando(btn, false);
     }
 });
 
@@ -485,11 +457,11 @@ async function eliminarInsumo(id, nombre) {
 
     if (result.isConfirmed) {
         try {
-            await apiFetch(`${base}/api/insumos/${id}`, 'DELETE');
-            alertSuccess('Insumo eliminado');
+            await GF.api(`${base}/api/insumos/${id}`, { method: 'DELETE' });
+            GF.toast('Insumo eliminado', 'success');
             setTimeout(() => location.reload(), 1000);
         } catch (e) {
-            alertError('Error al eliminar', e.message);
+            GF.error('Error al eliminar', e.message);
         }
     }
 }
@@ -575,9 +547,7 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
     }
     async function cargarListaMercado() {
         const incluir = incluirCerca?.checked;
-        const r = await fetch(base + '/api/lista-mercado?incluir_cerca=' + (incluir ? '1' : '0'), { credentials: 'same-origin' });
-        if (!r.ok) { renderLista([]); return; }
-        const data = await r.json();
+        const data = await GF.api.getOr(base + '/api/lista-mercado?incluir_cerca=' + (incluir ? '1' : '0'), {});
         renderLista(data.lista || []);
     }
     document.getElementById('btnListaMercado').addEventListener('click', function () {

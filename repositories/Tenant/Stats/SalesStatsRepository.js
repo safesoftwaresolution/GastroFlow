@@ -1,45 +1,5 @@
 const db = require('../../../config/database');
-
-/**
- * Retorna la fecha actual en timezone América/Bogotá (Colombia) como string 'YYYY-MM-DD'.
- */
-function getFechaColombia() {
-    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-}
-
-/**
- * Convierte un rango de fechas en hora local colombiana (Bogotá GMT-5)
- * a su rango correspondiente en fechas UTC reales ('YYYY-MM-DD HH:mm:ss').
- */
-function getUtcRangeForColombia(desde, hasta) {
-    const utcDesde = `${desde} 05:00:00`;
-    const utcHastaDate = new Date(`${hasta}T23:59:59`);
-    utcHastaDate.setHours(utcHastaDate.getHours() + 5);
-
-    const y = utcHastaDate.getFullYear();
-    const m = String(utcHastaDate.getMonth() + 1).padStart(2, '0');
-    const d = String(utcHastaDate.getDate()).padStart(2, '0');
-    const hh = String(utcHastaDate.getHours()).padStart(2, '0');
-    const mm = String(utcHastaDate.getMinutes()).padStart(2, '0');
-    const ss = String(utcHastaDate.getSeconds()).padStart(2, '0');
-
-    const utcHasta = `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
-    return { utcDesde, utcHasta };
-}
-
-/**
- * Retorna el rango UTC exacto que cubre un único día en hora colombiana.
- */
-function getUtcDayRangeForColombia(dateStr) {
-    const utcDesde = `${dateStr} 05:00:00`;
-    const nextDay = new Date(`${dateStr}T12:00:00`);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const y = nextDay.getFullYear();
-    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
-    const d = String(nextDay.getDate()).padStart(2, '0');
-    const utcHasta = `${y}-${m}-${d} 04:59:59`;
-    return { utcDesde, utcHasta };
-}
+const { SQL_COLOMBIA, hoyColombia, rangoUtcColombia, sumarDias, toFechaDia } = require('../../../utils/dateHelpers');
 
 class SalesStatsRepository {
     static async getTotalSales(tenantId, filters = {}) {
@@ -47,7 +7,7 @@ class SalesStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -63,8 +23,8 @@ class SalesStatsRepository {
     }
 
     static async getVentasHoy(tenantId) {
-        const hoy = getFechaColombia();
-        const { utcDesde, utcHasta } = getUtcDayRangeForColombia(hoy);
+        const hoy = hoyColombia();
+        const { utcDesde, utcHasta } = rangoUtcColombia(hoy);
         const [rows] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
              FROM facturas WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?`,
@@ -78,11 +38,11 @@ class SalesStatsRepository {
     }
 
     static async getVentasMes(tenantId) {
-        const hoy = getFechaColombia();
+        const hoy = hoyColombia();
         const parts = hoy.split('-');
         const mesInicioStr = `${parts[0]}-${parts[1]}-01`;
-        const { utcDesde } = getUtcDayRangeForColombia(mesInicioStr);
-        const { utcHasta } = getUtcDayRangeForColombia(hoy);
+        const { utcDesde } = rangoUtcColombia(mesInicioStr);
+        const { utcHasta } = rangoUtcColombia(hoy);
 
         const [rows] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
@@ -101,7 +61,7 @@ class SalesStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -125,7 +85,7 @@ class SalesStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -160,7 +120,7 @@ class SalesStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -208,42 +168,36 @@ class SalesStatsRepository {
     }
 
     static async getDailySales(tenantId, days = 30) {
-        const daysAgoDate = new Date();
-        daysAgoDate.setDate(daysAgoDate.getDate() - days);
-        const daysAgoUtc = daysAgoDate.toISOString().replace('T', ' ').substring(0, 19);
+        // Días Colombia completos: desde el inicio (UTC) del primer día de la serie.
+        // Antes era "ahora - N días" en UTC, que dejaba el primer día cortado.
+        const hoy = hoyColombia();
+        const primerDia = sumarDias(hoy, -days);
+        const { utcDesde } = rangoUtcColombia(primerDia);
 
         const query = `
             SELECT 
-                DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) AS fecha,
+                ${SQL_COLOMBIA.dia('fecha')} AS fecha,
                 COUNT(*) AS cantidad_facturas,
                 SUM(total) AS total_ventas
             FROM facturas
             WHERE tenant_id = ? AND evento_id IS NULL
               AND fecha >= ?
-            GROUP BY DATE(CONVERT_TZ(fecha, '+00:00', '-05:00'))
+            GROUP BY ${SQL_COLOMBIA.dia('fecha')}
             ORDER BY fecha ASC
         `;
-        const [result] = await db.query(query, [tenantId, daysAgoUtc]);
+        const [result] = await db.query(query, [tenantId, utcDesde]);
 
         const salesMap = new Map();
         result.forEach(row => {
-            const f = row.fecha;
-            const fechaStr = f instanceof Date ? f.toISOString().split('T')[0] : String(f || '').substring(0, 10);
-            salesMap.set(fechaStr, {
+            salesMap.set(toFechaDia(row.fecha), {
                 cantidad_facturas: parseInt(row.cantidad_facturas || 0),
                 total_ventas: parseFloat(row.total_ventas || 0)
             });
         });
 
         const list = [];
-        const todayColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
         for (let i = days; i >= 0; i--) {
-            const d = new Date(todayColombia);
-            d.setDate(todayColombia.getDate() - i);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            const dateStr = `${yyyy}-${mm}-${dd}`;
+            const dateStr = sumarDias(hoy, -i);
 
             if (salesMap.has(dateStr)) {
                 list.push({
@@ -264,19 +218,19 @@ class SalesStatsRepository {
     static async getMonthlySales(tenantId, months = 3, options = {}) {
         let query = `
             SELECT 
-                YEAR(f.fecha) AS year,
-                MONTH(f.fecha) AS month,
+                YEAR(${SQL_COLOMBIA.aColombia('f.fecha')}) AS year,
+                MONTH(${SQL_COLOMBIA.aColombia('f.fecha')}) AS month,
                 COUNT(*) AS cantidad_facturas,
                 COALESCE(SUM(f.total), 0) AS total_ventas
             FROM facturas f
             WHERE f.tenant_id = ?
-              AND f.fecha >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL ? MONTH), '%Y-%m-01')
+              AND f.fecha >= ${SQL_COLOMBIA.aUtc(`DATE_FORMAT(DATE_SUB(${SQL_COLOMBIA.hoy}, INTERVAL ? MONTH), '%Y-%m-01')`)}
         `;
         if (options.excludeEventos) {
             query += ` AND f.evento_id IS NULL`;
         }
         query += `
-            GROUP BY YEAR(f.fecha), MONTH(f.fecha)
+            GROUP BY year, month
             ORDER BY year ASC, month ASC
         `;
         const [result] = await db.query(query, [tenantId, months]);

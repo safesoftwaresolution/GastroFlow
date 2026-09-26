@@ -39,20 +39,11 @@ async function saveAppearance(tenantId) {
     };
 
     try {
-        const resp = await fetch(`/admin/tenants/${tenantId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ config: JSON.stringify(config) })
-        });
-        if (resp.ok) {
-            Swal.fire({ icon: 'success', title: 'Diseño Actualizado', timer: 1500, showConfirmButton: false })
-                .then(() => window.location.reload());
-        } else {
-            Swal.fire({ icon: 'error', title: 'Error al servidor' });
-        }
+        await GF.api.put(`/admin/tenants/${tenantId}`, { config: JSON.stringify(config) }, 'No se pudo guardar el diseño');
+        Swal.fire({ icon: 'success', title: 'Diseño Actualizado', timer: 1500, showConfirmButton: false })
+            .then(() => window.location.reload());
     } catch (e) {
-        console.error('Error al guardar apariencia:', e);
-        Swal.fire({ icon: 'error', title: 'Error de red', text: e.message });
+        GF.error(e.message);
     }
 }
 
@@ -72,28 +63,11 @@ async function handleFormSubmit(event, tenantId, type) {
     }
 
     try {
-        const resp = await fetch('/admin/tenants/' + tenantId, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (resp.ok) {
-            Swal.fire({ icon: 'success', title: 'Datos Guardados', timer: 1500, showConfirmButton: false })
-                .then(() => { if (type === 'general') window.location.reload(); });
-        } else {
-            let errText = 'Error en el servidor';
-            const textResp = await resp.text();
-            try {
-                const parsed = JSON.parse(textResp);
-                errText = parsed.error || parsed.message || JSON.stringify(parsed);
-            } catch (e) {
-                console.warn('Error al parsear respuesta JSON de error:', e);
-                errText = textResp;
-            }
-            Swal.fire({ icon: 'error', title: 'Error', text: errText || 'Error al actualizar datos' });
-        }
+        await GF.api.put('/admin/tenants/' + tenantId, data, 'Error al actualizar datos');
+        Swal.fire({ icon: 'success', title: 'Datos Guardados', timer: 1500, showConfirmButton: false })
+            .then(() => { if (type === 'general') window.location.reload(); });
     } catch (e) {
-        Swal.fire({ icon: 'error', title: 'Error Capturado', text: e.message });
+        GF.error(e.message);
     }
 }
 
@@ -113,21 +87,22 @@ async function confirmToggleStatus(id, activo) {
 }
 
 async function toggleTenantStatus(id, activo) {
-    const resp = await fetch(`/admin/tenants/${id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activo })
-    });
-    if (resp.ok) window.location.reload();
+    try {
+        await GF.api.post(`/admin/tenants/${id}/status`, { activo }, 'No se pudo cambiar el estado');
+        window.location.reload();
+    } catch (e) {
+        // Antes fallaba en silencio: el botón no hacía nada y no se sabía por qué.
+        GF.error(e.message);
+    }
 }
 
 async function confirmDeleteTenant(id, name) {
     if (id == 1) {
-        return Swal.fire('Acción Denedaga', 'No se permite eliminar el restaurante principal.', 'error');
+        return Swal.fire('Acción denegada', 'No se permite eliminar el restaurante principal.', 'error');
     }
     const result = await Swal.fire({
         title: '¿Estás completamente seguro?',
-        html: `Esta acción es <b>irreversible</b>.<br>Se borrarán todos los menús, ventas, usuarios y mesas de <b>${name}</b>.<br><br>Escribe el nombre del restaurante para confirmar:`,
+        html: `Esta acción es <b>irreversible</b>.<br>Se borrarán todos los menús, ventas, usuarios y mesas de <b>${GF.escapeHtml(name)}</b>.<br><br>Escribe el nombre del restaurante para confirmar:`,
         input: 'text',
         icon: 'error',
         inputPlaceholder: name,
@@ -144,16 +119,11 @@ async function confirmDeleteTenant(id, name) {
 
     if (result.isConfirmed) {
         try {
-            const resp = await fetch(`/admin/tenants/${id}`, { method: 'DELETE' });
-            if (resp.ok) {
-                Swal.fire('Eliminado', 'El restaurante ha sido borrado.', 'success')
-                    .then(() => window.location.href = '/admin/tenants');
-            } else {
-                Swal.fire('Error', 'No se pudo eliminar el restaurante.', 'error');
-            }
+            await GF.api.delete(`/admin/tenants/${id}`, 'No se pudo eliminar el restaurante.');
+            Swal.fire('Eliminado', 'El restaurante ha sido borrado.', 'success')
+                .then(() => window.location.href = '/admin/tenants');
         } catch (e) {
-            console.error('Error al eliminar restaurante:', e);
-            Swal.fire('Error', 'Error de conexión.', 'error');
+            GF.error(e.message);
         }
     }
 }
@@ -205,50 +175,25 @@ async function saveAllRoles(tenantId) {
             }
         });
 
-        const resp = await fetch(`/admin/tenants/${tenantId}/users/batch-roles`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ changes })
-        });
-
-        const data = await resp.json();
-
-        if (resp.ok && data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: '¡Éxito!',
-                text: data.message,
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => window.location.reload());
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.error || 'No se pudieron actualizar los roles.'
-            });
-        }
-    } catch (e) {
-        console.error('Error al guardar roles:', e);
+        const data = await GF.api.post(`/admin/tenants/${tenantId}/users/batch-roles`, { changes }, 'No se pudieron actualizar los roles.');
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Error de red al intentar guardar los cambios.'
-        });
+            icon: 'success',
+            title: '¡Éxito!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => window.location.reload());
+    } catch (e) {
+        GF.error(e.message);
     }
 }
 
 async function toggleUserStatus(userId, tenantId, activo) {
     try {
-        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ activo })
-        });
-        if (resp.ok) window.location.reload();
+        await GF.api.post(`/admin/tenants/${tenantId}/users/${userId}/status`, { activo }, 'No se pudo cambiar el estado del usuario');
+        window.location.reload();
     } catch (e) {
-        console.error('Error al cambiar estado de usuario:', e);
-        Swal.fire({ icon: 'error', title: 'Error de red' });
+        GF.error(e.message);
     }
 }
 
@@ -266,34 +211,16 @@ async function deleteUser(userId, username, tenantId) {
 
     if (result.isConfirmed) {
         try {
-            const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}`, {
-                method: 'DELETE'
-            });
-
-            const data = await resp.json();
-
-            if (resp.ok && data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Eliminado',
-                    text: 'El usuario ha sido eliminado correctamente.',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => window.location.reload());
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.error || 'No se pudo eliminar el usuario.'
-                });
-            }
-        } catch (e) {
-            console.error('Error al eliminar usuario:', e);
+            await GF.api.delete(`/admin/tenants/${tenantId}/users/${userId}`, 'No se pudo eliminar el usuario.');
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error de red al intentar eliminar el usuario.'
-            });
+                icon: 'success',
+                title: 'Eliminado',
+                text: 'El usuario ha sido eliminado correctamente.',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => window.location.reload());
+        } catch (e) {
+            GF.error(e.message);
         }
     }
 }
@@ -317,23 +244,15 @@ document.getElementById('btnGuardarPassword').addEventListener('click', async ()
     if (pass1.length < 6) return Swal.fire('Error', 'Mínimo 6 caracteres', 'error');
 
     try {
-        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/password`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ newPassword: pass1, newPasswordConfirm: pass2 })
-        });
-
-        const data = await resp.json();
-
-        if (resp.ok && data.success) {
-            Swal.fire('Éxito', data.message || 'Contraseña actualizada correctamente', 'success')
-                .then(() => bootstrap.Modal.getInstance(document.getElementById('modalCambiarPassword')).hide());
-        } else {
-            Swal.fire('Error', data.error || 'No se pudo actualizar la contraseña', 'error');
-        }
+        const data = await GF.api.put(
+            `/admin/tenants/${tenantId}/users/${userId}/password`,
+            { newPassword: pass1, newPasswordConfirm: pass2 },
+            'No se pudo actualizar la contraseña'
+        );
+        Swal.fire('Éxito', data.message || 'Contraseña actualizada correctamente', 'success')
+            .then(() => GF.cerrarModal('modalCambiarPassword'));
     } catch (e) {
-        console.error('Error al actualizar contraseña:', e);
-        Swal.fire('Error', 'Error de red', 'error');
+        GF.error(e.message);
     }
 });
 
@@ -351,27 +270,14 @@ document.getElementById('btnGuardarCorreo').addEventListener('click', async () =
     const email = document.getElementById('modalCorreoInput').value;
 
     try {
-        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/email`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-
-        const data = await resp.json();
-
-        if (resp.ok && data.success) {
-            Swal.fire('Éxito', data.message || 'Correo actualizado correctamente', 'success')
-                .then(() => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCorreo'));
-                    if (modal) modal.hide();
-                    window.location.reload();
-                });
-        } else {
-            Swal.fire('Error', data.error || 'No se pudo actualizar el correo', 'error');
-        }
+        const data = await GF.api.put(`/admin/tenants/${tenantId}/users/${userId}/email`, { email }, 'No se pudo actualizar el correo');
+        Swal.fire('Éxito', data.message || 'Correo actualizado correctamente', 'success')
+            .then(() => {
+                GF.cerrarModal('modalEditarCorreo');
+                window.location.reload();
+            });
     } catch (e) {
-        console.error('Error al actualizar correo:', e);
-        Swal.fire('Error', 'Error de red', 'error');
+        GF.error(e.message);
     }
 });
 
@@ -390,15 +296,10 @@ if (btnSeed) {
         if (result.isConfirmed) {
             Swal.fire({ title: 'Configurando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             try {
-                const resp = await fetch(`/admin/tenants/${tenantId}/seed-initial`, { method: 'POST' });
-                if (resp.ok) {
-                    Swal.fire('¡Listo!', 'El restaurante ha sido configurado.', 'success').then(() => window.location.reload());
-                } else {
-                    Swal.fire('Error', 'No se pudo realizar la configuración.', 'error');
-                }
+                await GF.api.post(`/admin/tenants/${tenantId}/seed-initial`, undefined, 'No se pudo realizar la configuración.');
+                Swal.fire('¡Listo!', 'El restaurante ha sido configurado.', 'success').then(() => window.location.reload());
             } catch (e) {
-                console.error('Error al cargar configuración inicial:', e);
-                Swal.fire('Error', 'Error de comunicación.', 'error');
+                GF.error(e.message);
             }
         }
     });

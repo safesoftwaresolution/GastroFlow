@@ -3,16 +3,15 @@
 // No captura nada de $(function(){...}) — vive en el scope más alto posible (S7721).
 async function getOrCreateConsumidorFinal() {
   try {
-    const r = await fetch('/api/clientes/buscar?q=consumidor%20final');
-    const list = await r.json();
+    const list = await GF.api('/api/clientes/buscar?q=consumidor%20final');
     const cf = list.find(c => (c.nombre || '').toLowerCase() === 'consumidor final');
     if (cf) return cf;
   } catch (err) {
     console.warn('No se pudo buscar consumidor final existente:', err);
   }
   try {
-    const r = await fetch('/api/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: 'Consumidor final' }) });
-    if (r.ok) { const cf = await r.json(); return { id: cf.id, nombre: 'Consumidor final' }; }
+    const cf = await GF.api.post('/api/clientes', { nombre: 'Consumidor final' });
+    return { id: cf.id, nombre: 'Consumidor final' };
   } catch (err) {
     console.warn('No se pudo crear consumidor final:', err);
   }
@@ -26,21 +25,16 @@ $(function () {
   // (con y sin costo) hacían exactamente esta misma petición, solo cambiaba el texto.
   async function facturarPedidoCompleto(clienteId, keyIdemp, extraMsg) {
     try {
-      const reqFactura = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
+      const dataF = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': keyIdemp
-        },
-        body: JSON.stringify({
+        headers: { 'Idempotency-Key': keyIdemp },
+        body: {
           cliente_id: clienteId,
           forma_pago: 'efectivo',
           descuentos: mod.descuentosPorItem,
           propina: mod.propinaPedido
-        })
-      });
-      const dataF = await reqFactura.json();
-      if (!reqFactura.ok) throw new Error(dataF.error || 'Error al facturar');
+        }
+      }, 'Error al facturar');
 
       Swal.fire({
         icon: 'success',
@@ -194,7 +188,7 @@ $(function () {
               <input type="checkbox" class="form-check-input check-item" data-id="${it.id}" style="transform: scale(1.1);">
             </td>
             <td style="text-align: left; padding: 10px 8px; min-width: 140px;">
-              <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${nombre}">${nombre}</div>
+              <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${GF.escapeHtml(nombre)}">${GF.escapeHtml(nombre)}</div>
               <small class="text-muted fs-7" style="white-space: nowrap;">${mod.formatear(precio)} c/u</small>
             </td>
             <td class="text-center" style="padding: 10px 8px; width: 85px; min-width: 85px; white-space: nowrap;">
@@ -320,20 +314,11 @@ $(function () {
     });
 
     try {
-      const r = await fetch(`/api/mesas/items/pagar-multiples`, {
+      const d = await GF.api('/api/mesas/items/pagar-multiples', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': keyIdemp
-        },
-        body: JSON.stringify({
-          forma_pago: formaPago,
-          items
-        })
-      });
-
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al procesar el pago masivo');
+        headers: { 'Idempotency-Key': keyIdemp },
+        body: { forma_pago: formaPago, items }
+      }, 'Error al procesar el pago masivo');
 
       await mod.cargarPedido(mod.pedidoActual.id);
 
@@ -387,9 +372,8 @@ $(function () {
 
   async function pedidoYaFueFacturadoEnOtroLado() {
     try {
-      const checkResp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}`);
-      if (!checkResp.ok) return false;
-      const checkData = await checkResp.json();
+      const checkData = await GF.api.getOr(`/api/mesas/pedidos/${mod.pedidoActual.id}`, null);
+      if (!checkData) return false;
       return checkData.pedido?.estado === 'cerrado' || checkData.pedido?.estado === 'cancelado';
     } catch (error_) {
       console.error('Error al verificar estado del pedido:', error_);
@@ -507,13 +491,7 @@ $(function () {
     if (!formData) return;
 
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al registrar el abono');
+      const d = await GF.api.post(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, formData, 'Error al registrar el abono');
 
       await mod.cargarPedido(mod.pedidoActual.id);
 
@@ -555,9 +533,7 @@ $(function () {
     if (!ok.isConfirmed) return;
 
     try {
-      const r = await fetch(`/api/mesas/abonos/${abonoId}`, { method: 'DELETE' });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'No se pudo eliminar el abono');
+      const d = await GF.api(`/api/mesas/abonos/${abonoId}`, { method: 'DELETE' }, 'No se pudo eliminar el abono');
       await mod.cargarPedido(mod.pedidoActual.id);
       Swal.close();
       // eslint-disable-next-line no-use-before-define
@@ -570,9 +546,7 @@ $(function () {
   async function verAbonos() {
     if (!mod.pedidoActual?.id) return;
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al cargar los abonos');
+      const d = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, {}, 'Error al cargar los abonos');
 
       const filas = (d.abonos || []).map(filaAbono).join('');
 
@@ -737,9 +711,7 @@ $(function () {
       }
       $('#bonoValidacionInfo').text('Consultando...').removeClass('text-success text-danger');
       try {
-        const r = await fetch(`/api/bonos/validar/${encodeURIComponent(codigo)}`);
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Código de bono inválido');
+        const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
 
         const montoBono = Math.min(Number(d.saldo_actual), totalOriginal);
         bonoAplicado = { codigo, monto: montoBono };
@@ -865,13 +837,10 @@ $(function () {
       });
 
       try {
-        const resp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
+        const data = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Idempotency-Key': keyIdemp
-          },
-          body: JSON.stringify({
+          headers: { 'Idempotency-Key': keyIdemp },
+          body: {
             cliente_id: clienteId,
             // Si el bono cubre todo no se eligió tarjeta de pago -- no importa
             // cuál se mande, el servidor solo cobra por ahí si queda algo
@@ -881,10 +850,8 @@ $(function () {
             propina: mod.propinaPedido,
             efectivo_recibido: formaPagoSeleccionada === 'efectivo' ? montoRecibido : null,
             codigo_bono: bonoAplicado ? bonoAplicado.codigo : null
-          })
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Error al facturar');
+          }
+        }, 'Error al facturar');
 
         Swal.close();
         const modalPago = bootstrap.Modal.getInstance(document.getElementById('modalPago'));

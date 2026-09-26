@@ -16,12 +16,7 @@ window.POS_QZ = {
     _connecting: null,
 
     async init() {
-        try {
-            const r = await fetch('/configuracion/impresoras');
-            this._config = r.ok ? await r.json() : null;
-        } catch {
-            this._config = null;
-        }
+        this._config = await GF.api.getOr('/configuracion/impresoras', null);
 
         if (this._config?.qz_habilitado && typeof qz !== 'undefined') {
             // Conecta ya al abrir el POS, para que el popup de "Allow" (si aplica)
@@ -62,7 +57,6 @@ window.POS_QZ = {
         const { factura, detalles, config } = payload;
         const cols = Number(config?.ancho_papel) >= 80 ? 48 : 32;
         const linea = '-'.repeat(cols);
-        const money = n => '$ ' + Number(n || 0).toLocaleString('es-CO');
         const data = [];
 
         const raw = hex => data.push({ type: 'raw', format: 'hex', data: hex });
@@ -89,10 +83,10 @@ window.POS_QZ = {
 
         (detalles || []).forEach(item => {
             text(`${item.cantidad} x ${item.producto_nombre}`.slice(0, cols));
-            const sub = item.subtotal !== undefined ? money(item.subtotal) : '';
+            const sub = item.subtotal !== undefined ? GF.dinero(item.subtotal) : '';
             if (sub) text(sub.padStart(cols));
             if (item.descuento_valor != null && Number(item.descuento_valor) > 0) {
-                text(`  Desc: -${money(item.descuento_valor)}`.slice(0, cols));
+                text(`  Desc: -${GF.dinero(item.descuento_valor)}`.slice(0, cols));
             } else if (item.descuento_porcentaje != null && Number(item.descuento_porcentaje) > 0) {
                 text(`  Desc: -${Number(item.descuento_porcentaje)}%`.slice(0, cols));
             }
@@ -102,19 +96,19 @@ window.POS_QZ = {
         });
         text(linea);
 
-        if (factura.subtotal !== undefined) text(`Subtotal:`.padEnd(cols - 12) + money(factura.subtotal).padStart(12));
-        if (factura.total_impuestos) text(`Impuestos:`.padEnd(cols - 12) + money(factura.total_impuestos).padStart(12));
-        if (factura.propina) text(`Propina:`.padEnd(cols - 12) + money(factura.propina).padStart(12));
-        text(`TOTAL:`.padEnd(cols - 12) + money(factura.total).padStart(12), { bold: true });
+        if (factura.subtotal !== undefined) text(`Subtotal:`.padEnd(cols - 12) + GF.dinero(factura.subtotal).padStart(12));
+        if (factura.total_impuestos) text(`Impuestos:`.padEnd(cols - 12) + GF.dinero(factura.total_impuestos).padStart(12));
+        if (factura.propina) text(`Propina:`.padEnd(cols - 12) + GF.dinero(factura.propina).padStart(12));
+        text(`TOTAL:`.padEnd(cols - 12) + GF.dinero(factura.total).padStart(12), { bold: true });
 
         if (factura.efectivo_recibido != null && Number(factura.efectivo_recibido) > Number(factura.total)) {
-            text(`Recibido:`.padEnd(cols - 12) + money(factura.efectivo_recibido).padStart(12));
-            text(`Cambio:`.padEnd(cols - 12) + money(Number(factura.efectivo_recibido) - Number(factura.total)).padStart(12));
+            text(`Recibido:`.padEnd(cols - 12) + GF.dinero(factura.efectivo_recibido).padStart(12));
+            text(`Cambio:`.padEnd(cols - 12) + GF.dinero(Number(factura.efectivo_recibido) - Number(factura.total)).padStart(12));
         }
 
         if (factura.forma_pago === 'mixto') {
-            text(`Efectivo: ${money(factura.monto_efectivo)}`);
-            text(`Transferencia: ${money(factura.monto_transferencia)}`);
+            text(`Efectivo: ${GF.dinero(factura.monto_efectivo)}`);
+            text(`Transferencia: ${GF.dinero(factura.monto_transferencia)}`);
         } else {
             text(`Pago: ${factura.forma_pago || ''}`);
         }
@@ -135,9 +129,8 @@ window.POS_QZ = {
         if (!ok) return;
 
         try {
-            const r = await fetch(`/facturas/${facturaId}/imprimir-json`);
-            if (!r.ok) return;
-            const payload = await r.json();
+            const payload = await GF.api.getOr(`/facturas/${facturaId}/imprimir-json`, null);
+            if (!payload) return;
 
             const printer = await this._resolverImpresora();
             const cfg = qz.configs.create(printer, { encoding: 'CP858' });

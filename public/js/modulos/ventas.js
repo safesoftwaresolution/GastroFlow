@@ -7,13 +7,6 @@ function getDetallesModal() {
     return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
 }
 
-function mostrarAlerta(mensaje, tipo = 'success') {
-    const alertaDiv = document.createElement('div');
-    alertaDiv.className = 'custom-alert ' + tipo;
-    alertaDiv.innerHTML = '<div class="alert-content"><i class="bi ' + (tipo === 'success' ? 'bi-check-circle' : tipo === 'error' ? 'bi-x-circle' : 'bi-exclamation-triangle') + ' me-2"></i>' + mensaje + '</div><button type="button" class="btn-close ms-3" onclick="this.parentElement.remove()"></button>';
-    document.body.appendChild(alertaDiv);
-    setTimeout(function () { alertaDiv.remove(); }, 5000);
-}
 
 function mostrarFactura(id, numeroDisplay) {
     const modalEl = document.getElementById('facturaModal');
@@ -31,7 +24,7 @@ function mostrarDetalles(id) {
         url: '/api/facturas/' + id + '/detalles',
         success: function (data) {
             if (!data || !data.factura) {
-                mostrarAlerta('No se encontraron detalles de la factura', 'error');
+                GF.toast('No se encontraron detalles de la factura', 'error');
                 return;
             }
             const cliente = data.cliente || {};
@@ -41,21 +34,21 @@ function mostrarDetalles(id) {
             const pagosPorProducto = data.pagos_por_producto || [];
             const fmtNum = function (n) { return (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
             const fmtFecha = function (f) { return f ? new Date(f).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'medium' }) : '-'; };
-            $('#detallesCliente').html('<p><strong>Nombre:</strong> ' + (cliente.nombre || '-') + '</p><p><strong>Dirección:</strong> ' + (cliente.direccion || 'No especificada') + '</p><p><strong>Teléfono:</strong> ' + (cliente.telefono || 'No especificado') + '</p>');
+            $('#detallesCliente').html('<p><strong>Nombre:</strong> ' + GF.escapeHtml(cliente.nombre || '-') + '</p><p><strong>Dirección:</strong> ' + GF.escapeHtml(cliente.direccion || 'No especificada') + '</p><p><strong>Teléfono:</strong> ' + GF.escapeHtml(cliente.telefono || 'No especificado') + '</p>');
             let facturaHtml = '<p><strong>Factura #:</strong> ' + (factura.numero != null ? factura.numero : factura.id) + '</p><p><strong>Fecha:</strong> ' + fmtFecha(factura.fechaISO || factura.fecha) + '</p><p><strong>Forma de Pago:</strong> ' + (factura.forma_pago ? (factura.forma_pago.charAt(0).toUpperCase() + factura.forma_pago.slice(1)) : '-');
             const montoEfectivo = Number(factura.monto_efectivo) || 0;
             const montoTransferencia = Number(factura.monto_transferencia) || 0;
             const montoBono = Number(factura.monto_bono) || 0;
             if (factura.forma_pago === 'mixto') {
                 const partes = [];
-                if (montoEfectivo > 0) partes.push('Efectivo: $' + fmtNum(montoEfectivo));
-                if (montoTransferencia > 0) partes.push('Transferencia: $' + fmtNum(montoTransferencia));
-                if (montoBono > 0) partes.push('Bono: $' + fmtNum(montoBono));
+                if (montoEfectivo > 0) partes.push('Efectivo: ' + GF.dinero(montoEfectivo));
+                if (montoTransferencia > 0) partes.push('Transferencia: ' + GF.dinero(montoTransferencia));
+                if (montoBono > 0) partes.push('Bono: ' + GF.dinero(montoBono));
                 facturaHtml += ' <span class="text-muted">(' + partes.join(' · ') + ')</span>';
             }
             facturaHtml += '</p>';
             if (factura.propina != null && Number(factura.propina) > 0) {
-                facturaHtml += '<p><strong>Propina:</strong> $' + fmtNum(factura.propina) + '</p>';
+                facturaHtml += '<p><strong>Propina:</strong> ' + GF.dinero(factura.propina) + '</p>';
             }
             $('#detallesFactura').html(facturaHtml);
 
@@ -70,21 +63,21 @@ function mostrarDetalles(id) {
                 const filasAbono = abonos.map(function (a) {
                     sumaCubierta[a.forma_pago] = (sumaCubierta[a.forma_pago] || 0) + Number(a.monto || 0);
                     const metodo = a.forma_pago === 'efectivo' ? 'Efectivo' : 'Transferencia';
-                    return '<tr><td><i class="bi bi-piggy-bank me-1 text-success"></i>Abono ' + metodo + (a.usuario_nombre ? ' · ' + a.usuario_nombre : '') + '</td>' +
+                    return '<tr><td><i class="bi bi-piggy-bank me-1 text-success"></i>Abono ' + metodo + (a.usuario_nombre ? ' · ' + GF.escapeHtml(a.usuario_nombre) : '') + '</td>' +
                         '<td class="text-muted small">' + fmtFecha(a.created_at) + '</td>' +
-                        '<td class="text-end">$' + fmtNum(a.monto) + '</td></tr>';
+                        '<td class="text-end">' + GF.dinero(a.monto) + '</td></tr>';
                 });
                 const filasProducto = pagosPorProducto.map(function (p) {
                     sumaCubierta[p.forma_pago] = (sumaCubierta[p.forma_pago] || 0) + Number(p.monto || 0);
                     const metodo = p.forma_pago === 'efectivo' ? 'Efectivo' : 'Transferencia';
-                    return '<tr><td><i class="bi bi-cart-check me-1 text-info"></i>Pagado por producto: ' + p.producto_nombre + ' x' + fmtNum(p.cantidad) + ' (' + metodo + ')' + (p.usuario_nombre ? ' · ' + p.usuario_nombre : '') + '</td>' +
+                    return '<tr><td><i class="bi bi-cart-check me-1 text-info"></i>Pagado por producto: ' + GF.escapeHtml(p.producto_nombre) + ' x' + fmtNum(p.cantidad) + ' (' + metodo + ')' + (p.usuario_nombre ? ' · ' + GF.escapeHtml(p.usuario_nombre) : '') + '</td>' +
                         '<td class="text-muted small">' + fmtFecha(p.created_at) + '</td>' +
-                        '<td class="text-end">$' + fmtNum(p.monto) + '</td></tr>';
+                        '<td class="text-end">' + GF.dinero(p.monto) + '</td></tr>';
                 });
                 const filasBono = bonosRedimidos.map(function (b) {
-                    return '<tr><td><i class="bi bi-gift me-1 text-warning"></i>Bono ' + b.codigo + ' redimido' + (b.usuario_nombre ? ' · ' + b.usuario_nombre : '') + '</td>' +
+                    return '<tr><td><i class="bi bi-gift me-1 text-warning"></i>Bono ' + GF.escapeHtml(b.codigo) + ' redimido' + (b.usuario_nombre ? ' · ' + GF.escapeHtml(b.usuario_nombre) : '') + '</td>' +
                         '<td class="text-muted small">' + fmtFecha(b.created_at) + '</td>' +
-                        '<td class="text-end">$' + fmtNum(b.monto) + '</td></tr>';
+                        '<td class="text-end">' + GF.dinero(b.monto) + '</td></tr>';
                 });
                 // Orden cronológico: los pagos por producto suelen pasar antes que los
                 // abonos libres, pero mezclarlos por fecha real evita adivinar.
@@ -94,10 +87,10 @@ function mostrarDetalles(id) {
                 const restoEfectivo = Math.max(0, montoEfectivo - sumaCubierta.efectivo);
                 const restoTransferencia = Math.max(0, montoTransferencia - sumaCubierta.transferencia);
                 if (restoEfectivo > 0) {
-                    filasPagos += '<tr><td><i class="bi bi-cash-stack me-1 text-primary"></i>Pago restante al facturar (Efectivo)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">$' + fmtNum(restoEfectivo) + '</td></tr>';
+                    filasPagos += '<tr><td><i class="bi bi-cash-stack me-1 text-primary"></i>Pago restante al facturar (Efectivo)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">' + GF.dinero(restoEfectivo) + '</td></tr>';
                 }
                 if (restoTransferencia > 0) {
-                    filasPagos += '<tr><td><i class="bi bi-bank me-1 text-primary"></i>Pago restante al facturar (Transferencia)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">$' + fmtNum(restoTransferencia) + '</td></tr>';
+                    filasPagos += '<tr><td><i class="bi bi-bank me-1 text-primary"></i>Pago restante al facturar (Transferencia)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">' + GF.dinero(restoTransferencia) + '</td></tr>';
                 }
 
                 $('#detallesPagos').html(
@@ -119,20 +112,20 @@ function mostrarDetalles(id) {
                 totalGeneral += subtotal;
                 const serviceBadge = producto.es_servicio ? ' <span class="badge bg-info text-dark" style="font-size: 0.6rem;">Servicio</span>' : '';
                 tbody.append('<tr>' +
-                    '<td><div class="fw-medium">' + (producto.nombre || '') + serviceBadge + '</div>' +
-                    '<div class="d-block d-md-none small text-muted">A $' + fmtNum(precio) + ' / ' + (producto.unidad || 'N/A') + '</div></td>' +
+                    '<td><div class="fw-medium">' + GF.escapeHtml(producto.nombre || '') + serviceBadge + '</div>' +
+                    '<div class="d-block d-md-none small text-muted">A ' + GF.dinero(precio) + ' / ' + GF.escapeHtml(producto.unidad || 'N/A') + '</div></td>' +
                     '<td class="text-end align-middle">' + fmtNum(cantidad) + '</td>' +
                     '<td class="d-none d-md-table-cell align-middle">' + (producto.unidad || 'N/A') + '</td>' +
-                    '<td class="text-end d-none d-md-table-cell align-middle">$' + fmtNum(precio) + '</td>' +
-                    '<td class="text-end align-middle">$' + fmtNum(subtotal) + '</td>' +
+                    '<td class="text-end d-none d-md-table-cell align-middle">' + GF.dinero(precio) + '</td>' +
+                    '<td class="text-end align-middle">' + GF.dinero(subtotal) + '</td>' +
                     '</tr>');
             });
-            $('#detallesTotal').text('$' + fmtNum(totalGeneral));
+            $('#detallesTotal').text(GF.dinero(totalGeneral));
             const modal = getDetallesModal();
             if (modal) modal.show();
         },
         error: function () {
-            mostrarAlerta('Error al cargar los detalles de la factura', 'error');
+            GF.toast('Error al cargar los detalles de la factura', 'error');
         }
     });
 }
@@ -166,7 +159,7 @@ document.getElementById('filtrarVentas').addEventListener('click', function () {
     const hasta = document.getElementById('fechaHasta').value;
     const q = document.getElementById('buscarVentas').value || '';
     if (!desde || !hasta) {
-        mostrarAlerta('Por favor seleccione ambas fechas', 'warning');
+        GF.toast('Por favor seleccione ambas fechas', 'warning');
         return;
     }
     const params = new URLSearchParams({ desde, hasta, q });

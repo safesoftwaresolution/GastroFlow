@@ -8,14 +8,6 @@ const UMBRAL_MEDIO_MIN = 10;
 const UMBRAL_ALTO_MIN = 20;
 const MODO_VISTA_KEY = 'gastroflow.cocina.modoVista';
 
-function escapeHtml(str) {
-    return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-}
 
 // Agrupa los modificadores/toppings de un ítem por su grupo (ej. "Elige tu salsa",
 // "Toppings") para que en la comanda se lea a qué corresponde cada selección, en vez
@@ -71,19 +63,19 @@ function cardItem(it) {
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="producto">${it.producto_nombre}</span>
+                            <span class="producto">${GF.escapeHtml(it.producto_nombre)}</span>
                             ${estadoBadge}
-                            <span class="badge bg-dark cantidad-badge">${it.cantidad} ${it.unidad_medida || 'UND'}</span>
+                            <span class="badge bg-dark cantidad-badge">${it.cantidad} ${GF.escapeHtml(it.unidad_medida || 'UND')}</span>
                         </div>
                         ${it.nota ? `
                         <div class="nota-especial">
                             <strong>Instrucciones Especiales:</strong>
-                            <span>${it.nota}</span>
+                            <span>${GF.escapeHtml(it.nota)}</span>
                         </div>` : ''}
                         ${it.modificadores?.length ? `
                         <div class="nota-especial">
                             <strong>Detalle:</strong>
-                            <span>${escapeHtml(formatModificadores(it.modificadores))}</span>
+                            <span>${GF.escapeHtml(formatModificadores(it.modificadores))}</span>
                         </div>` : ''}
                         <div class="small text-muted">
                             <i class="bi bi-clock"></i> ${new Date(it.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
@@ -123,11 +115,11 @@ function cardItemEstacion(item) {
     return `
         <div class="kds-item ${claseEspera(minutos)}">
             <div class="d-flex justify-content-between">
-                <span class="kds-item-producto">${escapeHtml(item.producto_nombre)}</span>
+                <span class="kds-item-producto">${GF.escapeHtml(item.producto_nombre)}</span>
                 <span class="badge bg-dark">${item.cantidad}</span>
             </div>
-            <div class="kds-item-meta">${escapeHtml(mesaLabel)} · Pedido #${item.pedido_numero} · esperando ${minutos} min</div>
-            ${item.nota ? `<div class="kds-item-nota"><i class="bi bi-chat-left-text"></i> ${escapeHtml(item.nota)}</div>` : ''}
+            <div class="kds-item-meta">${GF.escapeHtml(mesaLabel)} · Pedido #${item.pedido_numero} · esperando ${minutos} min</div>
+            ${item.nota ? `<div class="kds-item-nota"><i class="bi bi-chat-left-text"></i> ${GF.escapeHtml(item.nota)}</div>` : ''}
             ${accion}
         </div>
     `;
@@ -160,7 +152,7 @@ function renderPorEstacion(itemsEnCocina, estaciones) {
             return `
                 <div class="kds-columna">
                     <div class="kds-columna-header">
-                        <span>${escapeHtml(estacion.nombre)}</span>
+                        <span>${GF.escapeHtml(estacion.nombre)}</span>
                         <span class="badge bg-secondary">${itemsEstacion.length}</span>
                     </div>
                     <div class="kds-columna-body">
@@ -193,7 +185,7 @@ function cardMesa(mesaNumero, items) {
     const itemsHtml = items.map(it => cardItem(it)).join('');
     const esPOS = items[0]?.pedido_origen === 'caja';
     const nombrePedido = (items[0]?.mesa_descripcion || '').trim();
-    const titulo = escapeHtml(esPOS ? (nombrePedido || 'Venta mostrador') : `Mesa ${mesaNumero}`);
+    const titulo = GF.escapeHtml(esPOS ? (nombrePedido || 'Venta mostrador') : `Mesa ${mesaNumero}`);
     const icono = esPOS ? 'bi-shop' : 'bi-table';
     const headerClass = esPOS ? 'bg-info text-dark' : 'bg-primary text-white';
     const btnCompletar = esPOS
@@ -261,9 +253,7 @@ $(function () {
      */
     async function cargarCola() {
         try {
-            const resp = await fetch('/api/cocina/cola');
-            if (!resp.ok) throw new Error('Error al cargar cola');
-            const items = await resp.json();
+            const items = await GF.api('/api/cocina/cola', {}, 'Error al cargar cola');
             render(items);
         } catch (error) {
             console.error('Error al cargar cola:', error);
@@ -438,14 +428,14 @@ $(function () {
                     <div class="card h-100 resumen-item shadow-none">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <span class="producto-nombre">${pNombre}</span>
+                                <span class="producto-nombre">${GF.escapeHtml(pNombre)}</span>
                                 <span class="total-badge">${pData.total} <small>${unidadStr}</small></span>
                             </div>
                             <div class="variaciones-list border-top pt-2">
             `;
 
             pData.variaciones.forEach((vData) => {
-                const label = escapeHtml([vData.nota, vData.modsTexto].filter(Boolean).join(' · ') || 'Estándar');
+                const label = GF.escapeHtml([vData.nota, vData.modsTexto].filter(Boolean).join(' · ') || 'Estándar');
                 const isNota = !!(vData.nota || vData.modsTexto);
 
                 html += `
@@ -460,9 +450,9 @@ $(function () {
                         <div class="d-flex flex-column flex-sm-row gap-1">
                         ${vData.enviado > 0 ? `
                             <button class="btn btn-xs btn-primary flex-fill px-1 py-1 btn-preparar-lote"
-                                data-nombre="${pNombre}"
-                                data-nota="${vData.nota}"
-                                data-mods-hash="${vData.modificadoresHash}"
+                                data-nombre="${GF.escapeHtml(pNombre)}"
+                                data-nota="${GF.escapeHtml(vData.nota)}"
+                                data-mods-hash="${GF.escapeHtml(vData.modificadoresHash)}"
                                 data-estado="preparando"
                                 title="Iniciar preparación">
                                 <i class="bi bi-play-fill"></i> Iniciar (${vData.enviado})
@@ -471,9 +461,9 @@ $(function () {
 
                         ${vData.preparando > 0 ? `
                             <button class="btn btn-xs btn-success flex-fill px-1 py-1 btn-preparar-lote"
-                                data-nombre="${pNombre}"
-                                data-nota="${vData.nota}"
-                                data-mods-hash="${vData.modificadoresHash}"
+                                data-nombre="${GF.escapeHtml(pNombre)}"
+                                data-nota="${GF.escapeHtml(vData.nota)}"
+                                data-mods-hash="${GF.escapeHtml(vData.modificadoresHash)}"
                                 data-estado="listo"
                                 title="Marcar todos como listos">
                                 <i class="bi bi-check-all"></i> Listo (${vData.preparando})
@@ -518,22 +508,19 @@ $(function () {
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
         try {
-            const resp = await fetch('/api/cocina/preparar-lote', {
+            await GF.api('/api/cocina/preparar-lote', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+                body: {
                     productoNombre,
                     nota,
                     estado,
                     modificadoresHash
-                })
-            });
-
-            if (!resp.ok) throw new Error('Error al procesar lote');
+                }
+            }, 'Error al procesar lote');
             await cargarCola();
         } catch (error) {
             console.error('Error batch:', error);
-            alert('Error al actualizar el lote');
+            GF.toast(error.message || 'Error al actualizar el lote', 'error');
             btn.prop('disabled', false).html(oldHtml);
         }
     });
@@ -542,30 +529,20 @@ $(function () {
     $(document).on('click', '[data-action="prep"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/cocina/item/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'preparando' })
-            });
+            await GF.api.put(`/api/cocina/item/${id}/estado`, { estado: 'preparando' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 
     $(document).on('click', '[data-action="listo"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/cocina/item/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'listo' })
-            });
+            await GF.api.put(`/api/cocina/item/${id}/estado`, { estado: 'listo' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 
@@ -583,8 +560,7 @@ $(function () {
         if (!confirm.isConfirmed) return;
 
         try {
-            const resp = await fetch(`/api/cocina/pedidos/${pedidoId}/completar`, { method: 'PUT' });
-            if (!resp.ok) throw new Error('Error al completar pedido');
+            await GF.api(`/api/cocina/pedidos/${pedidoId}/completar`, { method: 'PUT' }, 'Error al completar pedido');
             await cargarCola();
         } catch (error) {
             console.error('Error:', error);
@@ -606,8 +582,7 @@ $(function () {
         if (!confirm.isConfirmed) return;
 
         try {
-            const resp = await fetch(`/api/cocina/pedidos/${pedidoId}/cancelar`, { method: 'PUT' });
-            if (!resp.ok) throw new Error('Error al cancelar pedido');
+            await GF.api(`/api/cocina/pedidos/${pedidoId}/cancelar`, { method: 'PUT' }, 'Error al cancelar pedido');
             await cargarCola();
         } catch (error) {
             console.error('Error:', error);
@@ -618,52 +593,20 @@ $(function () {
     $(document).on('click', '[data-action="servido"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/mesas/items/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'servido' })
-            });
+            await GF.api.put(`/api/mesas/items/${id}/estado`, { estado: 'servido' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 
-    // Real-time notifications (SSE)
-    (function () {
-        if (window.EventSource) {
-            const source = new EventSource('/api/notifications/subscribe');
-
-            source.addEventListener('message', function (e) {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (data.event === 'orderCreated') {
-                        console.log('Evento de cocina detectado:', data);
-
-                        // Si es una cancelación, mostrar alerta específica
-                        if (data.action === 'cancelled') {
-                            const Toast = Swal.mixin({
-                                toast: true, position: 'top-end', showConfirmButton: false, timer: 4000
-                            });
-                            Toast.fire({
-                                icon: 'warning',
-                                title: 'Pedido Cancelado',
-                                text: `El pedido #${data.pedidoId} ha sido cancelado.`
-                            });
-                        }
-
-                        // En cualquier caso (nuevo o cancelado), refrescar la cola inmediatamente
-                        cargarCola();
-                    }
-                } catch (err) {
-                    console.error('Error SSE Cocina:', err);
-                }
-            }, false);
-
-            window.addEventListener('beforeunload', () => source.close());
+    // Tiempo real: pedido nuevo, modificado o cancelado -> refrescar la cola
+    GF.tiempoReal.on('orderCreated', data => {
+        if (data.action === 'cancelled') {
+            GF.toast('Pedido cancelado', 'warning', { text: `El pedido #${data.pedidoId} ha sido cancelado.`, timer: 4000 });
         }
-    })();
+        cargarCola();
+    });
 
     // Auto-refresh every 5 seconds (fallback)
     cargarCola();

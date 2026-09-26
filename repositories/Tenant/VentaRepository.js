@@ -5,6 +5,7 @@
  */
 
 const db = require('../../config/database');
+const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
 class VentaRepository {
     /**
@@ -40,14 +41,14 @@ class VentaRepository {
             // Sargable (sin función sobre f.fecha, usa el índice). El día del filtro es
             // un día Colombia y f.fecha está en UTC: se convierte el límite, no la columna.
             // Sin esto, lo vendido después de las 7 p. m. caía en el día siguiente.
-            query += ` AND f.fecha >= CONVERT_TZ(?, '-05:00', '+00:00')`;
+            query += ` AND f.fecha >= ${SQL_COLOMBIA.desdeDia()}`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
             // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
             // todo el día "hasta" comparando contra el inicio del día siguiente.
-            query += ` AND f.fecha < CONVERT_TZ(DATE_ADD(?, INTERVAL 1 DAY), '-05:00', '+00:00')`;
+            query += ` AND f.fecha < ${SQL_COLOMBIA.hastaDia()}`;
             params.push(filters.hasta);
         }
 
@@ -103,14 +104,14 @@ class VentaRepository {
             // Sargable (sin función sobre f.fecha, usa el índice). El día del filtro es
             // un día Colombia y f.fecha está en UTC: se convierte el límite, no la columna.
             // Sin esto, lo vendido después de las 7 p. m. caía en el día siguiente.
-            query += ` AND f.fecha >= CONVERT_TZ(?, '-05:00', '+00:00')`;
+            query += ` AND f.fecha >= ${SQL_COLOMBIA.desdeDia()}`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
             // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
             // todo el día "hasta" comparando contra el inicio del día siguiente.
-            query += ` AND f.fecha < CONVERT_TZ(DATE_ADD(?, INTERVAL 1 DAY), '-05:00', '+00:00')`;
+            query += ` AND f.fecha < ${SQL_COLOMBIA.hastaDia()}`;
             params.push(filters.hasta);
         }
 

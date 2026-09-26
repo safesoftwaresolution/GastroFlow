@@ -155,7 +155,7 @@ $(function () {
       html += `
         <div style="display:flex; flex-direction:column; gap:7px;">
           <div style="display:flex; justify-content:space-between; font-size:13px;">
-            <span style="font-weight:600; color:#3a4453;">${c.categoria_nombre}</span>
+            <span style="font-weight:600; color:#3a4453;">${GF.escapeHtml(c.categoria_nombre)}</span>
             <span style="font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${this.formatCurrency(val)}</span>
           </div>
           <div style="height:10px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
@@ -188,7 +188,7 @@ $(function () {
           <span style="width:23px; height:23px; flex:0 0 23px; border-radius:7px; background:${rankBg}; color:${rankColor}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center;">${idx + 1}</span>
           <div style="flex:1; min-width:0;">
             <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
-              <span style="font-size:13.5px; font-weight:600; color:#1e2733; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.nombre}</span>
+              <span style="font-size:13.5px; font-weight:600; color:#1e2733; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${GF.escapeHtml(p.nombre)}</span>
               <span style="font-size:13px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; white-space:nowrap;">${this.formatCurrency(val)}</span>
             </div>
             <div style="height:6px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
@@ -274,11 +274,7 @@ $(function () {
       this.updateMiniCalendarioEventos(this.calendarEventosCache[mesParam], year, month);
       return;
     }
-    fetch('/api/dashboard/eventos-calendario?mes=' + mesParam, { credentials: 'same-origin' })
-      .then(r => {
-        if (!r.ok) throw new Error('Error al cargar eventos');
-        return r.json();
-      })
+    GF.api('/api/dashboard/eventos-calendario?mes=' + mesParam, {}, 'Error al cargar eventos')
       .then(data => {
         let list = data.eventosCalendario || data.eventos || [];
         if (!Array.isArray(list)) list = [];
@@ -313,7 +309,7 @@ $(function () {
       const budget = r.presupuesto != null ? r.presupuesto : 0;
       html += `
         <tr>
-          <td><span class="fw-bold">${r.nombre}</span><br><span class="text-muted small">${r.descripcion || 'Sin descripción'}</span></td>
+          <td><span class="fw-bold">${GF.escapeHtml(r.nombre)}</span><br><span class="text-muted small">${GF.escapeHtml(r.descripcion || 'Sin descripción')}</span></td>
           <td>${r.fecha_inicio ? r.fecha_inicio.split('T')[0] : 'N/D'}</td>
           <td>${r.fecha_fin ? r.fecha_fin.split('T')[0] : 'N/D'}</td>
           <td class="text-end fw-bold">${this.formatCurrency(budget)}</td>
@@ -342,7 +338,7 @@ $(function () {
             <span style="font-size:8.5px; font-weight:700; letter-spacing:.06em; margin-top:2px;">${start.toLocaleDateString('es-ES', {month: 'short'}).toUpperCase()}</span>
           </div>
           <div style="flex:1; min-width:0;">
-            <div style="font-size:13.5px; font-weight:600; color:#1e2733; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${e.nombre}</div>
+            <div style="font-size:13.5px; font-weight:600; color:#1e2733; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${GF.escapeHtml(e.nombre)}</div>
             <div style="font-size:12px; color:#8a94a6; margin-top:2px;">Confirmado</div>
           </div>
           <span style="font-size:13.5px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${this.formatCurrency(budget)}</span>

@@ -1,9 +1,6 @@
 // Clasificación — ranking de productos más vendidos con filtros de fecha y categoría
 
 (function () {
-    function money(n) {
-        return '$ ' + Math.round(n || 0).toLocaleString('es-CO');
-    }
 
     const $desde = document.getElementById('clasifDesde');
     const $hasta = document.getElementById('clasifHasta');
@@ -13,13 +10,6 @@
     const $resumenUnidades = document.getElementById('clasifResumenUnidades');
     const $resumenTotal = document.getElementById('clasifResumenTotal');
 
-    function escapeHtml(str) {
-        return String(str)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;');
-    }
 
     function renderLista(productos) {
         if (!productos.length) {
@@ -40,8 +30,8 @@
                     <span class="${rankClass}">${idx + 1}</span>
                     <div class="clasif-info">
                         <div class="clasif-name-row">
-                            <span class="clasif-name">${escapeHtml(p.nombre)}<span class="clasif-cat-badge">${escapeHtml(p.categoria_nombre)}</span></span>
-                            <span class="clasif-total">${money(p.total_ventas)}</span>
+                            <span class="clasif-name">${GF.escapeHtml(p.nombre)}<span class="clasif-cat-badge">${GF.escapeHtml(p.categoria_nombre)}</span></span>
+                            <span class="clasif-total">${GF.dinero(p.total_ventas)}</span>
                         </div>
                         <div class="clasif-bar-track">
                             <div class="clasif-bar-fill" style="width:${pct}%"></div>
@@ -57,7 +47,7 @@
         const totalVentas = productos.reduce((s, p) => s + (p.total_ventas || 0), 0);
         $resumenProductos.textContent = productos.length;
         $resumenUnidades.textContent = Math.round(totalUnidades).toLocaleString('es-CO');
-        $resumenTotal.textContent = money(totalVentas);
+        $resumenTotal.textContent = GF.dinero(totalVentas);
     }
 
     async function cargar() {
@@ -72,9 +62,7 @@
         if ($categoria.value) params.append('categoria_id', $categoria.value);
 
         try {
-            const resp = await fetch(`/clasificacion/ranking?${params.toString()}`);
-            if (!resp.ok) throw new Error('Error al cargar el ranking');
-            const productos = await resp.json();
+            const productos = await GF.api(`/clasificacion/ranking?${params.toString()}`, {}, 'Error al cargar el ranking');
             renderResumen(productos);
             renderLista(productos);
         } catch (err) {

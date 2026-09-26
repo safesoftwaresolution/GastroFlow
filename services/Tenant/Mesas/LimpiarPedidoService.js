@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class LimpiarPedidoService {
     /**
@@ -37,17 +38,12 @@ class LimpiarPedidoService {
             await connection.commit();
 
             // Emitir evento SSE para notificar en tiempo real que se limpió/canceló el pedido
-            try {
-                const RealtimeEvents = require('../../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
-                    tenantId,
-                    pedidoId,
-                    mesaId,
-                    action: 'cancelled'
-                });
-            } catch (err) {
-                console.error('Error al emitir evento de limpieza SSE:', err);
-            }
+            RealtimeEvents.emitPedido({
+                tenantId,
+                pedidoId,
+                mesaId,
+                action: 'cancelled'
+            });
 
             return { message: 'Pedido limpiado y mesa liberada correctamente', mesaId };
         } catch (error) {

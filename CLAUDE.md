@@ -55,9 +55,10 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
 
 - **Routing entry point is `routes/web.js`**, mounted at `/` from `app.js`. It wires every module's
   middleware chain (auth + tenant + plan-feature + permission) and requires from `routes/tenant/*.js` and
-  `routes/admin/*.js`. **The `*-backup.js` / `*-refactored.js` files sitting directly under `routes/` are
-  dead leftovers from a refactor and are not required anywhere** — don't edit them expecting effect; the
-  live route file for e.g. facturas is `routes/tenant/facturas.js`, not `routes/facturas-refactored.js`.
+  `routes/admin/*.js`. The few files directly under `routes/` (`auth`, `onboarding`, `qr`, `qr_api`,
+  `webhooks`) are the public/unauthenticated routers, also wired from `web.js`. Page JS lives in
+  `public/js/modulos/` (not in `views/*/_scripts.ejs` — the old inline copies were deleted in 2026-09;
+  don't reintroduce page logic inside EJS).
 - Controllers live under `app/Http/Controllers/{Admin,Tenant,Public,Webhooks}/`, request validation under
   `app/Http/Requests/{Admin,Auth,Tenant}/`. Controllers orchestrate services and either `res.render(...)`
   (EJS view) or `res.json(...)` — the same controller/route commonly serves both a page and its `/api/...`
@@ -94,11 +95,46 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
 - **Realtime** is Server-Sent Events, not WebSockets: `services/Shared/RealtimeEvents.js` is an in-process
   `EventEmitter` bus (`orderCreated`, `mesaSolicitud`, ...) that feeds Cocina/Mesas/POS/Dashboard through
   the single subscription endpoint `GET /api/notifications/subscribe`. This only works for a single
-  process — it won't fan out across multiple server instances/workers.
+  process — it won't fan out across multiple server instances/workers. Emit through the helpers
+  (`RealtimeEvents.emitPedido(...)`, `emitMesasChanged(tenantId)`, `emitVentaRegistrada(tenantId)`), which
+  never throw — don't call `events.emit` wrapped in a local try/catch.
+
+- **Dates / timezone — use `utils/dateHelpers.js`, never compute "today" by hand.** DB timestamps are UTC
+  and production MySQL runs in UTC, so `CURDATE()`, `NOW()`, `DATE(col)` and
+  `new Date().toISOString().slice(0, 10)` all give the UTC day, which flips at 7 p.m. in Colombia (this
+  caused several bugs). Use `hoyColombia()`, `sumarDias`, `sumarMeses` (month-end safe),
+  `rangoUtcColombia(desde, hasta)` for `BETWEEN` on UTC columns, and the `SQL_COLOMBIA` fragments
+  (`hoy`, `inicioHoyUtc`, `dia(col)`, `desdeDia()`/`hastaDia()`, `aColombia(col)`, `aUtc()`) inside SQL.
+  In production (`MYSQL_URL`) mysql2 returns `DATE` columns as JS `Date` objects but locally as strings
+  (`dateStrings` never applied in URL mode, see `config/database.js`): normalize with `toFechaDia()`
+  before comparing or string-building.
+
+- **Consecutive numbers** (daily order number, invoice number) come only from
+  `repositories/Tenant/NumeracionRepository.js`, called with the transaction's `connection`. It locks
+  the tenant row before the `MAX()` read — a bare `SELECT MAX(...) FOR UPDATE` deadlocks under
+  concurrent inserts (gap locks).
 
 - **Idempotency**: `middleware/idempotency.js` runs globally and short-circuits duplicate mutating
   requests (POST/PUT/PATCH/DELETE) that carry an `Idempotency-Key` header, caching the response for 30 min
   and returning 409 on a concurrent in-flight duplicate. Only applies when the header is present.
+
+- **Frontend core — `public/js/core/gf.js` (`window.GF`)**, loaded on every page from the navbar partial and
+  the superadmin shell (pages without them — login, registro, QR menu — include it explicitly). Use it
+  instead of rewriting helpers per module: `GF.api(url, opts, mensajeError)` (+ `.get/.post/.put/.patch/
+  .delete`, and `.getOr(url, porDefecto)` that never throws) for every call to our own backend — it sends
+  JSON, throws `Error` with the server's `error`/`message` and `.status`, and doesn't blow up on HTML
+  responses; `GF.dinero(n)` for money ("$ 12.345", no cents); `GF.escapeHtml` for ANY DB/user text put
+  into HTML (innerHTML, `.html()`, template literals, `data-*` attributes); `GF.toast/alerta/exito/error/
+  confirmar`; `GF.cargando(btn, bool)`; `GF.tiempoReal.on(evento, fn)` (one shared SSE connection per
+  page). Raw `fetch` is only for non-JSON (blob) or third-party APIs (Wompi). Also reusable:
+  `core/modules/{FormManager,SearchManager,TableManager}.js`, `core/tablas-responsive.js` (tables become
+  cards on mobile automatically; opt out with `.no-stack`), `core/money-input.js`.
+
+- **XSS**: product names, client names, order notes (writable by anonymous QR customers!) and restaurant
+  names (chosen at self-registration) are untrusted. Escape them client-side with `GF.escapeHtml`, and
+  embed server data in `<script>` only via `<%- jsonSeguro(data) %>` (`utils/jsonSeguro.js`, exposed as
+  `app.locals.jsonSeguro`) — never `<%- JSON.stringify(...) %>`, which a `</script>` inside the data breaks.
+  Don't store the JWT in localStorage (the session is the httpOnly `auth_token` cookie).
 
 - **PDFs** are generated with `pdfmake` (`services/Shared/PdfMaker.js`, docDefinition → Buffer, no
   Chromium). Puppeteer is only used by `scripts/generate-og-image.js` (a screenshot, not a PDF) — don't

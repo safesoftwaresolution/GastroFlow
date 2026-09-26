@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class AgregarServicioService {
     static async execute({ tenantId, pedidoId, servicio_id, cantidad, precio, nota }) {
@@ -28,18 +29,12 @@ class AgregarServicioService {
         }
 
         // Emitir evento SSE
-        try {
-            const RealtimeEvents = require('../../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId,
-                mesaId,
-                action: 'items_updated'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE en AgregarServicioService:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId,
+            mesaId,
+            action: 'items_updated'
+        });
 
         return { id: result.insertId };
     }

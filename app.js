@@ -29,6 +29,8 @@ app.set('trust proxy', 1);
 // Configuración de Vistas
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+// Helper para incrustar datos en <script> sin riesgo de XSS (ver utils/jsonSeguro.js)
+app.locals.jsonSeguro = require('./utils/jsonSeguro');
 
 // Compresión gzip/brotli para todas las respuestas
 app.use(compression());

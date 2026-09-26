@@ -14,15 +14,10 @@
             return;
         }
         try {
-            const res = await fetch('/estaciones', {
+            const data = await GF.api('/estaciones', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo crear la estación');
-            }
+                body: { nombre }
+            }, 'No se pudo crear la estación');
             location.reload();
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
@@ -36,15 +31,10 @@
         const activa = fila.querySelector('.est-activa').checked;
 
         try {
-            const res = await fetch(`/estaciones/${id}`, {
+            const data = await GF.api(`/estaciones/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, orden, activa })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo guardar');
-            }
+                body: { nombre, orden, activa }
+            }, 'No se pudo guardar');
             Swal.fire({ icon: 'success', title: 'Guardado', timer: 900, showConfirmButton: false });
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
@@ -65,11 +55,7 @@
             return;
         }
         try {
-            const res = await fetch(`/estaciones/${id}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo eliminar');
-            }
+            const data = await GF.api(`/estaciones/${id}`, { method: 'DELETE' }, 'No se pudo eliminar');
             location.reload();
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
@@ -80,15 +66,10 @@
         const categoriaId = select.dataset.categoriaId;
         const estacionId = select.value;
         try {
-            const res = await fetch(`/estaciones/categorias/${categoriaId}`, {
+            const data = await GF.api(`/estaciones/categorias/${categoriaId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estacion_id: estacionId || null })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo actualizar');
-            }
+                body: { estacion_id: estacionId || null }
+            }, 'No se pudo actualizar');
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
         }

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/css/core/index.css">
     <link rel="stylesheet" href="/css/modulos/pos.css">
 </head>
-<body class="pos-terminal-body" style="--pos-accent:<%- nav.primaryColor || '#6366f1' %>;--pos-dark:<%- nav.bgStart || '#1e293b' %>">
+<body class="pos-terminal-body" style="--pos-accent:<%= nav.primaryColor || '#6366f1' %>;--pos-dark:<%= nav.bgStart || '#1e293b' %>">
 
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 
@@ -27,7 +27,7 @@
     </div>
 <% } %>
 
-<script type="application/json" id="posInitData"><%- JSON.stringify({ productos: productos || [], categorias: categorias || [] }) %></script>
+<script type="application/json" id="posInitData"><%- jsonSeguro({ productos: productos || [], categorias: categorias || [] }) %></script>
 
 <div class="pos-wrapper">
 

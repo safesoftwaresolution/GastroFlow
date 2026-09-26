@@ -11,17 +11,10 @@ function pollJobAndDownload(createJobUrl, options) {
 
     onStart();
 
-    fetch(createJobUrl)
-        .then(function (r) {
-            return r.json().then(function (data) {
-                return { ok: r.ok, data: data };
-            });
-        })
-        .then(function (res) {
-            if (!res.ok || !res.data.jobId) {
-                throw new Error((res.data && res.data.error) || 'No se pudo iniciar la generación.');
-            }
-            poll(res.data.jobId);
+    GF.api(createJobUrl, {}, 'No se pudo iniciar la generación.')
+        .then(function (data) {
+            if (!data || !data.jobId) throw new Error('No se pudo iniciar la generación.');
+            poll(data.jobId);
         })
         .catch(function (err) {
             onDone();
@@ -29,8 +22,7 @@ function pollJobAndDownload(createJobUrl, options) {
         });
 
     function poll(jobId) {
-        fetch('/admin/jobs/' + jobId)
-            .then(function (r) { return r.json(); })
+        GF.api('/admin/jobs/' + jobId)
             .then(function (job) {
                 if (job.estado === 'completado') {
                     onDone();

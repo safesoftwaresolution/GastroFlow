@@ -1,4 +1,5 @@
 const EventoService = require('../../../../services/Tenant/EventoService');
+const { hoyColombia } = require('../../../../utils/dateHelpers');
 
 class EventosController {
     // GET /eventos
@@ -29,7 +30,7 @@ class EventosController {
             if (!tenantId) {
                 return res.status(403).json({ error: 'Contexto de tenant no disponible' });
             }
-            const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
+            const fecha = req.query.fecha || hoyColombia();
             const eventos = await EventoService.list(tenantId, { activo: true });
             const activosEnFecha = eventos.filter(e => {
                 const d = fecha.slice(0, 10);

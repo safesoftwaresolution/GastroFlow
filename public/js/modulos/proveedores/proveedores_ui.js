@@ -31,26 +31,16 @@ $(function () {
         const url = id ? `/proveedores/${id}` : '/proveedores';
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-          Swal.fire({
-            icon: 'success',
-            title: id ? 'Actualizado' : 'Creado',
-            text: 'El proveedor ha sido guardado correctamente.',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => location.reload());
-        } else {
-          const err = await response.json();
-          Swal.fire('Error', err.error || 'No se pudo guardar', 'error');
-        }
+        await GF.api(url, { method, body: data }, 'No se pudo guardar');
+        Swal.fire({
+          icon: 'success',
+          title: id ? 'Actualizado' : 'Creado',
+          text: 'El proveedor ha sido guardado correctamente.',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => location.reload());
       } catch (error) {
-        Swal.fire('Error', 'Error de conexión', 'error');
+        GF.error(error.message);
       }
     });
   }
@@ -98,20 +88,7 @@ $(function () {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Subiendo...';
 
     try {
-      const res = await fetch(`/proveedores/${proveedorId}/facturas`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: 'Error del servidor (' + res.status + ')' }));
-        throw new Error(errData.error || 'No se pudo subir el archivo');
-      }
-
-      const data = await res.json();
+      const data = await GF.api(`/proveedores/${proveedorId}/facturas`, { method: 'POST', body: formData }, 'No se pudo subir el archivo');
       Swal.fire({ icon: 'success', title: '¡Éxito!', text: data.message, timer: 1500, showConfirmButton: false });
       this.reset();
       await window.cargarFacturas(proveedorId);

@@ -166,7 +166,7 @@
     <% if (wompiPublicKey) { %>
     <script src="https://wompijs.wompi.com/libs/js/v1.js" data-public-key="<%= wompiPublicKey %>"></script>
     <% } %>
-    <script type="application/json" id="facturacion-data"><%- JSON.stringify({ wompiPublicKey: wompiPublicKey || null, wompiApiBase: wompiApiBase || null, tenantEmail: (tenant && tenant.email) || (user && user.email) || '' }) %></script>
+    <script type="application/json" id="facturacion-data"><%- jsonSeguro({ wompiPublicKey: wompiPublicKey || null, wompiApiBase: wompiApiBase || null, tenantEmail: (tenant && tenant.email) || (user && user.email) || '' }) %></script>
     <script src="/js/modulos/facturacion.js"></script>
 </body>
 

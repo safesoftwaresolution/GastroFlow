@@ -80,6 +80,27 @@ describe('SuscripcionService.finalizarPago', () => {
         );
     });
 
+    it('cobro exitoso con proximo_cobro como Date (así llega la columna DATE en producción) avanza un mes', async () => {
+        const pago = { id: 3, tenant_id: 6, estado: 'pendiente', monto: 79900 };
+        const tenant = {
+            id: 6,
+            nombre: 'El Fogón',
+            email: 'dueno@fogon.com',
+            suspendido_por_pago: 0,
+            intentos_fallidos_pago: 0,
+            proximo_cobro: new Date(2026, 0, 31) // 31-ene, a medianoche local como lo arma mysql2
+        };
+        mockDbByQuery({ pago, tenant });
+
+        await SuscripcionService.finalizarPago({ reference: 'sub-6-1', status: 'APPROVED', rawPayload: {} });
+
+        const update = db.query.mock.calls.find(([sql]) => sql.includes('UPDATE tenants SET proximo_cobro'));
+        expect(update).toBeDefined();
+        // Antes: "Invalid time value" (y el tenant quedaba listo para cobrarse otra vez).
+        // Fin de mes: 31-ene + 1 mes = 28-feb, no 3-mar.
+        expect(update[1][0]).toBe('2026-02-28');
+    });
+
     it('cobro exitoso mientras estaba suspendido: reactiva el tenant y envía correo de reactivación', async () => {
         const pago = { id: 2, tenant_id: 7, estado: 'pendiente', monto: 79900 };
         const tenant = {

@@ -48,17 +48,12 @@ window.FacturasModule = {
   },
 
   getOrCreateConsumidorFinal() {
-    return fetch('/api/clientes/buscar?q=consumidor%20final')
-      .then(r => r.json())
+    return GF.api('/api/clientes/buscar?q=consumidor%20final')
       .then(list => {
-        let cf = (list || []).find(c => (c.nombre || '').toLowerCase() === 'consumidor final');
-        if (cf) return cf;
-        return fetch('/api/clientes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre: 'Consumidor final' })
-        }).then(r => r.ok ? r.json() : null);
-      }).catch(() => null);
+        const cf = (list || []).find(c => (c.nombre || '').toLowerCase() === 'consumidor final');
+        return cf || GF.api.post('/api/clientes', { nombre: 'Consumidor final' });
+      })
+      .catch(() => null);
   },
 
   subtotalLinea(item) {

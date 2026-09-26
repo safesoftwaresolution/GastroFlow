@@ -18,7 +18,7 @@ window.POS_PAGO = {
                 desc = ` <span class="text-success small">(-${item.descuento_porcentaje}%)</span>`;
             }
             return `<div class="pos-pago-item-row">
-                <span>${item.nombre} x${item.cantidad}${desc}</span>
+                <span>${GF.escapeHtml(item.nombre)} x${item.cantidad}${desc}</span>
                 <span>$ ${sub.toLocaleString('es-CO')}</span>
             </div>`;
         }).join('');

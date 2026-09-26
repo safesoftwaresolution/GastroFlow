@@ -3,36 +3,28 @@
  */
 
 const db = require('../../config/database');
+const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
 class FinanzasRepository {
     /**
      * Registra un movimiento de dinero (Entrada/Salida)
      */
     static async createMovimiento(tenantId, data) {
-        const { 
-            sesion_id, 
-            usuario_id, 
-            tipo, 
-            monto, 
-            motivo, 
-            categoria_gasto, 
-            referencia_tipo, 
-            referencia_id 
-        } = data;
+        const { sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id } = data;
 
         const [result] = await db.query(
             `INSERT INTO caja_movimientos 
             (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                tenantId, 
-                sesion_id || null, 
-                usuario_id, 
-                tipo, 
-                monto, 
-                motivo, 
-                categoria_gasto || 'General', 
-                referencia_tipo || 'manual', 
+                tenantId,
+                sesion_id || null,
+                usuario_id,
+                tipo,
+                monto,
+                motivo,
+                categoria_gasto || 'General',
+                referencia_tipo || 'manual',
                 referencia_id || null
             ]
         );
@@ -79,12 +71,12 @@ class FinanzasRepository {
     static async getHistoricoDiario(tenantId, fechaInicio, fechaFin) {
         const [rows] = await db.query(
             `SELECT 
-                DATE(created_at) as fecha,
+                ${SQL_COLOMBIA.dia('created_at')} as fecha,
                 SUM(CASE WHEN tipo = 'entrada' THEN monto ELSE 0 END) as ingresos,
                 SUM(CASE WHEN tipo = 'salida' THEN monto ELSE 0 END) as egresos
             FROM caja_movimientos
             WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
-            GROUP BY DATE(created_at)
+            GROUP BY fecha
             ORDER BY fecha ASC`,
             [tenantId, fechaInicio, fechaFin]
         );

@@ -41,9 +41,7 @@
     async function abrirEditar(fila) {
         const id = fila.dataset.id;
         try {
-            const r = await fetch(`/promociones/${id}`);
-            const p = await r.json();
-            if (!r.ok) throw new Error(p.error || 'No se pudo cargar la promoción');
+            const p = await GF.api(`/promociones/${id}`, {}, 'No se pudo cargar la promoción');
 
             limpiarFormulario();
             document.getElementById('promocionId').value = p.id;
@@ -103,13 +101,10 @@
         try {
             const url = id ? `/promociones/${id}` : '/promociones';
             const method = id ? 'PUT' : 'POST';
-            const r = await fetch(url, {
+            const data = await GF.api(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo guardar la promoción');
+                body: payload
+            }, 'No se pudo guardar la promoción');
 
             getModal()?.hide();
             location.reload();
@@ -131,9 +126,7 @@
         if (!result.isConfirmed) return;
 
         try {
-            const r = await fetch(`/promociones/${id}`, { method: 'DELETE' });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo eliminar');
+            const data = await GF.api(`/promociones/${id}`, { method: 'DELETE' }, 'No se pudo eliminar');
             location.reload();
         } catch (error) {
             Swal.fire('Error', error.message, 'error');

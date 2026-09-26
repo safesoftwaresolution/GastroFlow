@@ -31,8 +31,8 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <span class="badge dashboard-soft-badge border px-3 py-2 rounded-pill fw-bold" id="totalHoyBadge">
-                    Total Hoy: $<span id="ventasHoyTotalGlobal">
-                        <%= Number(stats.ventasHoyTotalGlobal || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 }) %>
+                    Total Hoy: <span id="ventasHoyTotalGlobal">
+                        $ <%= Number(stats.ventasHoyTotalGlobal || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 }) %>
                     </span>
                 </span>
                 <span class="small text-muted" id="lastUpdatedLabel" title="Actualización automática cada 60 segundos">

@@ -16,7 +16,7 @@ window.MesasModule = {
   cerradaStreak: 0,
 
   formatear(valor) {
-    return `$${Number(valor || 0).toLocaleString('es-CO')}`;
+    return GF.dinero(valor);
   },
 
   // Normaliza la entrada de descuentosPorItem a { tipo, valor }.
@@ -144,17 +144,11 @@ window.refreshMesaIfOpen = async function(mesaId, action) {
     if (typeof window.MesasModule.cargarPedido === 'function') {
       await window.MesasModule.cargarPedido(window.MesasModule.pedidoActual.id);
     }
-    const Toast = Swal.mixin({
-      toast: true,
+    GF.toast('Pedido actualizado', 'info', {
+      text: 'Se han recibido nuevos productos en el pedido.',
       position: 'bottom-end',
-      showConfirmButton: false,
       timer: 1500,
       timerProgressBar: false
-    });
-    Toast.fire({
-      icon: 'info',
-      title: 'Pedido actualizado',
-      text: 'Se han recibido nuevos productos en el pedido.'
     });
   } else {
     if (typeof refreshMesas === 'function') refreshMesas();

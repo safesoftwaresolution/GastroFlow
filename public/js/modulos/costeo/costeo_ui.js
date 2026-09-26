@@ -1,6 +1,6 @@
 // UI interaction, events, Excel uploads, and data loaders for the Costeo module
 
-$(function () {
+document.addEventListener('DOMContentLoaded', function () {
   if (window.COSTEO_SHOW_TENANT_SELECTOR) return;
   const mod = window.CosteoModule;
 
@@ -19,12 +19,7 @@ $(function () {
     if (mod.isSuperadmin && window.COSTEO_TENANT_ID) {
       url += '?tenant_id=' + window.COSTEO_TENANT_ID;
     }
-    fetch(url, {
-      method: 'POST',
-      body: formData,
-      credentials: 'same-origin'
-    })
-      .then(res => res.ok ? res.json() : res.json().then(j => { throw new Error(j.error || res.statusText); }))
+    GF.api(url, { method: 'POST', body: formData }, 'Error al importar')
       .then((result) => {
         const { creados = 0, actualizados = 0, errores = [] } = result;
         let msg = '';
@@ -66,8 +61,8 @@ $(function () {
         (list || []).forEach(rec => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${mod.escapeHtml(rec.producto_nombre || '-')}</td>
-            <td>${mod.escapeHtml(rec.nombre_receta)}</td>
+            <td>${GF.escapeHtml(rec.producto_nombre || '-')}</td>
+            <td>${GF.escapeHtml(rec.nombre_receta)}</td>
             <td>${rec.porciones}</td>
             <td>${mod.formatMoney(rec.precio_venta_actual)}</td>
             <td class="text-end">
@@ -99,7 +94,7 @@ $(function () {
       set('costeoMarkup', data.markup_real_pct != null ? data.markup_real_pct + '%' : '-');
       set('costeoTotalFijos', mod.formatMoney(data.total_costos_fijos));
       set('costeoMargenContrib', mod.formatMoney(data.margen_contribucion_porcion));
-      set('costeoPuntoEquilibrio', data.punto_equilibrio_porciones != null ? mod.formatMoney(data.punto_equilibrio_porciones) : '-');
+      set('costeoPuntoEquilibrio', data.punto_equilibrio_porciones != null ? Number(data.punto_equilibrio_porciones).toLocaleString('es-CO', { maximumFractionDigits: 2 }) : '-');
       panel?.classList.remove('d-none');
     }).catch(() => panel?.classList.add('d-none'));
   }
@@ -219,9 +214,9 @@ $(function () {
       mod.recetaIngredientes.forEach((ing, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${mod.escapeHtml(ing.insumo_codigo || '')} - ${mod.escapeHtml(ing.insumo_nombre || '')}</td>
+          <td>${GF.escapeHtml(ing.insumo_codigo || '')} - ${GF.escapeHtml(ing.insumo_nombre || '')}</td>
           <td>${ing.cantidad}</td>
-          <td>${ing.unidad}</td>
+          <td>${GF.escapeHtml(ing.unidad)}</td>
           <td>${mod.canEdit ? `<button type="button" class="btn btn-sm btn-outline-danger btnQuitarIng" data-idx="${idx}">Quitar</button>` : ''}</td>`;
         tbody.appendChild(tr);
       });
@@ -319,7 +314,6 @@ $(function () {
     loadingEl.classList.remove('d-none');
     contentEl.classList.add('d-none');
     mod.api('/api/costeo/alertas').then(data => {
-      const fmt = (n) => n != null && !Number.isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
       const margenBajo = data.margenBajo || [];
       const precioBajo = data.precioBajoCosto || [];
       const sinReceta = data.sinReceta || [];
@@ -332,10 +326,10 @@ $(function () {
       if (tbodyMB) {
         tbodyMB.innerHTML = margenBajo.map(it => `
           <tr>
-            <td>${mod.escapeHtml(it.producto_nombre)}</td>
-            <td>${mod.escapeHtml(it.producto_codigo)}</td>
-            <td class="text-end">$${fmt(it.precio_venta_actual)}</td>
-            <td class="text-end">$${fmt(it.costo_total_porcion)}</td>
+            <td>${GF.escapeHtml(it.producto_nombre)}</td>
+            <td>${GF.escapeHtml(it.producto_codigo)}</td>
+            <td class="text-end">${mod.formatMoney(it.precio_venta_actual)}</td>
+            <td class="text-end">${mod.formatMoney(it.costo_total_porcion)}</td>
             <td class="text-end text-warning">${it.margen_actual_pct != null ? it.margen_actual_pct + '%' : '-'}</td>
           </tr>`).join('');
         if (vacioMB) vacioMB.classList.toggle('d-none', margenBajo.length > 0);
@@ -343,18 +337,18 @@ $(function () {
       if (tbodyPB) {
         tbodyPB.innerHTML = precioBajo.map(it => `
           <tr>
-            <td>${mod.escapeHtml(it.producto_nombre)}</td>
-            <td>${mod.escapeHtml(it.producto_codigo)}</td>
-            <td class="text-end">$${fmt(it.precio_venta_actual)}</td>
-            <td class="text-end text-danger">$${fmt(it.costo_total_porcion)}</td>
+            <td>${GF.escapeHtml(it.producto_nombre)}</td>
+            <td>${GF.escapeHtml(it.producto_codigo)}</td>
+            <td class="text-end">${mod.formatMoney(it.precio_venta_actual)}</td>
+            <td class="text-end text-danger">${mod.formatMoney(it.costo_total_porcion)}</td>
           </tr>`).join('');
         if (vacioPB) vacioPB.classList.toggle('d-none', precioBajo.length > 0);
       }
       if (tbodySR) {
         tbodySR.innerHTML = sinReceta.map(it => `
           <tr>
-            <td>${mod.escapeHtml(it.nombre)}</td>
-            <td>${mod.escapeHtml(it.codigo)}</td>
+            <td>${GF.escapeHtml(it.nombre)}</td>
+            <td>${GF.escapeHtml(it.codigo)}</td>
             <td><a href="/productos" class="btn btn-sm btn-outline-primary">Ir a Productos</a></td>
           </tr>`).join('');
         if (vacioSR) vacioSR.classList.toggle('d-none', sinReceta.length > 0);
@@ -439,7 +433,7 @@ $(function () {
         (data.productos || []).forEach(p => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${mod.escapeHtml(p.producto_nombre || '')}</td>
+            <td>${GF.escapeHtml(p.producto_nombre || '')}</td>
             <td class="text-end">${mod.formatMoney(p.precio_venta)}</td>
             <td class="text-end">${mod.formatMoney(p.cvu_porcion)}</td>
             <td class="text-end">${mod.formatMoney(p.margen_contribucion_porcion)}</td>
@@ -465,7 +459,7 @@ $(function () {
       items.forEach(cf => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${mod.escapeHtml(cf.nombre)}</td>
+          <td>${GF.escapeHtml(cf.nombre)}</td>
           <td class="text-end">${mod.formatMoney(cf.monto_mensual)}</td>
           <td>${cf.activo ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</td>
           <td class="text-end">

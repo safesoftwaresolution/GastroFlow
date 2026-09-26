@@ -10,14 +10,7 @@ function hideError() {
 }
 
 function setLoading(loading) {
-    const btn = document.getElementById('btnCrearLocal');
-    if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Creando...';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Crear mi local';
-    }
+    GF.cargando(document.getElementById('btnCrearLocal'), loading, 'Creando...');
 }
 
 document.getElementById('crearLocalForm').addEventListener('submit', async function (e) {
@@ -42,16 +35,10 @@ document.getElementById('crearLocalForm').addEventListener('submit', async funct
     setLoading(true);
 
     try {
-        const response = await fetch('/onboarding/crear-local', {
+        const data = await GF.api('/onboarding/crear-local', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'No se pudo crear el local');
-        }
+            body: payload
+        }, 'No se pudo crear el local');
 
         window.location.href = data.redirect || '/onboarding/pendiente';
     } catch (error) {
