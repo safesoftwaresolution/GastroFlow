@@ -1,4 +1,5 @@
 const PagarItemIndividualService = require('./PagarItemIndividualService');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class PagarMultiplesItemsService {
     /**
@@ -46,8 +47,7 @@ class PagarMultiplesItemsService {
                 );
                 if (rows.length > 0) {
                     const { pedido_id, mesa_id } = rows[0];
-                    const RealtimeEvents = require('../../Shared/RealtimeEvents');
-                    RealtimeEvents.emit('orderCreated', {
+                    RealtimeEvents.emitPedido({
                         tenantId,
                         pedidoId: pedido_id,
                         mesaId: mesa_id,

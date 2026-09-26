@@ -10,6 +10,7 @@
  * factura.
  */
 const PromocionRepository = require('../../repositories/Tenant/PromocionRepository');
+const { hoyColombia } = require('../../utils/dateHelpers');
 const cacheService = require('../Shared/CacheService');
 
 const DIAS_SET = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
@@ -172,7 +173,7 @@ class PromocionService {
         const cacheKey = `promociones_vigentes_${tenantId}`;
         let candidatas = cacheService.get(cacheKey);
         if (!candidatas) {
-            const fechaHoy = PromocionService._hoyColombia();
+            const fechaHoy = hoyColombia();
             const promos = await PromocionRepository.getActivasVigentes(tenantId, fechaHoy);
             const promoIds = promos.map(p => p.id);
             const { productosPorPromocion, categoriasPorPromocion } =
@@ -224,10 +225,6 @@ class PromocionService {
         const pad = n => String(n).padStart(2, '0');
         const horaActual = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
         return { diaActual, horaActual };
-    }
-
-    static _hoyColombia() {
-        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     }
 
     static _invalidarCache(tenantId) {

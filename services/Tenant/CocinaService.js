@@ -5,6 +5,7 @@
  */
 
 const CocinaRepository = require('../../repositories/Tenant/CocinaRepository');
+const RealtimeEvents = require('../Shared/RealtimeEvents');
 
 class CocinaService {
     /**
@@ -56,18 +57,12 @@ class CocinaService {
             throw new Error('Pedido no encontrado');
         }
 
-        try {
-            const RealtimeEvents = require('../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId: pedido.id,
-                mesaId: pedido.mesa_id,
-                action: 'billed'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE al completar pedido POS:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId: pedido.id,
+            mesaId: pedido.mesa_id,
+            action: 'billed'
+        });
 
         return { message: 'Pedido completado' };
     }
@@ -91,18 +86,12 @@ class CocinaService {
             console.error('Error al borrar borrador POS asociado al cancelar desde cocina:', err);
         }
 
-        try {
-            const RealtimeEvents = require('../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId: pedido.id,
-                mesaId: pedido.mesa_id,
-                action: 'cancelled'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE al cancelar pedido POS:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId: pedido.id,
+            mesaId: pedido.mesa_id,
+            action: 'cancelled'
+        });
 
         return pedido;
     }

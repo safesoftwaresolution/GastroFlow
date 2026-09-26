@@ -1,40 +1,6 @@
 const db = require('../../../config/database');
+const { SQL_COLOMBIA, hoyColombia, rangoUtcColombia, toFechaDia } = require('../../../utils/dateHelpers');
 const cacheService = require('../../Shared/CacheService');
-
-/**
- * Convierte un rango de fechas en hora local colombiana (Bogotá GMT-5)
- * a su rango correspondiente en fechas UTC reales ('YYYY-MM-DD HH:mm:ss').
- * Permite realizar búsquedas indexadas (SARGABLE) sin usar DATE(CONVERT_TZ(...)).
- */
-function getUtcRangeForColombia(desde, hasta) {
-    const utcDesde = `${desde} 05:00:00`;
-    const utcHastaDate = new Date(`${hasta}T23:59:59`);
-    utcHastaDate.setHours(utcHastaDate.getHours() + 5);
-
-    const y = utcHastaDate.getFullYear();
-    const m = String(utcHastaDate.getMonth() + 1).padStart(2, '0');
-    const d = String(utcHastaDate.getDate()).padStart(2, '0');
-    const hh = String(utcHastaDate.getHours()).padStart(2, '0');
-    const mm = String(utcHastaDate.getMinutes()).padStart(2, '0');
-    const ss = String(utcHastaDate.getSeconds()).padStart(2, '0');
-
-    const utcHasta = `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
-    return { utcDesde, utcHasta };
-}
-
-/**
- * Retorna el rango UTC exacto que cubre un único día en hora colombiana.
- */
-function getUtcDayRangeForColombia(dateStr) {
-    const utcDesde = `${dateStr} 05:00:00`;
-    const nextDay = new Date(`${dateStr}T12:00:00`);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const y = nextDay.getFullYear();
-    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
-    const d = String(nextDay.getDate()).padStart(2, '0');
-    const utcHasta = `${y}-${m}-${d} 04:59:59`;
-    return { utcDesde, utcHasta };
-}
 
 class TenantStatsService {
     /**
@@ -110,35 +76,28 @@ class TenantStatsService {
         const [mesasRows] = await db.query(`SELECT COUNT(*) AS cnt FROM mesas WHERE tenant_id IS NOT NULL`);
         const [recientesRow] = await db.query(`
             SELECT COUNT(*) AS cantidad FROM tenants
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            WHERE created_at >= DATE_SUB(${SQL_COLOMBIA.hoy}, INTERVAL 30 DAY)
         `);
         const [historicoRows] = await db.query(`
             SELECT DATE_FORMAT(created_at, '%Y-%m') AS mes, COUNT(*) AS cantidad
             FROM tenants
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            WHERE created_at >= DATE_SUB(${SQL_COLOMBIA.hoy}, INTERVAL 6 MONTH)
             GROUP BY mes
             ORDER BY mes ASC
         `);
 
-        // Ventas del mes actuales diarias (Bogotá UTC-5)
-        const bogotaOffset = -5;
-        const now = new Date();
-        const bogotaDate = new Date(now.getTime() + bogotaOffset * 3600000);
-        const yyyy = bogotaDate.getUTCFullYear();
-        const mm = String(bogotaDate.getUTCMonth() + 1).padStart(2, '0');
-        const dd = String(bogotaDate.getUTCDate()).padStart(2, '0');
-
-        const hoyColombia = `${yyyy}-${mm}-${dd}`;
-        const mesInicioStr = `${yyyy}-${mm}-01`;
-        const diaHoy = bogotaDate.getUTCDate(); // Día actual en Bogotá
-        const parts = [String(yyyy), mm, dd];
+        // Ventas del mes actuales diarias (día Colombia)
+        const hoy = hoyColombia();
+        const parts = hoy.split('-'); // [yyyy, mm, dd]
+        const mesInicioStr = `${parts[0]}-${parts[1]}-01`;
+        const diaHoy = Number(parts[2]);
 
         // Rango de fechas UTC para el mes actual colombia
-        const { utcDesde: utcMesInicio, utcHasta: utcMesFin } = getUtcRangeForColombia(mesInicioStr, hoyColombia);
+        const { utcDesde: utcMesInicio, utcHasta: utcMesFin } = rangoUtcColombia(mesInicioStr, hoy);
 
         const [ventasDiaRows] = await db.query(
             `
-            SELECT DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) AS fecha_colombia, SUM(total) as total
+            SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
             WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
@@ -149,10 +108,7 @@ class TenantStatsService {
 
         const ventasPorFecha = {};
         ventasDiaRows.forEach(r => {
-            const f =
-                r.fecha_colombia instanceof Date
-                    ? r.fecha_colombia.toISOString().split('T')[0]
-                    : String(r.fecha_colombia || '').substring(0, 10);
+            const f = toFechaDia(r.fecha_colombia);
             ventasPorFecha[f] = parseFloat(r.total || 0);
         });
 
@@ -167,7 +123,7 @@ class TenantStatsService {
 
         const [ventasEventosDiaRows] = await db.query(
             `
-            SELECT DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) AS fecha_colombia, SUM(total) as total
+            SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
             WHERE evento_id IS NOT NULL AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
@@ -178,10 +134,7 @@ class TenantStatsService {
 
         const ventasEventosPorFecha = {};
         ventasEventosDiaRows.forEach(r => {
-            const f =
-                r.fecha_colombia instanceof Date
-                    ? r.fecha_colombia.toISOString().split('T')[0]
-                    : String(r.fecha_colombia || '').substring(0, 10);
+            const f = toFechaDia(r.fecha_colombia);
             ventasEventosPorFecha[f] = parseFloat(r.total || 0);
         });
 
@@ -205,14 +158,14 @@ class TenantStatsService {
         const diasEnMesAnterior = new Date(mesAnteriorY, mesAnteriorM, 0).getDate();
         const mesAnteriorFinStr = `${mesAnteriorY}-${String(mesAnteriorM).padStart(2, '0')}-${String(diasEnMesAnterior).padStart(2, '0')}`;
 
-        const { utcDesde: utcMesAntInicio, utcHasta: utcMesAntFin } = getUtcRangeForColombia(
+        const { utcDesde: utcMesAntInicio, utcHasta: utcMesAntFin } = rangoUtcColombia(
             mesAnteriorInicioStr,
             mesAnteriorFinStr
         );
 
         const [ventasDiaAntRows] = await db.query(
             `
-            SELECT DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) AS fecha_colombia, SUM(total) as total
+            SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
             WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
@@ -223,10 +176,7 @@ class TenantStatsService {
 
         const ventasPorFechaAnt = {};
         ventasDiaAntRows.forEach(r => {
-            const f =
-                r.fecha_colombia instanceof Date
-                    ? r.fecha_colombia.toISOString().split('T')[0]
-                    : String(r.fecha_colombia || '').substring(0, 10);
+            const f = toFechaDia(r.fecha_colombia);
             ventasPorFechaAnt[f] = parseFloat(r.total || 0);
         });
 
@@ -252,7 +202,7 @@ class TenantStatsService {
 
         const [ventasTenantRows] = await db.query(
             `
-            SELECT t.nombre AS tenant_nombre, DATE(CONVERT_TZ(f.fecha, '+00:00', '-05:00')) AS fecha_colombia, SUM(f.total) as total
+            SELECT t.nombre AS tenant_nombre, ${SQL_COLOMBIA.dia('f.fecha')} AS fecha_colombia, SUM(f.total) as total
             FROM facturas f
             JOIN tenants t ON f.tenant_id = t.id
             WHERE f.evento_id IS NULL AND f.fecha BETWEEN ? AND ?
@@ -263,10 +213,7 @@ class TenantStatsService {
         );
 
         ventasTenantRows.forEach(r => {
-            const f =
-                r.fecha_colombia instanceof Date
-                    ? r.fecha_colombia.toISOString().split('T')[0]
-                    : String(r.fecha_colombia || '').substring(0, 10);
+            const f = toFechaDia(r.fecha_colombia);
             const t = r.tenant_nombre || 'Desconocido';
             if (!ventasPorTenantYFecha[t]) {
                 ventasPorTenantYFecha[t] = {};
@@ -287,7 +234,7 @@ class TenantStatsService {
         });
 
         // Ventas de hoy directas
-        const { utcDesde: utcHoyInicio, utcHasta: utcHoyFin } = getUtcDayRangeForColombia(hoyColombia);
+        const { utcDesde: utcHoyInicio, utcHasta: utcHoyFin } = rangoUtcColombia(hoy);
         const [ventasHoyDirectas] = await db.query(
             `
             SELECT t.nombre AS tenant_nombre, COALESCE(SUM(f.total), 0) AS total, COUNT(f.id) AS facturas

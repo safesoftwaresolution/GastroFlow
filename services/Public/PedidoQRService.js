@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const NumeracionRepository = require('../../repositories/Tenant/NumeracionRepository');
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
 const InventarioService = require('../Tenant/InventarioService'); // Para validación de stock
@@ -96,11 +97,7 @@ class PedidoQRService {
                 }
             } else {
                 // Crear un nuevo pedido con origen='qr' (numeración reiniciada cada día)
-                const [numResult] = await connection.query(
-                    `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00')`,
-                    [tenantId]
-                );
-                const siguienteNumero = numResult[0].siguiente;
+                const siguienteNumero = await NumeracionRepository.siguienteNumeroPedidoDelDia(connection, tenantId);
                 pedidoNumero = siguienteNumero;
 
                 const [insert] = await connection.query(
@@ -224,7 +221,7 @@ class PedidoQRService {
             await connection.commit();
 
             // Emitir evento para notificaciones en tiempo real en el panel administrativo
-            RealtimeEvents.emit('orderCreated', { 
+            RealtimeEvents.emitPedido({ 
                 tenantId, 
                 pedidoId, 
                 mesaId,

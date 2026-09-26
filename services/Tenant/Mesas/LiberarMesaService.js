@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class LiberarMesaService {
     /**
@@ -43,16 +44,11 @@ class LiberarMesaService {
             await connection.commit();
 
             // Emitir evento SSE para notificar en tiempo real que se liberó la mesa
-            try {
-                const RealtimeEvents = require('../../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
-                    tenantId,
-                    mesaId,
-                    action: 'cancelled'
-                });
-            } catch (err) {
-                console.error('Error al emitir evento de liberación SSE:', err);
-            }
+            RealtimeEvents.emitPedido({
+                tenantId,
+                mesaId,
+                action: 'cancelled'
+            });
 
             return { message: 'Mesa liberada' };
         } catch (error) {

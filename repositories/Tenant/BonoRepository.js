@@ -3,7 +3,7 @@
  * regalado, identificado por código) y su historial de movimientos.
  */
 const db = require('../../config/database');
-const { toFechaDia } = require('../../utils/dateHelpers');
+const { SQL_COLOMBIA, toFechaDia } = require('../../utils/dateHelpers');
 
 // fecha_vencimiento siempre como 'YYYY-MM-DD' (en producción llega como Date).
 const normalizar = fila => (fila ? { ...fila, fecha_vencimiento: toFechaDia(fila.fecha_vencimiento) } : null);
@@ -182,7 +182,7 @@ class BonoRepository {
             `UPDATE bonos SET estado = 'vencido'
              WHERE estado = 'activo' AND saldo_actual > 0
                AND fecha_vencimiento IS NOT NULL
-               AND fecha_vencimiento < DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00'))`
+               AND fecha_vencimiento < ${SQL_COLOMBIA.hoy}`
         );
         return result.affectedRows;
     }

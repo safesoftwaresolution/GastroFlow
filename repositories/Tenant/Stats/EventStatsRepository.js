@@ -1,24 +1,5 @@
 const db = require('../../../config/database');
-
-/**
- * Convierte un rango de fechas en hora local colombiana (Bogotá GMT-5)
- * a su rango correspondiente en fechas UTC reales ('YYYY-MM-DD HH:mm:ss').
- */
-function getUtcRangeForColombia(desde, hasta) {
-    const utcDesde = `${desde} 05:00:00`;
-    const utcHastaDate = new Date(`${hasta}T23:59:59`);
-    utcHastaDate.setHours(utcHastaDate.getHours() + 5);
-    
-    const y = utcHastaDate.getFullYear();
-    const m = String(utcHastaDate.getMonth() + 1).padStart(2, '0');
-    const d = String(utcHastaDate.getDate()).padStart(2, '0');
-    const hh = String(utcHastaDate.getHours()).padStart(2, '0');
-    const mm = String(utcHastaDate.getMinutes()).padStart(2, '0');
-    const ss = String(utcHastaDate.getSeconds()).padStart(2, '0');
-    
-    const utcHasta = `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
-    return { utcDesde, utcHasta };
-}
+const { rangoUtcColombia } = require('../../../utils/dateHelpers');
 
 class EventStatsRepository {
     static async getEventStatsForDashboard(tenantId, desde, hasta) {
@@ -29,7 +10,7 @@ class EventStatsRepository {
             [tenantId, hasta, desde]
         );
 
-        const { utcDesde, utcHasta } = getUtcRangeForColombia(desde, hasta);
+        const { utcDesde, utcHasta } = rangoUtcColombia(desde, hasta);
         const [ventasEventos] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
              FROM facturas 
@@ -45,7 +26,7 @@ class EventStatsRepository {
     }
 
     static async getVentasPorEventoEnRango(tenantId, desde, hasta) {
-        const { utcDesde, utcHasta } = getUtcRangeForColombia(desde, hasta);
+        const { utcDesde, utcHasta } = rangoUtcColombia(desde, hasta);
         const [rows] = await db.query(
             `SELECT e.id, e.nombre AS evento_nombre,
                     COUNT(f.id) AS cantidad_ventas,

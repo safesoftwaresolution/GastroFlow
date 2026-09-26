@@ -1,37 +1,8 @@
 const db = require('../../../config/database');
+const { SQL_COLOMBIA, hoyColombia, rangoUtcColombia, sumarDias, toFechaDia } = require('../../../utils/dateHelpers');
 const cacheService = require('../../Shared/CacheService');
 
 const PERIODOS_VALIDOS = [7, 30, 90, 180, 365];
-
-/**
- * Convierte un rango de fechas en hora local colombiana (Bogotá GMT-5)
- * a su rango correspondiente en fechas UTC reales ('YYYY-MM-DD HH:mm:ss').
- * Mismo patrón que TenantStatsService/SalesStatsRepository.
- */
-function getUtcRangeForColombia(desde, hasta) {
-    const utcDesde = `${desde} 05:00:00`;
-    const utcHastaDate = new Date(`${hasta}T23:59:59`);
-    utcHastaDate.setHours(utcHastaDate.getHours() + 5);
-
-    const y = utcHastaDate.getFullYear();
-    const m = String(utcHastaDate.getMonth() + 1).padStart(2, '0');
-    const d = String(utcHastaDate.getDate()).padStart(2, '0');
-    const hh = String(utcHastaDate.getHours()).padStart(2, '0');
-    const mm = String(utcHastaDate.getMinutes()).padStart(2, '0');
-    const ss = String(utcHastaDate.getSeconds()).padStart(2, '0');
-
-    return { utcDesde, utcHasta: `${y}-${m}-${d} ${hh}:${mm}:${ss}` };
-}
-
-function addDays(dateStr, days) {
-    const d = new Date(`${dateStr}T12:00:00`);
-    d.setDate(d.getDate() + days);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function dateKeyOf(value) {
-    return value instanceof Date ? value.toISOString().split('T')[0] : String(value || '').substring(0, 10);
-}
 
 /**
  * % de crecimiento entre dos periodos. Si no hubo datos en el periodo anterior
@@ -61,14 +32,14 @@ class CrecimientoStatsService {
             return cached;
         }
 
-        const hoyColombia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-        const desde = addDays(hoyColombia, -(periodoDias - 1));
-        const hasta = hoyColombia;
-        const hastaAnterior = addDays(desde, -1);
-        const desdeAnterior = addDays(hastaAnterior, -(periodoDias - 1));
+        const hoy = hoyColombia();
+        const desde = sumarDias(hoy, -(periodoDias - 1));
+        const hasta = hoy;
+        const hastaAnterior = sumarDias(desde, -1);
+        const desdeAnterior = sumarDias(hastaAnterior, -(periodoDias - 1));
 
-        const { utcDesde, utcHasta } = getUtcRangeForColombia(desde, hasta);
-        const { utcDesde: utcDesdeAnt, utcHasta: utcHastaAnt } = getUtcRangeForColombia(desdeAnterior, hastaAnterior);
+        const { utcDesde, utcHasta } = rangoUtcColombia(desde, hasta);
+        const { utcDesde: utcDesdeAnt, utcHasta: utcHastaAnt } = rangoUtcColombia(desdeAnterior, hastaAnterior);
 
         const [
             [resumenTenants],
@@ -95,13 +66,13 @@ class CrecimientoStatsService {
                  FROM facturas WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?`,
                 [utcDesdeAnt, utcHastaAnt]
             ),
-            db.query(`SELECT COUNT(*) AS cantidad FROM tenants WHERE DATE(created_at) BETWEEN ? AND ?`, [desde, hasta]),
-            db.query(`SELECT COUNT(*) AS cantidad FROM tenants WHERE DATE(created_at) BETWEEN ? AND ?`, [
-                desdeAnterior,
-                hastaAnterior
+            db.query(`SELECT COUNT(*) AS cantidad FROM tenants WHERE created_at BETWEEN ? AND ?`, [utcDesde, utcHasta]),
+            db.query(`SELECT COUNT(*) AS cantidad FROM tenants WHERE created_at BETWEEN ? AND ?`, [
+                utcDesdeAnt,
+                utcHastaAnt
             ]),
             db.query(
-                `SELECT DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) AS fecha_col,
+                `SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_col,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
                  WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
@@ -126,7 +97,7 @@ class CrecimientoStatsService {
                 [utcDesdeAnt, utcHastaAnt]
             ),
             db.query(
-                `SELECT DATE_FORMAT(CONVERT_TZ(fecha, '+00:00', '-05:00'), '%Y-%m') AS ym,
+                `SELECT DATE_FORMAT(${SQL_COLOMBIA.aColombia('fecha')}, '%Y-%m') AS ym,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
                  WHERE evento_id IS NULL AND fecha >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
@@ -156,14 +127,14 @@ class CrecimientoStatsService {
         // --- Tendencia en el tiempo (rellena días sin ventas con 0) ---
         const ventasPorFecha = {};
         tendenciaRows.forEach(r => {
-            ventasPorFecha[dateKeyOf(r.fecha_col)] = {
+            ventasPorFecha[toFechaDia(r.fecha_col)] = {
                 ventas: parseFloat(r.ventas || 0),
                 facturas: parseInt(r.facturas || 0, 10)
             };
         });
         const tendencia = [];
         for (let i = 0; i < periodoDias; i++) {
-            const fecha = addDays(desde, i);
+            const fecha = sumarDias(desde, i);
             const punto = ventasPorFecha[fecha] || { ventas: 0, facturas: 0 };
             tendencia.push({ fecha, ventas: punto.ventas, facturas: punto.facturas });
         }

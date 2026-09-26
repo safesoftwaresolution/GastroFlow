@@ -4,6 +4,7 @@
  */
 
 const db = require('../../config/database');
+const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
 class EventoRepository {
     static async findAllByTenant(tenantId, filters = {}) {
@@ -27,10 +28,7 @@ class EventoRepository {
     }
 
     static async findById(id, tenantId) {
-        const [rows] = await db.query(
-            'SELECT * FROM eventos WHERE id = ? AND tenant_id = ?',
-            [id, tenantId]
-        );
+        const [rows] = await db.query('SELECT * FROM eventos WHERE id = ? AND tenant_id = ?', [id, tenantId]);
         return rows[0] || null;
     }
 
@@ -58,18 +56,21 @@ class EventoRepository {
 
     static async update(id, tenantId, data) {
         const { nombre, fecha_inicio, fecha_fin, descripcion, activo, tipo } = data;
-        const tipoVal = tipo === 'ocasional' ? 'ocasional' : (tipo === 'permanente' ? 'permanente' : undefined);
-        const updates = ['nombre = ?', 'fecha_inicio = ?', 'fecha_fin = ?', 'descripcion = ?', 'activo = COALESCE(?, activo)'];
+        const tipoVal = tipo === 'ocasional' ? 'ocasional' : tipo === 'permanente' ? 'permanente' : undefined;
+        const updates = [
+            'nombre = ?',
+            'fecha_inicio = ?',
+            'fecha_fin = ?',
+            'descripcion = ?',
+            'activo = COALESCE(?, activo)'
+        ];
         const params = [nombre, fecha_inicio, fecha_fin, descripcion || null, activo];
         if (tipoVal !== undefined) {
             updates.push('tipo = ?');
             params.push(tipoVal);
         }
         params.push(id, tenantId);
-        await db.query(
-            `UPDATE eventos SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`,
-            params
-        );
+        await db.query(`UPDATE eventos SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`, params);
     }
 
     static async delete(id, tenantId) {
@@ -99,7 +100,7 @@ class EventoRepository {
         return rows;
     }
 
-    /** 
+    /**
      * Obtiene los eventos que están en curso hoy, o que comenzarán en los próximos "dias" días.
      */
     static async getProximosEventos(tenantId, dias = 8) {
@@ -107,7 +108,7 @@ class EventoRepository {
             `SELECT id, nombre, fecha_inicio, fecha_fin, descripcion, tipo 
              FROM eventos 
              WHERE tenant_id = ? AND activo = 1 
-             AND (fecha_inicio <= DATE_ADD(CURDATE(), INTERVAL ? DAY) AND fecha_fin >= CURDATE())
+             AND (fecha_inicio <= DATE_ADD(${SQL_COLOMBIA.hoy}, INTERVAL ? DAY) AND fecha_fin >= ${SQL_COLOMBIA.hoy})
              ORDER BY fecha_inicio ASC`,
             [tenantId, dias]
         );

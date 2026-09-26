@@ -1,4 +1,6 @@
 const db = require('../../config/database');
+const NumeracionRepository = require('./NumeracionRepository');
+const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
 class POSRepository {
     static async getProductosActivos(tenantId) {
@@ -219,7 +221,8 @@ class POSRepository {
         const [rows] = await db.query(
             `SELECT COUNT(*) AS num_ordenes, COALESCE(SUM(total), 0) AS total_hoy
              FROM facturas
-             WHERE tenant_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY`,
+             WHERE tenant_id = ? AND fecha >= ${SQL_COLOMBIA.inicioHoyUtc}
+               AND fecha < ${SQL_COLOMBIA.hastaDia(SQL_COLOMBIA.hoy)}`,
             [tenantId]
         );
         return rows[0] || { num_ordenes: 0, total_hoy: 0 };
@@ -309,11 +312,7 @@ class POSRepository {
 
             // FOR UPDATE serializa contra otros envíos POS concurrentes del mismo tenant
             // mientras dure la transacción (ver AbrirPedidoService, mismo patrón).
-            const [numResult] = await connection.query(
-                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00') FOR UPDATE`,
-                [tenantId]
-            );
-            const siguienteNumero = numResult[0].siguiente;
+            const siguienteNumero = await NumeracionRepository.siguienteNumeroPedidoDelDia(connection, tenantId);
             const numeroMesa = `POS-${siguienteNumero}`;
 
             // numeroMesa se reinicia cada día, pero mesas.numero es único por tenant PARA

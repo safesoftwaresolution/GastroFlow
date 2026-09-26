@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class PagarItemIndividualService {
     /**
@@ -158,18 +159,12 @@ class PagarItemIndividualService {
 
         if (!skipEvent) {
             // Emitir evento SSE
-            try {
-                const RealtimeEvents = require('../../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
-                    tenantId,
-                    pedidoId: item.pedido_id,
-                    mesaId: item.mesa_id,
-                    action: 'items_updated'
-                });
-            } catch (err) {
-                // eslint-disable-next-line no-console
-                console.error('Error al emitir evento SSE en PagarItemIndividualService:', err);
-            }
+            RealtimeEvents.emitPedido({
+                tenantId,
+                pedidoId: item.pedido_id,
+                mesaId: item.mesa_id,
+                action: 'items_updated'
+            });
         }
 
         return { message: 'Item pagado correctamente' };

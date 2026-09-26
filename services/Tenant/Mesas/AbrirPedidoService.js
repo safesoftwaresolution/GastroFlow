@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const NumeracionRepository = require('../../../repositories/Tenant/NumeracionRepository');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class AbrirPedidoService {
@@ -40,11 +41,7 @@ class AbrirPedidoService {
             // reiniciado cada día como un ticket de cocina). El día es el de Colombia:
             // antes se usaba DATE(created_at) = CURDATE(), que con MySQL en UTC
             // reiniciaba la numeración a las 7 p. m., en pleno servicio.
-            const [numResult] = await connection.query(
-                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00')`,
-                [tenantId]
-            );
-            const siguienteNumero = numResult[0].siguiente;
+            const siguienteNumero = await NumeracionRepository.siguienteNumeroPedidoDelDia(connection, tenantId);
 
             const [insert] = await connection.query(
                 `INSERT INTO pedidos (tenant_id, mesa_id, cliente_id, estado, total, notas, numero) VALUES (?, ?, ?, 'abierto', 0, ?, ?)`,

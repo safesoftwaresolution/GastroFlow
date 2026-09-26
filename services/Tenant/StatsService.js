@@ -5,6 +5,7 @@
  */
 
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
+const { hoyColombia } = require('../../utils/dateHelpers');
 const InventarioService = require('./InventarioService');
 const cacheService = require('../Shared/CacheService');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
@@ -31,7 +32,7 @@ class StatsService {
         }
 
         // Calcular fechas en timezone Colombia (America/Bogota), no en UTC
-        const fechaHoyColombia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); // 'YYYY-MM-DD'
+        const fechaHoyColombia = hoyColombia(); // 'YYYY-MM-DD'
         const [anioColombia, mesColombia] = fechaHoyColombia.split('-').map(Number);
         const ultimoDiaMes = new Date(anioColombia, mesColombia, 0).getDate();
         const mesInicioStr = `${anioColombia}-${String(mesColombia).padStart(2, '0')}-01`;

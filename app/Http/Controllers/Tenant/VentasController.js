@@ -2,7 +2,7 @@ const VentaService = require('../../../../services/Tenant/VentaService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
 const EventoService = require('../../../../services/Tenant/EventoService');
 const SalesStatsRepository = require('../../../../repositories/Tenant/Stats/SalesStatsRepository');
-const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
+const { hoyColombia, toFechaISOUtc } = require('../../../../utils/dateHelpers');
 let ExcelJS;
 
 class VentasController {
@@ -30,12 +30,12 @@ class VentasController {
             }
             // "Ventas hoy" (siempre el día actual en zona Colombia, independiente del
             // rango de filtro de arriba), desglosado por medio de pago igual que el dashboard.
-            const hoyColombia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+            const hoy = hoyColombia();
 
             const [ventas, mesasListas, hoyTotals] = await Promise.all([
                 VentaService.getWithFilters(tenantId, filters),
                 VentaService.getTablesReadyToPay(tenantId),
-                SalesStatsRepository.getTotalsByPaymentMethod(tenantId, { desde: hoyColombia, hasta: hoyColombia })
+                SalesStatsRepository.getTotalsByPaymentMethod(tenantId, { desde: hoy, hasta: hoy })
             ]);
             const ventasHoy = {
                 efectivo: hoyTotals.efectivo || 0,

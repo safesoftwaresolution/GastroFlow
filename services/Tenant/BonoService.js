@@ -4,6 +4,7 @@
  * transacción de facturación, vive en FacturarPedidoService + BonoRepository.redimir).
  */
 const BonoRepository = require('../../repositories/Tenant/BonoRepository');
+const { hoyColombia } = require('../../utils/dateHelpers');
 const BonoPlantillas = require('./BonoPlantillas');
 
 // Sin 0/O ni 1/I/L: se leen en voz alta o se escriben a mano en el recibo sin
@@ -246,10 +247,7 @@ class BonoService {
         if (bono.estado === 'anulado') {
             throw new Error('Este bono fue anulado');
         }
-        if (
-            bono.estado === 'vencido' ||
-            (bono.fecha_vencimiento && bono.fecha_vencimiento < BonoService._hoyColombia())
-        ) {
+        if (bono.estado === 'vencido' || (bono.fecha_vencimiento && bono.fecha_vencimiento < hoyColombia())) {
             throw new Error('Este bono está vencido');
         }
         if (bono.estado === 'agotado' || Number(bono.saldo_actual) <= 0) {
@@ -262,12 +260,6 @@ class BonoService {
         return String(codigo || '')
             .trim()
             .toUpperCase();
-    }
-
-    static _hoyColombia() {
-        // 'YYYY-MM-DD', mismo criterio que ya usa el resto del proyecto (ver
-        // VentasController, SalesStatsRepository) para comparar contra columnas DATE.
-        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     }
 
     static async marcarVencidos() {

@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const SincronizarPrecioPromoService = require('./SincronizarPrecioPromoService');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class UpdateItemCantidadService {
     /**
@@ -42,18 +43,12 @@ class UpdateItemCantidadService {
         const subtotal = Number(actualizado[0]?.subtotal) || 0;
 
         // Emitir evento SSE
-        try {
-            const RealtimeEvents = require('../../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId: pedido_id,
-                mesaId: mesa_id,
-                action: 'items_updated'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE en UpdateItemCantidadService:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId: pedido_id,
+            mesaId: mesa_id,
+            action: 'items_updated'
+        });
 
         return { message: 'Cantidad actualizada', subtotal };
     }

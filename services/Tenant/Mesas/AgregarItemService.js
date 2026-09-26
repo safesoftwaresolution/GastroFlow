@@ -2,6 +2,7 @@ const db = require('../../../config/database');
 const InventarioService = require('../InventarioService');
 const ModificadorService = require('../ModificadorService');
 const SincronizarPrecioPromoService = require('./SincronizarPrecioPromoService');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class AgregarItemService {
     static async execute({
@@ -134,18 +135,12 @@ class AgregarItemService {
         await SincronizarPrecioPromoService.ejecutar(tenantId, pedidoId, realProductId);
 
         // Emitir evento SSE
-        try {
-            const RealtimeEvents = require('../../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId,
-                mesaId,
-                action: 'items_updated'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE en AgregarItemService:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId,
+            mesaId,
+            action: 'items_updated'
+        });
 
         return { id: itemId };
     }

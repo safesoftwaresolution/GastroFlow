@@ -95,7 +95,24 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
 - **Realtime** is Server-Sent Events, not WebSockets: `services/Shared/RealtimeEvents.js` is an in-process
   `EventEmitter` bus (`orderCreated`, `mesaSolicitud`, ...) that feeds Cocina/Mesas/POS/Dashboard through
   the single subscription endpoint `GET /api/notifications/subscribe`. This only works for a single
-  process — it won't fan out across multiple server instances/workers.
+  process — it won't fan out across multiple server instances/workers. Emit through the helpers
+  (`RealtimeEvents.emitPedido(...)`, `emitMesasChanged(tenantId)`, `emitVentaRegistrada(tenantId)`), which
+  never throw — don't call `events.emit` wrapped in a local try/catch.
+
+- **Dates / timezone — use `utils/dateHelpers.js`, never compute "today" by hand.** DB timestamps are UTC
+  and production MySQL runs in UTC, so `CURDATE()`, `NOW()`, `DATE(col)` and
+  `new Date().toISOString().slice(0, 10)` all give the UTC day, which flips at 7 p.m. in Colombia (this
+  caused several bugs). Use `hoyColombia()`, `sumarDias`, `sumarMeses` (month-end safe),
+  `rangoUtcColombia(desde, hasta)` for `BETWEEN` on UTC columns, and the `SQL_COLOMBIA` fragments
+  (`hoy`, `inicioHoyUtc`, `dia(col)`, `desdeDia()`/`hastaDia()`, `aColombia(col)`, `aUtc()`) inside SQL.
+  In production (`MYSQL_URL`) mysql2 returns `DATE` columns as JS `Date` objects but locally as strings
+  (`dateStrings` never applied in URL mode, see `config/database.js`): normalize with `toFechaDia()`
+  before comparing or string-building.
+
+- **Consecutive numbers** (daily order number, invoice number) come only from
+  `repositories/Tenant/NumeracionRepository.js`, called with the transaction's `connection`. It locks
+  the tenant row before the `MAX()` read — a bare `SELECT MAX(...) FOR UPDATE` deadlocks under
+  concurrent inserts (gap locks).
 
 - **Idempotency**: `middleware/idempotency.js` runs globally and short-circuits duplicate mutating
   requests (POST/PUT/PATCH/DELETE) that carry an `Idempotency-Key` header, caching the response for 30 min

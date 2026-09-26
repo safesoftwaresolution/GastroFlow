@@ -1,24 +1,5 @@
 const db = require('../../../config/database');
-
-/**
- * Convierte un rango de fechas en hora local colombiana (Bogotá GMT-5)
- * a su rango correspondiente en fechas UTC reales ('YYYY-MM-DD HH:mm:ss').
- */
-function getUtcRangeForColombia(desde, hasta) {
-    const utcDesde = `${desde} 05:00:00`;
-    const utcHastaDate = new Date(`${hasta}T23:59:59`);
-    utcHastaDate.setHours(utcHastaDate.getHours() + 5);
-
-    const y = utcHastaDate.getFullYear();
-    const m = String(utcHastaDate.getMonth() + 1).padStart(2, '0');
-    const d = String(utcHastaDate.getDate()).padStart(2, '0');
-    const hh = String(utcHastaDate.getHours()).padStart(2, '0');
-    const mm = String(utcHastaDate.getMinutes()).padStart(2, '0');
-    const ss = String(utcHastaDate.getSeconds()).padStart(2, '0');
-
-    const utcHasta = `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
-    return { utcDesde, utcHasta };
-}
+const { rangoUtcColombia } = require('../../../utils/dateHelpers');
 
 class ProductStatsRepository {
     static async getTopProducts(tenantId, limit = 10, filters = {}) {
@@ -40,7 +21,7 @@ class ProductStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -87,7 +68,7 @@ class ProductStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             ventasSubquery += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -150,7 +131,7 @@ class ProductStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
@@ -185,7 +166,7 @@ class ProductStatsRepository {
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            const { utcDesde, utcHasta } = getUtcRangeForColombia(filters.desde, filters.hasta);
+            const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
             query += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }

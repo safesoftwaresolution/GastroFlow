@@ -15,6 +15,7 @@
  * manual hasta que registren una tarjeta desde /facturacion.
  */
 const db = require('../../config/database');
+const { SQL_COLOMBIA, hoyColombia, sumarMeses, toFechaDia } = require('../../utils/dateHelpers');
 const WompiService = require('../Shared/WompiService');
 const AddonService = require('./AddonService');
 const TenantService = require('./TenantService');
@@ -25,14 +26,19 @@ const CacheService = require('../Shared/CacheService');
 const MAX_INTENTOS = 3;
 const RECONCILIAR_DESPUES_DE_MINUTOS = 60;
 
-function addOneMonth(dateStr) {
-    const d = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
-    d.setMonth(d.getMonth() + 1);
-    return d.toISOString().slice(0, 10);
+/**
+ * Siguiente fecha de cobro. Recibe lo que venga de la BD: en producción la
+ * columna DATE llega como objeto Date (armar `${fecha}T00:00:00` con eso daba
+ * "Invalid time value" y el pago aprobado nunca movía proximo_cobro, dejando al
+ * tenant listo para cobrarse otra vez). Respeta fin de mes (31-ene -> 28-feb).
+ */
+function addOneMonth(fecha) {
+    return sumarMeses(toFechaDia(fecha) || hoyColombia(), 1);
 }
 
+/** Hoy en Colombia: el ciclo de cobro va por días del cliente, no por UTC. */
 function todayStr() {
-    return new Date().toISOString().slice(0, 10);
+    return hoyColombia();
 }
 
 async function enviarCorreoSeguro(opts) {
@@ -95,7 +101,7 @@ class SuscripcionService {
              FROM tenants
              WHERE wompi_payment_source_id IS NOT NULL
                AND proximo_cobro IS NOT NULL
-               AND proximo_cobro <= CURDATE()`
+               AND proximo_cobro <= ${SQL_COLOMBIA.hoy}`
         );
 
         await Promise.all(

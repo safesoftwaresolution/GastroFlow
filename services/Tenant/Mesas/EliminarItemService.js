@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const SincronizarPrecioPromoService = require('./SincronizarPrecioPromoService');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class EliminarItemService {
     static async execute({ tenantId, itemId }) {
@@ -47,19 +48,13 @@ class EliminarItemService {
             }
 
             // Emitir evento SSE
-            try {
-                const action = restantes[0].cnt === 0 ? 'cancelled' : 'items_updated';
-                const RealtimeEvents = require('../../Shared/RealtimeEvents');
-                RealtimeEvents.emit('orderCreated', {
-                    tenantId,
-                    pedidoId: pedido_id,
-                    mesaId: mesa_id,
-                    action
-                });
-            } catch (err) {
-                // eslint-disable-next-line no-console
-                console.error('Error al emitir evento SSE en EliminarItemService:', err);
-            }
+            const action = restantes[0].cnt === 0 ? 'cancelled' : 'items_updated';
+            RealtimeEvents.emitPedido({
+                tenantId,
+                pedidoId: pedido_id,
+                mesaId: mesa_id,
+                action
+            });
 
             return { message: 'Item eliminado y estado de mesa validado' };
         } catch (error) {

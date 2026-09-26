@@ -1,5 +1,6 @@
 const TenantService = require('../../../../services/Admin/TenantService');
 const db = require('../../../../config/database');
+const { SQL_COLOMBIA, hoyColombia } = require('../../../../utils/dateHelpers');
 const cacheService = require('../../../../services/Shared/CacheService');
 const RealtimeEvents = require('../../../../services/Shared/RealtimeEvents');
 
@@ -21,7 +22,7 @@ class DashboardController {
     // GET /admin/dashboard/live-stats
     static async getLiveStats(req, res) {
         try {
-            const hoyColombia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+            const hoy = hoyColombia();
 
             const [ventasHoyRows] = await db.query(
                 `
@@ -35,13 +36,13 @@ class DashboardController {
                     -- comparar DATE(CONVERT_TZ(f.fecha...)), que evaluaba la función en
                     -- cada factura de todos los tenants. Mismo resultado: se
                     -- convierten los límites del día Colombia a UTC.
-                    AND f.fecha >= CONVERT_TZ(?, '-05:00', '+00:00')
-                    AND f.fecha < CONVERT_TZ(DATE_ADD(?, INTERVAL 1 DAY), '-05:00', '+00:00')
+                    AND f.fecha >= ${SQL_COLOMBIA.desdeDia()}
+                    AND f.fecha < ${SQL_COLOMBIA.hastaDia()}
                 WHERE t.activo = 1
                 GROUP BY t.id, t.nombre
                 ORDER BY total DESC
             `,
-                [hoyColombia, hoyColombia]
+                [hoy, hoy]
             );
 
             const ventasHoyPorTenant = ventasHoyRows.map(r => ({
@@ -62,7 +63,7 @@ class DashboardController {
 
             res.json({
                 ok: true,
-                hoyColombia,
+                hoyColombia: hoy,
                 ventasHoyPorTenant,
                 ventasHoyTotalGlobal,
                 totalFacturas: parseInt(factRow.cnt || 0, 10),

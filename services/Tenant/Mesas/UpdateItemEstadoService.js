@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class UpdateItemEstadoService {
     /**
@@ -43,18 +44,12 @@ class UpdateItemEstadoService {
         }
 
         // Emitir evento SSE
-        try {
-            const RealtimeEvents = require('../../Shared/RealtimeEvents');
-            RealtimeEvents.emit('orderCreated', {
-                tenantId,
-                pedidoId: pedido_id,
-                mesaId: mesa_id,
-                action: 'items_updated'
-            });
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('Error al emitir evento SSE en UpdateItemEstadoService:', err);
-        }
+        RealtimeEvents.emitPedido({
+            tenantId,
+            pedidoId: pedido_id,
+            mesaId: mesa_id,
+            action: 'items_updated'
+        });
 
         return { message: 'Estado actualizado', estado };
     }

@@ -28,26 +28,26 @@ const events = new EventEmitter();
 events.setMaxListeners(100);
 
 /**
- * Avisa a las pantallas de Mesas del tenant que deben refrescar la grilla.
- * Nunca lanza: una falla notificando no debe tumbar la acción que ya se guardó.
+ * Emite sin lanzar nunca: si notificar falla, la acción que ya se guardó (un
+ * pedido, una factura...) no debe fallar por eso. Usar siempre estos helpers
+ * en vez de events.emit(...) directo con un try/catch en cada service.
  */
-events.emitMesasChanged = tenantId => {
+function emitirSeguro(evento, datos) {
     try {
-        events.emit('mesasChanged', { tenantId });
+        events.emit(evento, datos);
     } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('Error al emitir mesasChanged:', err);
+        console.error(`Error al emitir ${evento}:`, err);
     }
-};
+}
 
-/** Igual que emitMesasChanged, para facturas nuevas. Nunca lanza. */
-events.emitVentaRegistrada = tenantId => {
-    try {
-        events.emit('ventaRegistrada', { tenantId });
-    } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Error al emitir ventaRegistrada:', err);
-    }
-};
+/** Cambio en un pedido: { tenantId, pedidoId, mesaId, action?, origen? } (evento 'orderCreated'). */
+events.emitPedido = datos => emitirSeguro('orderCreated', datos);
+
+/** Las pantallas de Mesas del tenant deben refrescar la grilla. */
+events.emitMesasChanged = tenantId => emitirSeguro('mesasChanged', { tenantId });
+
+/** Se creó una factura (invalida caché de estadísticas y refresca dashboards). */
+events.emitVentaRegistrada = tenantId => emitirSeguro('ventaRegistrada', { tenantId });
 
 module.exports = events;
