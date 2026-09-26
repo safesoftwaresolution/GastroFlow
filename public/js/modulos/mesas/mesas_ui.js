@@ -438,10 +438,10 @@ $(function () {
 
     if (result.isConfirmed) {
       try {
-        Utils.showLoading('Vaciando pedido...');
+        GF.cargandoPantalla('Vaciando pedido...');
         const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/limpiar`, { method: 'DELETE' });
         const data = await r.json();
-        Utils.hideLoading();
+        GF.cerrarCargando();
 
         if (!r.ok) throw new Error(data.error || 'Error al vaciar pedido');
 
@@ -452,7 +452,7 @@ $(function () {
         if (typeof refreshMesas === 'function') refreshMesas();
         else window.location.reload();
       } catch (err) {
-        Utils.hideLoading();
+        GF.cerrarCargando();
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
       }
     }

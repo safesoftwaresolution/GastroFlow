@@ -10,14 +10,7 @@ function hideError() {
 }
 
 function setLoading(loading) {
-    const btn = document.getElementById('btnCrearLocal');
-    if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Creando...';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Crear mi local';
-    }
+    GF.cargando(document.getElementById('btnCrearLocal'), loading, 'Creando...');
 }
 
 document.getElementById('crearLocalForm').addEventListener('submit', async function (e) {

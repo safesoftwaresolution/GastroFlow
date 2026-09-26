@@ -15,9 +15,7 @@ async function aprobarLocal(id, nombre) {
     if (!confirm.isConfirmed) return;
 
     try {
-        const r = await fetch(`/admin/onboarding/tenants/${id}/aprobar`, { method: 'POST', credentials: 'same-origin' });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'No se pudo aprobar');
+        const data = await GF.api(`/admin/onboarding/tenants/${id}/aprobar`, { method: 'POST' }, 'No se pudo aprobar');
         Swal.fire({ icon: 'success', title: 'Local aprobado', timer: 1500, showConfirmButton: false });
         removeRow(id);
     } catch (error) {
@@ -39,14 +37,11 @@ async function rechazarLocal(id, nombre) {
     if (!isConfirmed) return;
 
     try {
-        const r = await fetch(`/admin/onboarding/tenants/${id}/rechazar`, {
+        const data = await GF.api(`/admin/onboarding/tenants/${id}/rechazar`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ motivo })
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'No se pudo rechazar');
+            body: { motivo }
+        }, 'No se pudo rechazar');
         Swal.fire({ icon: 'success', title: 'Local rechazado', timer: 1500, showConfirmButton: false });
         removeRow(id);
     } catch (error) {
@@ -56,9 +51,7 @@ async function rechazarLocal(id, nombre) {
 
 async function reenviarVerificacion(id) {
     try {
-        const r = await fetch(`/admin/onboarding/usuarios/${id}/reenviar`, { method: 'POST', credentials: 'same-origin' });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'No se pudo reenviar');
+        const data = await GF.api(`/admin/onboarding/usuarios/${id}/reenviar`, { method: 'POST' }, 'No se pudo reenviar');
         Swal.fire({ icon: 'success', title: 'Correo reenviado', timer: 1500, showConfirmButton: false });
     } catch (error) {
         Swal.fire({ icon: 'error', title: 'Error', text: error.message });
@@ -78,9 +71,7 @@ async function eliminarUsuarioPendiente(id, username) {
     if (!confirm.isConfirmed) return;
 
     try {
-        const r = await fetch(`/admin/onboarding/usuarios/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'No se pudo eliminar');
+        const data = await GF.api(`/admin/onboarding/usuarios/${id}`, { method: 'DELETE' }, 'No se pudo eliminar');
         Swal.fire({ icon: 'success', title: 'Usuario eliminado', timer: 1500, showConfirmButton: false });
         removeRow(id);
     } catch (error) {

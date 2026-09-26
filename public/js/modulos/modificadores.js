@@ -11,21 +11,13 @@ const INSUMOS = (function () {
 })();
 const INSUMOS_POR_ID = new Map(INSUMOS.map(i => [String(i.id), i]));
 
-function escapeHtml(s) {
-    return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
 
 function buildInsumoOptions(selectedId) {
     const sel = selectedId != null ? String(selectedId) : '';
     const opts = ['<option value="">— Sin insumo —</option>'];
     INSUMOS.forEach(i => {
         const s = String(i.id) === sel ? ' selected' : '';
-        opts.push(`<option value="${i.id}"${s}>${escapeHtml(i.nombre)}</option>`);
+        opts.push(`<option value="${i.id}"${s}>${GF.escapeHtml(i.nombre)}</option>`);
     });
     return opts.join('');
 }
@@ -96,7 +88,7 @@ function addOpcionRow(nombre = '', precioAdicional = '', insumoId = null, cantid
     const unidad = unidadInsumo || (insumo ? insumo.unidad_base : '');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm opcion-nombre-input" placeholder="Ej: Queso extra" value="${escapeHtml(nombre)}"></td>
+        <td><input type="text" class="form-control form-control-sm opcion-nombre-input" placeholder="Ej: Queso extra" value="${GF.escapeHtml(nombre)}"></td>
         <td><input type="text" inputmode="decimal" class="form-control form-control-sm opcion-precio-input money-input" placeholder="0" value="${MoneyInput.format(String(Math.round(Number(precioAdicional) || 0)))}"></td>
         <td class="col-inventario${hidden}">
             <select class="form-select form-select-sm opcion-insumo-input">${buildInsumoOptions(insumoId)}</select>
@@ -104,7 +96,7 @@ function addOpcionRow(nombre = '', precioAdicional = '', insumoId = null, cantid
         <td class="col-inventario${hidden}">
             <div class="input-group input-group-sm">
                 <input type="number" step="0.0001" min="0" class="form-control opcion-cantidad-input" placeholder="0" value="${cantidadInsumo ?? ''}">
-                <span class="input-group-text opcion-unidad-label">${escapeHtml(unidad || '—')}</span>
+                <span class="input-group-text opcion-unidad-label">${GF.escapeHtml(unidad || '—')}</span>
             </div>
         </td>
         <td><button type="button" class="btn btn-sm btn-outline-danger quitar-opcion" title="Quitar"><i class="bi bi-trash"></i></button></td>

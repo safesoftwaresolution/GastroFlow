@@ -26,9 +26,6 @@ function catIcon(catNombre) {
     return 'bi-egg-fried';
 }
 
-function money(n) {
-    return '$ ' + Math.round(n).toLocaleString('es-CO');
-}
 
 window.POS_UI = {
 
@@ -90,8 +87,8 @@ window.POS_UI = {
             const badge = qty ? `<span class="ppc-qty-badge">${qty}</span>` : '';
             const inCartClass = qty ? ' ppc-in-cart' : '';
             const precioHtml = p.precio_promocion != null
-                ? `<span class="ppc-price"><s class="text-muted small">${money(p.precio_unidad)}</s> ${money(p.precio_promocion)}</span>`
-                : `<span class="ppc-price">${money(p.precio_unidad)}</span>`;
+                ? `<span class="ppc-price"><s class="text-muted small">${GF.dinero(p.precio_unidad)}</s> ${GF.dinero(p.precio_promocion)}</span>`
+                : `<span class="ppc-price">${GF.dinero(p.precio_unidad)}</span>`;
             let promoBadge = '';
             if (p.precio_promocion != null) {
                 promoBadge = `<span class="ppc-promo-badge" title="${p.promocion_nombre || 'Promoción'}"><i class="bi bi-percent"></i></span>`;
@@ -165,7 +162,7 @@ window.POS_UI = {
                         <div class="pci-info">
                             <div class="pci-name">${item.nombre}${descBadge}</div>
                             ${modText}
-                            <div class="pci-unit">${money(item.precio + (item.modificadores_total || 0))} c/u</div>
+                            <div class="pci-unit">${GF.dinero(item.precio + (item.modificadores_total || 0))} c/u</div>
                         </div>
                         <div class="pci-controls">
                             <div class="pci-qty-group">
@@ -177,7 +174,7 @@ window.POS_UI = {
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
                             </div>
-                            <span class="pci-total">${money(sub)}</span>
+                            <span class="pci-total">${GF.dinero(sub)}</span>
                         </div>
                     </div>
                     <div class="pci-actions-row">
@@ -219,12 +216,12 @@ window.POS_UI = {
             totalesEl.innerHTML = `
                 <div class="pos-total-row">
                     <span>Subtotal <span class="pos-units-count">(${units} u.)</span></span>
-                    <span>${money(total)}</span>
+                    <span>${GF.dinero(total)}</span>
                 </div>
                 <div class="pos-total-divider"></div>
                 <div class="pos-total-row pos-total-main">
                     <span>Total</span>
-                    <span class="pos-total-amount" style="color:${emptyColor}">${money(total)}</span>
+                    <span class="pos-total-amount" style="color:${emptyColor}">${GF.dinero(total)}</span>
                 </div>`;
         }
 
@@ -232,7 +229,7 @@ window.POS_UI = {
         if (cobrarBtn) {
             cobrarBtn.disabled = !cart.length;
             const totalSpan = document.getElementById('posCobrarTotal');
-            if (totalSpan) totalSpan.textContent = money(total);
+            if (totalSpan) totalSpan.textContent = GF.dinero(total);
         }
 
         // Badge del tab "Carrito" en móvil
@@ -284,7 +281,7 @@ window.POS_UI = {
         const el1 = document.getElementById('posStatsOrdenes');
         const el2 = document.getElementById('posStatsTotal');
         if (el1) el1.textContent = num_ordenes || 0;
-        if (el2) el2.textContent = money(total_hoy || 0);
+        if (el2) el2.textContent = GF.dinero(total_hoy || 0);
     },
 
     // ─── Servicios ──────────────────────────────────────────────
@@ -306,7 +303,7 @@ window.POS_UI = {
         cont.innerHTML = servicios.map((s, idx) => `
             <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" data-serv-idx="${idx}">
                 <span>${s.nombre}</span>
-                <span class="fw-bold">${money(s.precio)}</span>
+                <span class="fw-bold">${GF.dinero(s.precio)}</span>
             </button>`).join('');
 
         cont.querySelectorAll('[data-serv-idx]').forEach(btn => {
@@ -344,7 +341,7 @@ window.POS_UI = {
 
         tbody.innerHTML = borradores.map((b, idx) => {
             const n = b.items.length;
-            const total = money(b.total || 0);
+            const total = GF.dinero(b.total || 0);
             const hora = new Date(b.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
             return `<tr>
                 <td>${b.nombre_cliente || 'Consumidor final'}</td>
@@ -364,7 +361,7 @@ window.POS_UI = {
 
         cards.innerHTML = borradores.map((b, idx) => {
             const n = b.items.length;
-            const total = money(b.total || 0);
+            const total = GF.dinero(b.total || 0);
             const hora = new Date(b.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
             return `<div class="pos-borrador-card">
                 <div class="d-flex justify-content-between align-items-start gap-2">

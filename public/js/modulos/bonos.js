@@ -2,9 +2,6 @@
 // Sin onclick inline (delegación de eventos), consistente con la convención CSP.
 
 (function () {
-    function fmt(n) {
-        return '$' + (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
 
     // ---------- Editor de diseño (emitir bono / cambiar diseño) ----------
 
@@ -12,9 +9,7 @@
 
     async function cargarPlantillas() {
         if (plantillasCache) return plantillasCache;
-        const r = await fetch('/bonos/plantillas');
-        if (!r.ok) throw new Error('No se pudieron cargar las plantillas');
-        plantillasCache = await r.json();
+        plantillasCache = await GF.api('/bonos/plantillas', {}, 'No se pudieron cargar las plantillas');
         return plantillasCache;
     }
 
@@ -22,11 +17,6 @@
         return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
     }
 
-    function escapar(texto) {
-        const div = document.createElement('div');
-        div.textContent = texto == null ? '' : String(texto);
-        return div.innerHTML;
-    }
 
     function formatoVigencia(fecha) {
         if (!fecha) return 'Sin fecha de vencimiento';
@@ -40,11 +30,11 @@
         const galeria = plantillas
             .map(
                 p => `
-                <button type="button" class="bono-plantilla" data-plantilla="${p.id}" aria-pressed="false" title="${escapar(p.nombre)}">
+                <button type="button" class="bono-plantilla" data-plantilla="${p.id}" aria-pressed="false" title="${GF.escapeHtml(p.nombre)}">
                     <span class="bono-plantilla__img" style='background-image: ${svgComoFondo(p.svg)}'>
-                        <span class="bono-plantilla__titulo" style="color:${p.colores.titulo}">${escapar(p.titulo)}</span>
+                        <span class="bono-plantilla__titulo" style="color:${p.colores.titulo}">${GF.escapeHtml(p.titulo)}</span>
                     </span>
-                    <span class="bono-plantilla__nombre">${escapar(p.nombre)}</span>
+                    <span class="bono-plantilla__nombre">${GF.escapeHtml(p.nombre)}</span>
                 </button>`
             )
             .join('');
@@ -123,7 +113,7 @@
                             <span class="bono-preview__valor" id="bpValor"></span>
                             <i class="bi bi-qr-code bono-preview__qr" aria-hidden="true"></i>
                             <span class="bono-preview__rotulo">CÓDIGO</span>
-                            <span class="bono-preview__codigo">${escapar(bono?.codigo || 'BONO-XXXXXX')}</span>
+                            <span class="bono-preview__codigo">${GF.escapeHtml(bono?.codigo || 'BONO-XXXXXX')}</span>
                         </div>
                     </div>
                     <div class="bono-preview-acciones">
@@ -312,7 +302,7 @@
 
     function htmlComprobanteListo(url) {
         return url
-            ? `<a href="${escapar(url)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm mt-1"><i class="bi bi-file-earmark-pdf me-1"></i>Ver / descargar comprobante</a>`
+            ? `<a href="${GF.escapeHtml(url)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm mt-1"><i class="bi bi-file-earmark-pdf me-1"></i>Ver / descargar comprobante</a>`
             : '<p class="small text-warning mb-0">El comprobante no se pudo generar; puedes regenerarlo desde el detalle del bono.</p>';
     }
 
@@ -333,7 +323,7 @@
             Swal.fire({
                 icon: 'success',
                 title: 'Bono emitido',
-                html: `<p>Código: <strong style="font-size:1.3rem">${escapar(data.codigo)}</strong></p><p class="text-muted small">Entrégaselo al cliente: lo va a necesitar para redimirlo.</p>${htmlComprobanteListo(data.imagen_url)}`,
+                html: `<p>Código: <strong style="font-size:1.3rem">${GF.escapeHtml(data.codigo)}</strong></p><p class="text-muted small">Entrégaselo al cliente: lo va a necesitar para redimirlo.</p>${htmlComprobanteListo(data.imagen_url)}`,
                 confirmButtonText: 'Listo'
             }).then(() => location.reload());
         } catch (error) {
@@ -347,13 +337,10 @@
 
         Swal.fire({ title: 'Generando comprobante...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const r = await fetch(`/bonos/${bono.id}/comprobante`, {
+            const data = await GF.api(`/bonos/${bono.id}/comprobante`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(diseno)
-            });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo regenerar el comprobante');
+                body: diseno
+            }, 'No se pudo regenerar el comprobante');
             Swal.fire({
                 icon: 'success',
                 title: 'Comprobante listo',
@@ -368,9 +355,7 @@
     async function verMovimientos(fila) {
         const id = fila.dataset.id;
         try {
-            const r = await fetch(`/bonos/${id}`);
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo cargar el bono');
+            const data = await GF.api(`/bonos/${id}`, {}, 'No se pudo cargar el bono');
 
             const filas = (data.movimientos || [])
                 .map(m => {
@@ -378,19 +363,19 @@
                     const etiqueta = { emision: 'Emisión', redencion: 'Redención', anulacion: 'Anulación' }[m.tipo] || m.tipo;
                     const fecha = m.created_at ? new Date(m.created_at).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'short' }) : '-';
                     const factura = m.factura_numero != null ? ` (Factura #${m.factura_numero})` : '';
-                    return `<tr><td class="text-start">${etiqueta}${factura}</td><td class="text-muted small">${fecha}</td><td class="text-end">${signo}${fmt(m.monto)}</td></tr>`;
+                    return `<tr><td class="text-start">${etiqueta}${factura}</td><td class="text-muted small">${fecha}</td><td class="text-end">${signo}${GF.dinero(m.monto)}</td></tr>`;
                 })
                 .join('');
 
             const puedeDisenar = document.getElementById('btnNuevoBono') && data.bono.estado !== 'anulado';
             const comprobanteHtml = `<p class="mb-2 d-flex gap-2 justify-content-center flex-wrap">
-                    ${data.bono.imagen_url ? `<a class="btn btn-sm btn-outline-primary" href="${escapar(data.bono.imagen_url)}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i>Ver comprobante</a>` : ''}
+                    ${data.bono.imagen_url ? `<a class="btn btn-sm btn-outline-primary" href="${GF.escapeHtml(data.bono.imagen_url)}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i>Ver comprobante</a>` : ''}
                     ${puedeDisenar ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnCambiarDiseno"><i class="bi bi-palette me-1"></i>Cambiar diseño / regenerar</button>' : ''}
                 </p>`;
             Swal.fire({
                 title: `<h5 class="mb-0"><i class="bi bi-gift me-2"></i>${data.bono.codigo}</h5>`,
                 html: `
-                    <p class="mb-2">Saldo actual: <strong>${fmt(data.bono.saldo_actual)}</strong> de ${fmt(data.bono.valor_inicial)}</p>
+                    <p class="mb-2">Saldo actual: <strong>${GF.dinero(data.bono.saldo_actual)}</strong> de ${GF.dinero(data.bono.valor_inicial)}</p>
                     ${comprobanteHtml}
                     <div class="table-responsive"><table class="table table-sm"><tbody>${filas || '<tr><td colspan="3" class="text-center text-muted py-3">Sin movimientos</td></tr>'}</tbody></table></div>
                 `,
@@ -419,9 +404,7 @@
         if (!result.isConfirmed) return;
 
         try {
-            const r = await fetch(`/bonos/${id}/anular`, { method: 'PUT' });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo anular');
+            const data = await GF.api(`/bonos/${id}/anular`, { method: 'PUT' }, 'No se pudo anular');
             location.reload();
         } catch (error) {
             Swal.fire('Error', error.message, 'error');

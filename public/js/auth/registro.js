@@ -20,14 +20,7 @@ function hideError() {
 }
 
 function setLoading(loading) {
-    const btn = document.getElementById('btnRegistro');
-    if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Creando cuenta...';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-person-plus"></i> Crear cuenta';
-    }
+    GF.cargando(document.getElementById('btnRegistro'), loading, 'Creando cuenta...');
 }
 
 document.getElementById('registroForm').addEventListener('submit', async function (e) {

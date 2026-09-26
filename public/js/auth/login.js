@@ -25,14 +25,7 @@ function hideError() {
 }
 
 function setLoading(loading) {
-    const btn = document.getElementById('btnLogin');
-    if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Verificando...';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Iniciar sesión';
-    }
+    GF.cargando(document.getElementById('btnLogin'), loading, 'Verificando...');
 }
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {

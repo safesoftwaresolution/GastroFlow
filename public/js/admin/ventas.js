@@ -234,17 +234,7 @@
                 .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
                 .then(function (o) {
                     if (o.ok) {
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 2000,
-                            timerProgressBar: true
-                        });
-                        Toast.fire({
-                            icon: 'success',
-                            title: o.data.message || 'Factura eliminada correctamente'
-                        });
+                        GF.toast(o.data.message || 'Factura eliminada correctamente', 'success', { timer: 2000 });
 
                         // Eliminar fila
                         var row = document.querySelector('tr[data-factura-id="' + id + '"]');

@@ -21,12 +21,10 @@ function crearItemResultadoCliente(mod, list, modalClienteMesa, c) {
 
     if (mod.pedidoActual?.id) {
       try {
-        const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
+        await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cliente_id: c.id })
-        });
-        if (!r.ok) throw new Error('No se pudo asociar el cliente');
+          body: { cliente_id: c.id }
+        }, 'No se pudo asociar el cliente');
       } catch (err) {
         console.error('Error al asociar cliente:', err);
         mod.clienteActual = originalCliente;
@@ -351,13 +349,10 @@ $(function () {
         body = JSON.stringify({ mesa_destino_id: Number(destinoId) });
       }
 
-      const r = await fetch(endpoint, {
+      const data = await GF.api(endpoint, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'No se pudo realizar el traslado');
+      }, 'No se pudo realizar el traslado');
 
       await mod.cargarPedido(mod.pedidoActual.id);
       Swal.fire({
@@ -437,7 +432,7 @@ $(function () {
     
     try {
       modalServicios.hide();
-      Utils.showLoading('Agregando servicio...');
+      GF.cargandoPantalla('Agregando servicio...');
       
       const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/servicios`, {
         method: 'POST',
@@ -451,15 +446,15 @@ $(function () {
       });
 
       const data = await r.json();
-      Utils.hideLoading();
+      GF.cerrarCargando();
 
       if (!r.ok) throw new Error(data.error || 'Error al agregar servicio');
       
       await mod.cargarPedido(mod.pedidoActual.id);
-      AlertManager.success(`Servicio "${nombre}" agregado`);
+      GF.toast(`Servicio "${nombre}" agregado`, 'success');
     } catch (e) {
-      Utils.hideLoading();
-      AlertManager.error(e.message);
+      GF.cerrarCargando();
+      GF.toast(e.message, 'error');
     }
   });
 });

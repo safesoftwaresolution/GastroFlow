@@ -5,9 +5,6 @@
 (function () {
     let insumosCache = null;
 
-    function money(valor) {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(valor || 0);
-    }
 
     async function cargarInsumos() {
         if (insumosCache) {
@@ -99,7 +96,7 @@
                     <td>${i.insumo_nombre}</td>
                     <td class="text-end">${i.cantidad_pedida} ${i.unidad_base || ''}</td>
                     <td class="text-end">${i.cantidad_recibida !== null ? i.cantidad_recibida + ' ' + (i.unidad_base || '') : '-'}</td>
-                    <td class="text-end">${i.costo_unitario_estimado !== null ? money(i.costo_unitario_estimado) : '-'}</td>
+                    <td class="text-end">${i.costo_unitario_estimado !== null ? GF.dinero(i.costo_unitario_estimado, 2) : '-'}</td>
                 </tr>
             `
                 )

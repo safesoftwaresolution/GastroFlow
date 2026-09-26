@@ -43,9 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return r ? `${parseInt(r[1], 16)}, ${parseInt(r[2], 16)}, ${parseInt(r[3], 16)}` : '148, 163, 184';
     }
 
-    function formatCOP(value) {
-        return Number(value || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
-    }
 
     function formatHora(date) {
         return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -278,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="leaderboard-progress-fill" style="width: ${Math.max(pct, 1.5)}%; background: linear-gradient(90deg, rgba(${hexToRgb(color)}, 0.25), ${color});"></div>
                 </div>
             </div>
-            <span class="leaderboard-sales-val">$${formatCOP(v.total)}</span>
+            <span class="leaderboard-sales-val">${GF.dinero(v.total)}</span>
         `;
     }
 
@@ -295,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Actualizar total global
             const totalEl = document.getElementById('ventasHoyTotalGlobal');
             if (totalEl) {
-                const newValue = formatCOP(data.ventasHoyTotalGlobal);
+                const newValue = GF.dinero(data.ventasHoyTotalGlobal);
                 if (totalEl.textContent !== newValue) {
                     totalEl.textContent = newValue;
                     flashElement(totalEl.parentElement);
@@ -315,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data.ventasHoyPorTenant.forEach((v, idx) => {
                 let row = container.querySelector(`[data-tenant-row="${CSS.escape(v.nombre)}"]`);
                 const rankClass = idx === 0 ? 'top-rank' : '';
-                const newTotalStr = `$${formatCOP(v.total)}`;
+                const newTotalStr = `${GF.dinero(v.total)}`;
 
                 if (row) {
                     // Actualizar fila existente

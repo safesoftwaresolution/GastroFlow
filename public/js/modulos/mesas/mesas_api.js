@@ -7,9 +7,7 @@ window.MesasModule.abrirPedido = async function(mesaId, mesaNumero) {
     this.clienteActual = { id: null, nombre: 'Consumidor Final' };
     if (typeof this.actualizarUICliente === 'function') this.actualizarUICliente();
 
-    const resp = await fetch('/api/mesas/abrir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mesa_id: mesaId }) });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Error al abrir pedido');
+    const data = await GF.api('/api/mesas/abrir', { method: 'POST', body: { mesa_id: mesaId } }, 'Error al abrir pedido');
     this.pedidoActual = data.pedido;
     this.pedidoAbiertoAt = Date.now();
     this.cerradaStreak = 0;
@@ -27,9 +25,7 @@ window.MesasModule.abrirPedido = async function(mesaId, mesaNumero) {
 
 window.MesasModule.cargarPedido = async function(pedidoId) {
   try {
-    const resp = await fetch(`/api/mesas/pedidos/${pedidoId}`);
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Error al cargar pedido');
+    const data = await GF.api(`/api/mesas/pedidos/${pedidoId}`, {}, 'Error al cargar pedido');
     this.items = data.items || [];
     this.abonos = data.abonos || [];
     this.propinaPedido = Number(data.pedido?.propina) || 0;
@@ -63,9 +59,7 @@ window.MesasModule.liberarMesa = async function(mesaId, mesaNum) {
   const ok = await Swal.fire({ title: `Liberar mesa ${mesaNum}?`, text: 'Solo si no tiene items activos', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, liberar' });
   if (!ok.isConfirmed) return;
   try {
-    const r = await fetch(`/api/mesas/${mesaId}/liberar`, { method: 'PUT' });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'No se pudo liberar');
+    const data = await GF.api(`/api/mesas/${mesaId}/liberar`, { method: 'PUT' }, 'No se pudo liberar');
     Swal.fire({ icon: 'success', title: 'Mesa liberada' }).then(() => {
       if (typeof refreshMesas === 'function') refreshMesas();
       else location.reload();

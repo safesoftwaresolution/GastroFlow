@@ -23,14 +23,6 @@ let modalState = null;
 
 function formatPrice(val) { return '$' + Number(val).toLocaleString('es-CO'); }
 
-function escapeHtml(s) {
-    return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
 
 function getCardData(id) {
     const card = document.querySelector(`.product-card[data-id="${id}"]`);
@@ -189,8 +181,8 @@ function renderModalGroups(grupos) {
             <label class="qr-mod-opcion">
                 <span class="qr-mod-opcion-nombre">
                     <input type="${inputType}" name="qr-grupo-${g.id}" value="${o.id}"
-                        data-precio="${o.precio_adicional}" data-nombre="${escapeHtml(o.nombre)}">
-                    <span>${escapeHtml(o.nombre)}</span>
+                        data-precio="${o.precio_adicional}" data-nombre="${GF.escapeHtml(o.nombre)}">
+                    <span>${GF.escapeHtml(o.nombre)}</span>
                 </span>
                 <span class="qr-mod-opcion-precio">${Number(o.precio_adicional) > 0 ? '+' + formatPrice(o.precio_adicional) : ''}</span>
             </label>`).join('');
@@ -198,7 +190,7 @@ function renderModalGroups(grupos) {
             <div class="qr-mod-grupo" data-grupo-id="${g.id}" data-tipo="${g.tipo_seleccion}"
                  data-obligatorio="${g.obligatorio ? 1 : 0}" data-minimo="${g.minimo_selecciones || 0}"
                  data-maximo="${g.maximo_selecciones || 0}">
-                <div class="qr-mod-grupo-head"><strong>${escapeHtml(g.nombre)}</strong> ${badge}</div>
+                <div class="qr-mod-grupo-head"><strong>${GF.escapeHtml(g.nombre)}</strong> ${badge}</div>
                 <div class="qr-mod-grupo-sub">${sub}</div>
                 ${opciones}
             </div>`;
@@ -339,9 +331,9 @@ function renderOffcanvasList(total) {
             return `
                 <div class="cart-item">
                     <div style="flex-grow: 1; padding-right: 12px;">
-                        <div class="cart-item-name">${escapeHtml(item.nombre)}</div>
-                        ${toppings ? `<div class="cart-item-extra">${escapeHtml(toppings)}</div>` : ''}
-                        ${item.nota ? `<div class="cart-item-nota"><i class="bi bi-chat-left-text me-1"></i>${escapeHtml(item.nota)}</div>` : ''}
+                        <div class="cart-item-name">${GF.escapeHtml(item.nombre)}</div>
+                        ${toppings ? `<div class="cart-item-extra">${GF.escapeHtml(toppings)}</div>` : ''}
+                        ${item.nota ? `<div class="cart-item-nota"><i class="bi bi-chat-left-text me-1"></i>${GF.escapeHtml(item.nota)}</div>` : ''}
                         <div class="cart-item-price">${formatPrice(unit)}</div>
                     </div>
                     <div class="qty-controls active" style="position: static; background: #f0f2f5; box-shadow: none;">
@@ -411,9 +403,9 @@ const MESA_ESTADO = {
                         <div class="estado-item-main">
                             <span class="estado-item-qty">${it.cantidad}×</span>
                             <div>
-                                <div class="estado-item-name">${escapeHtml(it.producto_nombre)}</div>
-                                ${extras ? `<div class="estado-item-extra">${escapeHtml(extras)}</div>` : ''}
-                                ${it.nota ? `<div class="estado-item-extra"><i class="bi bi-chat-left-text me-1"></i>${escapeHtml(it.nota)}</div>` : ''}
+                                <div class="estado-item-name">${GF.escapeHtml(it.producto_nombre)}</div>
+                                ${extras ? `<div class="estado-item-extra">${GF.escapeHtml(extras)}</div>` : ''}
+                                ${it.nota ? `<div class="estado-item-extra"><i class="bi bi-chat-left-text me-1"></i>${GF.escapeHtml(it.nota)}</div>` : ''}
                             </div>
                         </div>
                         <span class="estado-chip ${chip.cls}">${chip.txt}</span>

@@ -88,7 +88,7 @@ class ProductManager {
         icon.removeClass('bi-star-fill text-warning').addClass('bi-star text-muted');
       }
     } catch (error) {
-      AlertManager.alert(error.message, 'error');
+      GF.error(error.message);
     }
   }
 
@@ -112,7 +112,7 @@ class ProductManager {
         icon.removeClass('bi-chat-left-text-fill').addClass('bi-chat-left-text');
       }
     } catch (error) {
-      AlertManager.alert(error.message, 'error');
+      GF.error(error.message);
     }
   }
 
@@ -144,14 +144,14 @@ class ProductManager {
         return res.json();
       });
       this._costeoData = data;
-      const fmt = (n) => n != null && !Number.isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
-      document.getElementById('costeoDirecto').textContent = '$' + fmt(data.costo_materia_prima_porcion ?? data.costo_directo_porcion);
+      const fmt = n => (n == null || Number.isNaN(n) ? '-' : GF.dinero(n, 2));
+      document.getElementById('costeoDirecto').textContent = fmt(data.costo_materia_prima_porcion ?? data.costo_directo_porcion);
       const mermaPctEl = document.getElementById('costeoMermaPct');
       if (mermaPctEl) mermaPctEl.textContent = data.merma_pct != null ? data.merma_pct : '0';
-      document.getElementById('costeoIndirecto').textContent = '$' + fmt(data.merma_monto ?? data.costo_indirecto);
-      document.getElementById('costeoTotal').textContent = '$' + fmt(data.costo_total_porcion);
-      document.getElementById('costeoPrecioSug').textContent = '$' + fmt(data.precio_sugerido);
-      document.getElementById('costeoPrecioActual').textContent = '$' + fmt(data.precio_venta_actual);
+      document.getElementById('costeoIndirecto').textContent = fmt(data.merma_monto ?? data.costo_indirecto);
+      document.getElementById('costeoTotal').textContent = fmt(data.costo_total_porcion);
+      document.getElementById('costeoPrecioSug').textContent = fmt(data.precio_sugerido);
+      document.getElementById('costeoPrecioActual').textContent = fmt(data.precio_venta_actual);
       document.getElementById('costeoMargen').textContent = data.margen_actual_pct != null ? data.margen_actual_pct + '%' : '-';
       loadingEl.classList.add('d-none');
       contentEl.classList.remove('d-none');
@@ -233,9 +233,9 @@ class ProductManager {
         throw new Error(e.error || 'No se pudo guardar la asignación');
       }
       bootstrap.Modal.getInstance(document.getElementById('productoModificadoresModal'))?.hide();
-      AlertManager.success('Modificadores actualizados');
+      GF.toast('Modificadores actualizados', 'success');
     } catch (error) {
-      AlertManager.error(error.message || 'Error al guardar modificadores');
+      GF.toast(error.message || 'Error al guardar modificadores', 'error');
     }
   }
 
@@ -244,11 +244,11 @@ class ProductManager {
     const data = this._costeoData;
     if (!id || data?.precio_sugerido == null) return;
     try {
-      await ApiClient.put(`/api/productos/${id}/precio`, { precio_unidad: data.precio_sugerido });
+      await GF.api.put(`/api/productos/${id}/precio`, { precio_unidad: data.precio_sugerido });
       bootstrap.Modal.getInstance(document.getElementById('costeoProductoModal'))?.hide();
-      Utils.reload();
+      location.reload();
     } catch (error) {
-      AlertManager.alert(error.message || 'Error al actualizar precio', 'error');
+      GF.error(error.message || 'Error al actualizar precio');
     }
   }
 
@@ -265,33 +265,33 @@ class ProductManager {
 
     try {
       if (isEdit) {
-        await ApiClient.put(`/api/productos/${id}`, productData);
+        await GF.api.put(`/api/productos/${id}`, productData);
         await guardarParametrosCosteo(id);
-        AlertManager.success('Producto actualizado correctamente');
+        GF.toast('Producto actualizado correctamente', 'success');
       } else {
-        await ApiClient.post('/api/productos', productData);
-        AlertManager.success('Producto creado correctamente');
+        await GF.api.post('/api/productos', productData);
+        GF.toast('Producto creado correctamente', 'success');
       }
 
       this.formManager.hide();
 
       setTimeout(() => {
-        Utils.reload();
+        location.reload();
       }, 1000);
     } catch (error) {
       console.error('Error saving product:', error);
       const errorMessage = error.message || 'Hubo un problema al guardar el producto. Por favor, intente de nuevo.';
       if (error.message?.includes('fetch')) {
-        AlertManager.error('Error de conexión: No se pudo comunicar con el servidor.');
+        GF.toast('Error de conexión: No se pudo comunicar con el servidor.', 'error');
       } else {
-        AlertManager.error(errorMessage);
+        GF.toast(errorMessage, 'error');
       }
     }
   }
 
   async handleEdit(id) {
     try {
-      const producto = await ApiClient.get(`/api/productos/${id}`);
+      const producto = await GF.api.get(`/api/productos/${id}`);
       document.getElementById('productoId').value = producto.id;
       document.getElementById('codigo').value = producto.codigo;
       document.getElementById('nombre').value = producto.nombre;
@@ -333,7 +333,7 @@ class ProductManager {
       }
     } catch (error) {
       console.error('Error al cargar el producto:', error);
-      AlertManager.alert('Error al cargar el producto', 'error');
+      GF.error('Error al cargar el producto');
     }
   }
 
@@ -355,9 +355,9 @@ class ProductManager {
     if (!result.isConfirmed) return;
 
     try {
-      await ApiClient.delete(`/api/productos/${id}`);
+      await GF.api.delete(`/api/productos/${id}`);
       await Swal.fire({ icon: 'success', title: 'Producto eliminado', timer: 1500, showConfirmButton: false });
-      Utils.reload();
+      location.reload();
     } catch (error) {
       Swal.fire({ icon: 'error', title: error.message || 'Error al eliminar' });
     }

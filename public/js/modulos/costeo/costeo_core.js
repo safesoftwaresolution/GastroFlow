@@ -27,42 +27,22 @@ window.CosteoModule = {
   insumosList: [],
   recetaIngredientes: [],
 
+  /**
+   * GF.api con la URL del módulo; el superadmin opera sobre el tenant elegido
+   * en el selector (tenant_id), que es lo único propio de Costeo.
+   */
   api(path, options = {}) {
     let url = this.base + path;
     if (this.isSuperadmin && window.COSTEO_TENANT_ID) {
       url += (path.indexOf('?') >= 0 ? '&' : '?') + 'tenant_id=' + window.COSTEO_TENANT_ID;
     }
-    return fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(options.headers || {})
-      },
-      credentials: 'same-origin'
-    }).then(res => res.text().then(text => {
-      let data = null;
-      try {
-        if (text?.trim()) data = JSON.parse(text);
-      } catch (_) {
-        if (!res.ok) throw new Error(res.statusText || 'Error del servidor');
-        throw new Error('Respuesta inválida del servidor');
-      }
-      if (!res.ok) throw new Error(data?.error || res.statusText || 'Error');
-      return data;
-    }));
+    return GF.api(url, options, 'Error del servidor');
   },
 
-  escapeHtml(s) {
-    if (s == null) return '';
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-  },
 
+  /** Montos de costeo: pueden tener centavos (costo por porción); '-' si no hay dato. */
   formatMoney(n) {
-    if (n == null || Number.isNaN(n)) return '-';
-    return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    return n == null || Number.isNaN(n) ? '-' : GF.dinero(n, 2);
   },
 
   showToast(msg, type) {

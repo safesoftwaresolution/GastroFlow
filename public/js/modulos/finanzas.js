@@ -42,10 +42,13 @@
         }
     });
 
-    const ctxCat = document.getElementById('chartCategorias').getContext('2d');
-    const dataCat = pageData.gastosPorCategoria;
+    // Este gráfico solo existe si hay gastos. Antes se buscaba igual y, sin
+    // gastos, el script se caía aquí: guardarGasto nunca quedaba definido y el
+    // botón "Registrar Operación" no hacía nada (no se podía registrar el primero).
+    const canvasCat = document.getElementById('chartCategorias');
+    const dataCat = pageData.gastosPorCategoria || [];
 
-    new Chart(ctxCat, {
+    if (canvasCat) new Chart(canvasCat.getContext('2d'), {
         type: 'bar',
         data: {
             labels: dataCat.map(function (row) { return row.categoria_gasto; }),
@@ -78,24 +81,15 @@
         if (!payload.monto) return Swal.fire('Aviso', 'Ingrese un monto válido', 'warning');
 
         try {
-            const r = await fetch('/finanzas/api/movimientos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (r.ok) {
-                Swal.fire({
-                    title: 'Registro Exitoso',
-                    text: 'La operación ha sido asentada en el libro diario.',
-                    icon: 'success',
-                    confirmButtonColor: '#0f172a'
-                }).then(function () { location.reload(); });
-            } else {
-                const err = await r.json().catch(function () { return {}; });
-                Swal.fire('Error', err.error || 'No se pudo completar la operación', 'error');
-            }
+            await GF.api('/finanzas/api/movimientos', { method: 'POST', body: payload }, 'No se pudo completar la operación');
+            Swal.fire({
+                title: 'Registro Exitoso',
+                text: 'La operación ha sido asentada en el libro diario.',
+                icon: 'success',
+                confirmButtonColor: '#0f172a'
+            }).then(function () { location.reload(); });
         } catch (e) {
-            Swal.fire('Error de Conexión', e.message, 'error');
+            GF.error(e.message);
         }
     }
 

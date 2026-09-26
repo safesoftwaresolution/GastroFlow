@@ -33,25 +33,7 @@
         });
     }
 
-    function showToast(msg, type) {
-        if (typeof Swal !== 'undefined' && Swal.mixin) {
-            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }).fire({ icon: type, title: msg });
-        } else {
-            const el = document.createElement('div');
-            el.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            el.style.cssText = 'top: 1rem; right: 1rem; z-index: 9999; min-width: 200px;';
-            el.innerHTML = msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 4000);
-        }
-    }
 
-    function escapeHtml(s) {
-        if (s == null) return '';
-        const div = document.createElement('div');
-        div.textContent = s;
-        return div.innerHTML;
-    }
 
     function loadTemas() {
         const ul = document.getElementById('listaTemas');
@@ -62,16 +44,16 @@
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
                 li.innerHTML = `
-                    <span>${escapeHtml(t.name)}</span>
+                    <span>${GF.escapeHtml(t.name)}</span>
                     <span>
-                        <button type="button" class="btn btn-sm btn-outline-primary me-1 btnAsignarParametrosTema" data-id="${t.id}" data-name="${escapeHtml(t.name)}">Parámetros</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary me-1 btnAsignarParametrosTema" data-id="${t.id}" data-name="${GF.escapeHtml(t.name)}">Parámetros</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary me-1 btnEditTema" data-id="${t.id}">Editar</button>
                         <button type="button" class="btn btn-sm btn-outline-danger btnElimTema" data-id="${t.id}">Eliminar</button>
                     </span>`;
                 ul.appendChild(li);
             });
             return list;
-        }).catch(err => { showToast(err.message, 'danger'); return []; });
+        }).catch(err => { GF.toast(err.message, 'danger'); return []; });
     }
 
     function loadParametros() {
@@ -85,7 +67,7 @@
                     const li = document.createElement('li');
                     li.className = 'list-group-item d-flex justify-content-between align-items-center';
                     li.innerHTML = `
-                        <span>${escapeHtml(p.name)}</span>
+                        <span>${GF.escapeHtml(p.name)}</span>
                         <span>
                             <button type="button" class="btn btn-sm btn-outline-secondary me-1 btnEditParametro" data-id="${p.id}">Editar</button>
                             <button type="button" class="btn btn-sm btn-outline-danger btnElimParametro" data-id="${p.id}">Eliminar</button>
@@ -94,7 +76,7 @@
                 });
             });
             return list;
-        }).catch(err => { showToast(err.message, 'danger'); return []; });
+        }).catch(err => { GF.toast(err.message, 'danger'); return []; });
     }
 
     // Selector tenant: recargar página con tenant_id
@@ -114,15 +96,15 @@
     document.getElementById('btnGuardarTema')?.addEventListener('click', () => {
         const id = document.getElementById('temaId').value;
         const name = document.getElementById('temaNombre').value.trim();
-        if (!name) { showToast('Nombre requerido', 'warning'); return; }
+        if (!name) { GF.toast('Nombre requerido', 'warning'); return; }
         const promise = id
             ? apiRequest('/api/temas/' + id, { method: 'PUT', body: JSON.stringify({ name }) })
             : apiRequest('/api/temas', { method: 'POST', body: JSON.stringify({ name }) });
         promise.then(() => {
             bootstrap.Modal.getInstance(document.getElementById('modalTema')).hide();
             loadTemas();
-            showToast('Tema guardado', 'success');
-        }).catch(err => showToast(err.message, 'danger'));
+            GF.toast('Tema guardado', 'success');
+        }).catch(err => GF.toast(err.message, 'danger'));
     });
 
     // Editar / Eliminar tema
@@ -135,12 +117,12 @@
                 document.getElementById('temaNombre').value = t.name || '';
                 document.getElementById('modalTemaTitle').textContent = 'Editar tema';
                 new bootstrap.Modal(document.getElementById('modalTema')).show();
-            }).catch(err => showToast(err.message, 'danger'));
+            }).catch(err => GF.toast(err.message, 'danger'));
         } else if (e.target.classList.contains('btnElimTema')) {
             (typeof Swal !== 'undefined' ? Swal.fire({ title: '¿Eliminar este tema?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar' }).then(r => r.isConfirmed) : Promise.resolve(confirm('¿Eliminar este tema?')))
                 .then(ok => { if (!ok) return; return apiRequest('/api/temas/' + id, { method: 'DELETE' }); })
-                .then(() => { loadTemas(); showToast('Tema eliminado', 'success'); })
-                .catch(err => err && showToast(err.message, 'danger'));
+                .then(() => { loadTemas(); GF.toast('Tema eliminado', 'success'); })
+                .catch(err => err && GF.toast(err.message, 'danger'));
         } else if (e.target.classList.contains('btnAsignarParametrosTema')) {
             const name = e.target.getAttribute('data-name') || '';
             document.getElementById('temaParametrosNombre').textContent = name;
@@ -154,11 +136,11 @@
                     (allParams || []).forEach(p => {
                         const label = document.createElement('label');
                         label.className = 'd-block me-3';
-                        label.innerHTML = `<input type="checkbox" class="form-check-input me-2" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${escapeHtml(p.name)}`;
+                        label.innerHTML = `<input type="checkbox" class="form-check-input me-2" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${GF.escapeHtml(p.name)}`;
                         div.appendChild(label);
                     });
                 });
-            }).catch(err => showToast(err.message, 'danger'));
+            }).catch(err => GF.toast(err.message, 'danger'));
         }
     });
 
@@ -168,8 +150,8 @@
         const checkboxes = document.querySelectorAll('#checkboxesParametrosTema input[type="checkbox"]:checked');
         const parametro_ids = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
         apiRequest('/api/temas/' + temaId + '/parametros', { method: 'PUT', body: JSON.stringify({ parametro_ids }) })
-            .then(() => { showToast('Parámetros del tema actualizados', 'success'); loadTemas(); })
-            .catch(err => showToast(err.message, 'danger'));
+            .then(() => { GF.toast('Parámetros del tema actualizados', 'success'); loadTemas(); })
+            .catch(err => GF.toast(err.message, 'danger'));
     });
 
     // Parámetros: nuevo (ambos botones)
@@ -185,15 +167,15 @@
     document.getElementById('btnGuardarParametro')?.addEventListener('click', () => {
         const id = document.getElementById('parametroId').value;
         const name = document.getElementById('parametroNombre').value.trim();
-        if (!name) { showToast('Nombre requerido', 'warning'); return; }
+        if (!name) { GF.toast('Nombre requerido', 'warning'); return; }
         const promise = id
             ? apiRequest('/api/parametros/' + id, { method: 'PUT', body: JSON.stringify({ name }) })
             : apiRequest('/api/parametros', { method: 'POST', body: JSON.stringify({ name }) });
         promise.then(() => {
             bootstrap.Modal.getInstance(document.getElementById('modalParametro')).hide();
             loadParametros();
-            showToast('Parámetro guardado', 'success');
-        }).catch(err => showToast(err.message, 'danger'));
+            GF.toast('Parámetro guardado', 'success');
+        }).catch(err => GF.toast(err.message, 'danger'));
     });
 
     // Editar / Eliminar parámetro (lista 1 y 2)
@@ -206,12 +188,12 @@
                 document.getElementById('parametroNombre').value = p.name || '';
                 document.getElementById('modalParametroTitle').textContent = 'Editar parámetro';
                 new bootstrap.Modal(document.getElementById('modalParametro')).show();
-            }).catch(err => showToast(err.message, 'danger'));
+            }).catch(err => GF.toast(err.message, 'danger'));
         } else if (e.target.classList.contains('btnElimParametro')) {
             (typeof Swal !== 'undefined' ? Swal.fire({ title: '¿Eliminar este parámetro?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar' }).then(r => r.isConfirmed) : Promise.resolve(confirm('¿Eliminar este parámetro?')))
                 .then(ok => { if (!ok) return; return apiRequest('/api/parametros/' + id, { method: 'DELETE' }); })
-                .then(() => { loadParametros(); showToast('Parámetro eliminado', 'success'); })
-                .catch(err => err && showToast(err.message, 'danger'));
+                .then(() => { loadParametros(); GF.toast('Parámetro eliminado', 'success'); })
+                .catch(err => err && GF.toast(err.message, 'danger'));
         }
     }
     document.getElementById('listaParametros')?.addEventListener('click', handleParametroListClick);

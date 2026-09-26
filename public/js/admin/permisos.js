@@ -209,17 +209,7 @@
                 mesero: 'Mesero',
                 cocinero: 'Cocinero'
             };
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1500,
-                timerProgressBar: true
-            });
-            Toast.fire({
-                icon: 'success',
-                title: 'Plantilla de ' + (roleNames[role] || role) + ' aplicada'
-            });
+            GF.toast('Plantilla de ' + (roleNames[role] || role) + ' aplicada', 'success', { timer: 1500 });
         });
     });
 

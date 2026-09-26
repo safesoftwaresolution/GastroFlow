@@ -96,10 +96,7 @@ $(function () {
 
     try {
       Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const r = await fetch(`/api/mesas/${mesaId}`, { method: 'DELETE' });
-      const data = await r.json();
-
-      if (!r.ok) throw new Error(data.error || 'No se pudo eliminar la mesa');
+      const data = await GF.api(`/api/mesas/${mesaId}`, { method: 'DELETE' }, 'No se pudo eliminar la mesa');
 
       Swal.fire({ icon: 'success', title: 'Mesa eliminada', text: 'La mesa ha sido borrada del sistema.', timer: 2000 }).then(() => {
         if (typeof refreshMesas === 'function') refreshMesas();
@@ -115,9 +112,7 @@ $(function () {
     e.preventDefault();
     try {
       Swal.fire({ title: 'Generando tokens...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const r = await fetch('/mesas/qrs/generar', { method: 'POST' });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'No se pudieron generar los tokens');
+      const data = await GF.api('/mesas/qrs/generar', { method: 'POST' }, 'No se pudieron generar los tokens');
       Swal.fire({
         icon: 'success',
         title: data.message || 'Tokens generados',

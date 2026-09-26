@@ -26,21 +26,16 @@ $(function () {
   // (con y sin costo) hacían exactamente esta misma petición, solo cambiaba el texto.
   async function facturarPedidoCompleto(clienteId, keyIdemp, extraMsg) {
     try {
-      const reqFactura = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
+      const dataF = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': keyIdemp
-        },
-        body: JSON.stringify({
+        headers: { 'Idempotency-Key': keyIdemp },
+        body: {
           cliente_id: clienteId,
           forma_pago: 'efectivo',
           descuentos: mod.descuentosPorItem,
           propina: mod.propinaPedido
-        })
-      });
-      const dataF = await reqFactura.json();
-      if (!reqFactura.ok) throw new Error(dataF.error || 'Error al facturar');
+        }
+      }, 'Error al facturar');
 
       Swal.fire({
         icon: 'success',
@@ -320,20 +315,11 @@ $(function () {
     });
 
     try {
-      const r = await fetch(`/api/mesas/items/pagar-multiples`, {
+      const d = await GF.api('/api/mesas/items/pagar-multiples', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': keyIdemp
-        },
-        body: JSON.stringify({
-          forma_pago: formaPago,
-          items
-        })
-      });
-
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al procesar el pago masivo');
+        headers: { 'Idempotency-Key': keyIdemp },
+        body: { forma_pago: formaPago, items }
+      }, 'Error al procesar el pago masivo');
 
       await mod.cargarPedido(mod.pedidoActual.id);
 
@@ -555,9 +541,7 @@ $(function () {
     if (!ok.isConfirmed) return;
 
     try {
-      const r = await fetch(`/api/mesas/abonos/${abonoId}`, { method: 'DELETE' });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'No se pudo eliminar el abono');
+      const d = await GF.api(`/api/mesas/abonos/${abonoId}`, { method: 'DELETE' }, 'No se pudo eliminar el abono');
       await mod.cargarPedido(mod.pedidoActual.id);
       Swal.close();
       // eslint-disable-next-line no-use-before-define
@@ -570,9 +554,7 @@ $(function () {
   async function verAbonos() {
     if (!mod.pedidoActual?.id) return;
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al cargar los abonos');
+      const d = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, {}, 'Error al cargar los abonos');
 
       const filas = (d.abonos || []).map(filaAbono).join('');
 
@@ -737,9 +719,7 @@ $(function () {
       }
       $('#bonoValidacionInfo').text('Consultando...').removeClass('text-success text-danger');
       try {
-        const r = await fetch(`/api/bonos/validar/${encodeURIComponent(codigo)}`);
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Código de bono inválido');
+        const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
 
         const montoBono = Math.min(Number(d.saldo_actual), totalOriginal);
         bonoAplicado = { codigo, monto: montoBono };
@@ -865,13 +845,10 @@ $(function () {
       });
 
       try {
-        const resp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
+        const data = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Idempotency-Key': keyIdemp
-          },
-          body: JSON.stringify({
+          headers: { 'Idempotency-Key': keyIdemp },
+          body: {
             cliente_id: clienteId,
             // Si el bono cubre todo no se eligió tarjeta de pago -- no importa
             // cuál se mande, el servidor solo cobra por ahí si queda algo
@@ -881,10 +858,8 @@ $(function () {
             propina: mod.propinaPedido,
             efectivo_recibido: formaPagoSeleccionada === 'efectivo' ? montoRecibido : null,
             codigo_bono: bonoAplicado ? bonoAplicado.codigo : null
-          })
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Error al facturar');
+          }
+        }, 'Error al facturar');
 
         Swal.close();
         const modalPago = bootstrap.Modal.getInstance(document.getElementById('modalPago'));

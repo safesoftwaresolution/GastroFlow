@@ -187,10 +187,6 @@
     }
 
     let calcIngredientes = [];
-    const fmt = function (n) {
-        if (n == null || Number.isNaN(n)) return '$0';
-        return '$' + Number(n).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    };
 
     function renderCalcIngredientes() {
         const tbody = document.getElementById('calcIngredientesBody');
@@ -198,7 +194,7 @@
         tbody.innerHTML = '';
         calcIngredientes.forEach(function (ing, idx) {
             const tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + (ing.insumo_codigo || '') + ' - ' + (ing.insumo_nombre || '') + '</td><td>' + ing.cantidad + '</td><td>' + (ing.unidad || 'g') + '</td><td class="text-end">' + fmt(ing.costo) + '</td><td><button type="button" class="btn btn-sm btn-outline-danger calcQuitarIng" data-idx="' + idx + '">×</button></td>';
+            tr.innerHTML = '<td>' + (ing.insumo_codigo || '') + ' - ' + (ing.insumo_nombre || '') + '</td><td>' + ing.cantidad + '</td><td>' + (ing.unidad || 'g') + '</td><td class="text-end">' + GF.dinero(ing.costo) + '</td><td><button type="button" class="btn btn-sm btn-outline-danger calcQuitarIng" data-idx="' + idx + '">×</button></td>';
             tbody.appendChild(tr);
         });
         tbody.querySelectorAll('.calcQuitarIng').forEach(function (btn) {
@@ -232,18 +228,18 @@
         const precioVentaTotal = precioPorcion * porciones;
         const gananciaNeta = gananciaPorcion * porciones;
 
-        document.getElementById('calcResumenIngredientes').textContent = fmt(totalIng);
-        document.getElementById('calcResumenManoObra').textContent = fmt(manoObra);
-        document.getElementById('calcResumenDesgaste').textContent = fmt(desgaste);
-        document.getElementById('calcResumenOtros').textContent = fmt(otros);
-        document.getElementById('calcResumenTotal').textContent = fmt(total);
+        document.getElementById('calcResumenIngredientes').textContent = GF.dinero(totalIng);
+        document.getElementById('calcResumenManoObra').textContent = GF.dinero(manoObra);
+        document.getElementById('calcResumenDesgaste').textContent = GF.dinero(desgaste);
+        document.getElementById('calcResumenOtros').textContent = GF.dinero(otros);
+        document.getElementById('calcResumenTotal').textContent = GF.dinero(total);
         document.getElementById('calcMargenPctVal').textContent = margenPct;
-        document.getElementById('calcCostoPorcion').textContent = fmt(costoPorcion);
-        document.getElementById('calcPrecioPorcion').textContent = fmt(precioPorcion);
-        document.getElementById('calcGananciaPorcion').textContent = fmt(gananciaPorcion);
+        document.getElementById('calcCostoPorcion').textContent = GF.dinero(costoPorcion);
+        document.getElementById('calcPrecioPorcion').textContent = GF.dinero(precioPorcion);
+        document.getElementById('calcGananciaPorcion').textContent = GF.dinero(gananciaPorcion);
         document.getElementById('calcMargenVentas').textContent = margenVentas.toFixed(1) + '%';
-        document.getElementById('calcPrecioVentaTotal').textContent = fmt(precioVentaTotal);
-        document.getElementById('calcGananciaNeta').textContent = fmt(gananciaNeta);
+        document.getElementById('calcPrecioVentaTotal').textContent = GF.dinero(precioVentaTotal);
+        document.getElementById('calcGananciaNeta').textContent = GF.dinero(gananciaNeta);
     }
 
     const fillCalcInsumoSelect = function () {

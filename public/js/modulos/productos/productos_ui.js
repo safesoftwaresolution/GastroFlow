@@ -126,9 +126,9 @@ ProductManager.prototype.init = function() {
           previewContainer.classList.remove('d-none');
         }
 
-        AlertManager.success('Imagen cargada correctamente');
+        GF.toast('Imagen cargada correctamente', 'success');
       } catch (err) {
-        AlertManager.error(err.message || 'No se pudo subir la imagen');
+        GF.toast(err.message || 'No se pudo subir la imagen', 'error');
         e.target.value = '';
       } finally {
         if (btnGuardar) {
@@ -260,10 +260,10 @@ ProductManager.prototype.setupImportExport = function() {
         });
         
         if (data.inserted > 0 || data.updated > 0) {
-          Utils.reload();
+          location.reload();
         }
       } catch (error) {
-        AlertManager.alert(error.message, 'error');
+        GF.error(error.message);
       } finally {
         btnImportar.disabled = false;
         btnImportar.innerHTML = '<i class="bi bi-upload"></i> Importar Excel';

@@ -1,14 +1,11 @@
 /**
  * Clientes Manager - Refactored using modular architecture
  * Manages client CRUD operations
- * Related to: views/clientes.ejs, routes/clientes.js, modules/ApiClient.js, modules/FormManager.js, etc.
+ * Related to: views/clientes.ejs, routes/clientes.js, core/gf.js, modules/FormManager.js, etc.
  */
 
-// Extraída de handleSubmit (S3776): las dos validaciones mostraban el mismo
-// aviso con el mismo fallback Swal/AlertManager, solo cambiaba el mensaje.
 function mostrarAdvertenciaValidacion(mensaje) {
-    if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: mensaje });
-    else AlertManager.alert(mensaje, 'error');
+    GF.alerta(mensaje, null, 'warning');
 }
 
 // Client manager class
@@ -81,8 +78,7 @@ class ClientManager {
         };
 
         // Validate required fields
-        const validation = Utils.validateRequired(clientData, ['nombre']);
-        if (!validation.valid) {
+        if (!clientData.nombre || !String(clientData.nombre).trim()) {
             mostrarAdvertenciaValidacion('El nombre es requerido');
             return;
         }
@@ -94,15 +90,15 @@ class ClientManager {
 
         try {
             if (isEdit) {
-                await ApiClient.put(`/api/clientes/${id}`, clientData);
+                await GF.api.put(`/api/clientes/${id}`, clientData);
             } else {
-                await ApiClient.post('/api/clientes', clientData);
+                await GF.api.post('/api/clientes', clientData);
             }
 
             this.formManager.hide();
-            Utils.reload();
+            location.reload();
         } catch (error) {
-            AlertManager.alert(error.message, 'error');
+            GF.error(error.message);
         }
     }
 
@@ -111,7 +107,7 @@ class ClientManager {
      */
     async handleEdit(id) {
         try {
-            const cliente = await ApiClient.get(`/api/clientes/${id}`);
+            const cliente = await GF.api.get(`/api/clientes/${id}`);
             document.getElementById('clienteId').value = cliente.id;
             document.getElementById('tipo_documento').value = cliente.tipo_documento || 'CC';
             document.getElementById('numero_documento').value = cliente.numero_documento || '';
@@ -120,7 +116,7 @@ class ClientManager {
             document.getElementById('direccion').value = cliente.direccion || '';
             document.getElementById('telefono').value = cliente.telefono || '';
         } catch (error) {
-            AlertManager.alert(error.message || 'Error al cargar el cliente', 'error');
+            GF.error(error.message || 'Error al cargar el cliente');
         }
     }
 
@@ -148,9 +144,9 @@ class ClientManager {
         if (!result.isConfirmed) return;
 
         try {
-            await ApiClient.delete(`/api/clientes/${id}`);
+            await GF.api.delete(`/api/clientes/${id}`);
             await Swal.fire({ icon: 'success', title: 'Cliente eliminado', timer: 1500, showConfirmButton: false });
-            Utils.reload();
+            location.reload();
         } catch (error) {
             Swal.fire({ icon: 'error', title: error.message || 'Error al eliminar' });
         }

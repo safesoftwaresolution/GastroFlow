@@ -7,13 +7,6 @@ function getDetallesModal() {
     return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
 }
 
-function mostrarAlerta(mensaje, tipo = 'success') {
-    const alertaDiv = document.createElement('div');
-    alertaDiv.className = 'custom-alert ' + tipo;
-    alertaDiv.innerHTML = '<div class="alert-content"><i class="bi ' + (tipo === 'success' ? 'bi-check-circle' : tipo === 'error' ? 'bi-x-circle' : 'bi-exclamation-triangle') + ' me-2"></i>' + mensaje + '</div><button type="button" class="btn-close ms-3" onclick="this.parentElement.remove()"></button>';
-    document.body.appendChild(alertaDiv);
-    setTimeout(function () { alertaDiv.remove(); }, 5000);
-}
 
 function mostrarFactura(id, numeroDisplay) {
     const modalEl = document.getElementById('facturaModal');
@@ -31,7 +24,7 @@ function mostrarDetalles(id) {
         url: '/api/facturas/' + id + '/detalles',
         success: function (data) {
             if (!data || !data.factura) {
-                mostrarAlerta('No se encontraron detalles de la factura', 'error');
+                GF.toast('No se encontraron detalles de la factura', 'error');
                 return;
             }
             const cliente = data.cliente || {};
@@ -132,7 +125,7 @@ function mostrarDetalles(id) {
             if (modal) modal.show();
         },
         error: function () {
-            mostrarAlerta('Error al cargar los detalles de la factura', 'error');
+            GF.toast('Error al cargar los detalles de la factura', 'error');
         }
     });
 }
@@ -166,7 +159,7 @@ document.getElementById('filtrarVentas').addEventListener('click', function () {
     const hasta = document.getElementById('fechaHasta').value;
     const q = document.getElementById('buscarVentas').value || '';
     if (!desde || !hasta) {
-        mostrarAlerta('Por favor seleccione ambas fechas', 'warning');
+        GF.toast('Por favor seleccione ambas fechas', 'warning');
         return;
     }
     const params = new URLSearchParams({ desde, hasta, q });

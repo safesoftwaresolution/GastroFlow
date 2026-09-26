@@ -115,9 +115,7 @@
         try {
             const tenantId = window.COSTEO_TENANT_ID;
             const url = tenantId ? `/costeo/api/costeo/resumen-financiero?tenant_id=${tenantId}` : '/costeo/api/costeo/resumen-financiero';
-            const res = await fetch(url, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
+            const data = await GF.api(url);
             renderRentabilidad(data);
         } catch (e) {
             document.getElementById('rentabilidadEmpty').style.display = '';
