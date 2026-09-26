@@ -1,80 +1,56 @@
-// POS API — todas las llamadas HTTP del módulo POS
+// POS API — todas las llamadas HTTP del módulo POS (sobre GF.api).
+// Las lecturas accesorias usan getOr: si fallan, el POS sigue funcionando con
+// un valor vacío en vez de bloquear la venta.
 
 window.POS_API = {
-    async getProductos() {
-        const r = await fetch('/pos/productos');
-        return r.ok ? r.json() : { productos: [], categorias: [] };
+    getProductos() {
+        return GF.api.getOr('/pos/productos', { productos: [], categorias: [] });
     },
 
-    async getModificadoresProducto(productoId) {
-        const r = await fetch(`/pos/productos/${productoId}/modificadores`);
-        return r.ok ? r.json() : [];
+    getModificadoresProducto(productoId) {
+        return GF.api.getOr(`/pos/productos/${productoId}/modificadores`, []);
     },
 
-    async getStats() {
-        const r = await fetch('/pos/stats');
-        return r.ok ? r.json() : { num_ordenes: 0, total_hoy: 0 };
+    getStats() {
+        return GF.api.getOr('/pos/stats', { num_ordenes: 0, total_hoy: 0 });
     },
 
-    async getServicios() {
-        const r = await fetch('/api/servicios/lista');
-        return r.ok ? r.json() : [];
+    getServicios() {
+        return GF.api.getOr('/api/servicios/lista', []);
     },
 
-    async getBorradores() {
-        const r = await fetch('/pos/borradores');
-        return r.ok ? r.json() : [];
+    getBorradores() {
+        return GF.api.getOr('/pos/borradores', []);
     },
 
-    async saveBorrador(data) {
-        const r = await fetch('/pos/borradores', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!r.ok) {
-            const err = await r.json().catch(() => ({}));
-            throw new Error(err.error || 'Error al guardar la orden');
-        }
-        return r.json();
+    saveBorrador(data) {
+        return GF.api.post('/pos/borradores', data, 'Error al guardar la orden');
     },
 
-    async deleteBorrador(id, { skipCocina = false } = {}) {
+    /** Devuelve true/false (no lanza), igual que antes. */
+    deleteBorrador(id, { skipCocina = false } = {}) {
         const url = `/pos/borradores/${id}${skipCocina ? '?skip_cocina=1' : ''}`;
-        const r = await fetch(url, { method: 'DELETE' });
-        return r.ok;
+        return GF.api.delete(url).then(
+            () => true,
+            () => false
+        );
     },
 
     // Ruta propia del POS — no requiere facturas.ver
-    async crearFactura(payload) {
-        const r = await fetch('/pos/vender', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Error al generar la factura');
-        return data;
+    crearFactura(payload) {
+        return GF.api.post('/pos/vender', payload, 'Error al generar la factura');
     },
 
-    async buscarCliente(q) {
-        const r = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(q)}`);
-        return r.ok ? r.json() : [];
+    buscarCliente(q) {
+        return GF.api.getOr(`/api/clientes/buscar?q=${encodeURIComponent(q)}`, []);
     },
 
-    async crearCliente(data) {
-        const r = await fetch('/api/clientes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!r.ok) throw new Error('No se pudo crear el cliente');
-        return r.json();
+    crearCliente(data) {
+        return GF.api.post('/api/clientes', data, 'No se pudo crear el cliente');
     },
 
     // Ruta propia del POS — no requiere clientes.ver
-    async getOrCreateConsumidorFinal() {
-        const r = await fetch('/pos/consumidor-final');
-        return r.ok ? r.json() : { id: null, nombre: 'Consumidor final' };
+    getOrCreateConsumidorFinal() {
+        return GF.api.getOr('/pos/consumidor-final', { id: null, nombre: 'Consumidor final' });
     }
 };

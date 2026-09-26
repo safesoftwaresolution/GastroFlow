@@ -106,17 +106,7 @@ ProductManager.prototype.init = function() {
       }
 
       try {
-        const res = await fetch('/api/productos/upload-image', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Error al subir la imagen');
-        }
-
-        const data = await res.json();
+        const data = await GF.api('/api/productos/upload-image', { method: 'POST', body: formData }, 'Error al subir la imagen');
         document.getElementById('imagenUrl').value = data.url;
 
         const previewContainer = document.getElementById('imagenPreviewContainer');
@@ -227,16 +217,7 @@ ProductManager.prototype.setupImportExport = function() {
       btnImportar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Importando...';
 
       try {
-        const response = await fetch('/api/productos/importar', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Error al importar');
-        }
+        const data = await GF.api('/api/productos/importar', { method: 'POST', body: formData }, 'Error al importar');
 
         let html = `<div class="text-start small">
           <div class="mb-1"><i class="bi bi-plus-circle text-success me-2"></i>Nuevos: <strong>${data.inserted}</strong></div>
@@ -247,7 +228,7 @@ ProductManager.prototype.setupImportExport = function() {
           html += `<hr><div class="text-start small text-danger">
             <strong><i class="bi bi-exclamation-triangle me-1"></i> Errores (${data.errores.length}):</strong>
             <div class="mt-2 p-2 bg-light border rounded" style="max-height: 100px; overflow-y: auto; font-size: 0.75rem;">
-              ${data.errores.map(e => `• Fila ${e.fila}: ${e.mensaje}`).join('<br>')}
+              ${data.errores.map(e => `• Fila ${GF.escapeHtml(e.fila)}: ${GF.escapeHtml(e.mensaje)}`).join('<br>')}
             </div>
           </div>`;
         }

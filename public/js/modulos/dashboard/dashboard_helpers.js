@@ -274,11 +274,7 @@ $(function () {
       this.updateMiniCalendarioEventos(this.calendarEventosCache[mesParam], year, month);
       return;
     }
-    fetch('/api/dashboard/eventos-calendario?mes=' + mesParam, { credentials: 'same-origin' })
-      .then(r => {
-        if (!r.ok) throw new Error('Error al cargar eventos');
-        return r.json();
-      })
+    GF.api('/api/dashboard/eventos-calendario?mes=' + mesParam, {}, 'Error al cargar eventos')
       .then(data => {
         let list = data.eventosCalendario || data.eventos || [];
         if (!Array.isArray(list)) list = [];

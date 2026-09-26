@@ -18,19 +18,13 @@
         if (!tenantId) return Promise.reject(new Error('Seleccioná un restaurante.'));
         const sep = path.indexOf('?') !== -1 ? '&' : '?';
         const url = BASE + path + sep + 'tenant_id=' + tenantId;
-        const options = {
-            headers: { 'Content-Type': 'application/json' },
-            ...opts
-        };
-        if (opts.body !== undefined && (opts.method === 'POST' || opts.method === 'PUT')) {
-            const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
-            body.tenant_id = tenantId;
-            options.body = JSON.stringify(body);
+        // Lo propio de esta pantalla: el superadmin opera sobre el tenant elegido,
+        // que va en la query y también en el body de POST/PUT. El resto es GF.api.
+        let body = opts.body;
+        if (body !== undefined && (opts.method === 'POST' || opts.method === 'PUT')) {
+            body = { ...(typeof body === 'string' ? JSON.parse(body) : body), tenant_id: tenantId };
         }
-        return fetch(url, options).then(res => {
-            if (!res.ok) return res.json().then(j => Promise.reject(new Error(j.error || res.statusText)));
-            return res.json();
-        });
+        return GF.api(url, { ...opts, body });
     }
 
 

@@ -24,22 +24,7 @@ $(document).ready(function () {
         $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creando...');
 
         try {
-            const token = localStorage.getItem('auth_token') || '';
-
-            const response = await fetch('/api/mesas/crear-masivas', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ cantidad, prefijo: prefijo || null })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Error al crear mesas');
-            }
+            const data = await GF.api.post('/api/mesas/crear-masivas', { cantidad, prefijo: prefijo || null }, 'Error al crear mesas');
 
             modalCrearMasivas.hide();
 

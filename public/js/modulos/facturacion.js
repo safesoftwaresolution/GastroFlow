@@ -129,18 +129,8 @@
                 card_holder: titular.trim()
             });
 
-            const res = await fetch('/facturacion/metodo-pago', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cardToken, acceptanceToken, personalAuthToken })
-            });
-            const data = await res.json().catch(() => ({}));
-            if (data.ok) {
-                Swal.fire('¡Listo!', 'Cobro automático activado.', 'success').then(() => location.reload());
-            } else {
-                setMensaje(data.error || 'No se pudo guardar el método de pago.', true);
-                if (btn) btn.disabled = false;
-            }
+            await GF.api.post('/facturacion/metodo-pago', { cardToken, acceptanceToken, personalAuthToken }, 'No se pudo guardar el método de pago.');
+            Swal.fire('¡Listo!', 'Cobro automático activado.', 'success').then(() => location.reload());
         } catch (err) {
             setMensaje(err.message || 'No se pudo guardar el método de pago.', true);
             if (btn) btn.disabled = false;
@@ -158,20 +148,9 @@
             if (!res.isConfirmed) {
                 return;
             }
-            fetch('/facturacion/cobrar-ahora', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: fingerprint.sessionId, deviceId: fingerprint.deviceId })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.ok) {
-                        Swal.fire('Cobro iniciado', data.mensaje || 'Te avisaremos por correo.', 'success');
-                    } else {
-                        Swal.fire('Error', data.error || 'No se pudo iniciar el cobro', 'error');
-                    }
-                })
-                .catch(() => Swal.fire('Error', 'No se pudo iniciar el cobro', 'error'));
+            GF.api.post('/facturacion/cobrar-ahora', { sessionId: fingerprint.sessionId, deviceId: fingerprint.deviceId }, 'No se pudo iniciar el cobro')
+                .then(data => Swal.fire('Cobro iniciado', data.mensaje || 'Te avisaremos por correo.', 'success'))
+                .catch(err => Swal.fire('Error', err.message, 'error'));
         });
     }
 

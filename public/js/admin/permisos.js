@@ -156,8 +156,7 @@
                 sectionCheckboxesInited = true;
             }
             
-            fetch('/admin/permisos/usuario/' + userId, { credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
+            GF.api('/admin/permisos/usuario/' + userId)
                 .then(function (data) {
                     loadedPermisoIds = (data.permiso_ids || []).map(function (id) { return parseInt(id, 10); });
                     document.querySelectorAll('.permiso-check').forEach(function (cb) {
@@ -239,29 +238,18 @@
             btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
             
             var permisoIds = Array.from(document.querySelectorAll('.permiso-check:checked')).map(function (c) { return parseInt(c.value, 10); });
-            fetch('/admin/permisos/usuario/' + userId, {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ permiso_ids: permisoIds })
-            })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-                .then(function (o) {
-                    btnGuardar.disabled = false;
-                    btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar permisos';
-                    
-                    if (o.ok) {
-                        loadedPermisoIds = permisoIds; // Actualizar IDs cargados originales
-                        updateSaveBar();
-                        Swal.fire({ icon: 'success', title: o.data.message || 'Permisos guardados con éxito' });
-                    } else {
-                        Swal.fire({ icon: 'error', title: o.data.error || 'Error' });
-                    }
+            GF.api.put('/admin/permisos/usuario/' + userId, { permiso_ids: permisoIds }, 'No se pudieron guardar los permisos')
+                .then(function (data) {
+                    loadedPermisoIds = permisoIds; // Actualizar IDs cargados originales
+                    updateSaveBar();
+                    Swal.fire({ icon: 'success', title: (data && data.message) || 'Permisos guardados con éxito' });
                 })
-                .catch(function () {
+                .catch(function (err) {
+                    Swal.fire({ icon: 'error', title: err.message });
+                })
+                .finally(function () {
                     btnGuardar.disabled = false;
                     btnGuardar.innerHTML = '<i class="bi bi-save me-1"></i>Guardar permisos';
-                    Swal.fire({ icon: 'error', title: 'Error de conexión' });
                 });
         });
     }

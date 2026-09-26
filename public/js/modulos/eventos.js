@@ -36,11 +36,6 @@
     };
 
     // Extraída para no anidar un .then() dentro de otro .then() (SonarQube S2004).
-    async function parseJsonResponse(res) {
-        const data = await res.json();
-        return { ok: res.ok, data };
-    }
-
     window.eliminarEvento = async function (id, nombre) {
         const r = await Swal.fire({
             title: '¿Eliminar evento?',
@@ -53,17 +48,11 @@
         if (!r.isConfirmed) return;
 
         try {
-            const res = await fetch('/eventos/' + id, { method: 'DELETE', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } });
-            const { ok, data } = await parseJsonResponse(res);
-            if (ok) {
-                Swal.fire({ icon: 'success', title: 'Evento eliminado' });
-                window.location.reload();
-            } else {
-                Swal.fire({ icon: 'error', title: data.error || 'Error' });
-            }
+            await GF.api.delete('/eventos/' + id, 'No se pudo eliminar el evento');
+            Swal.fire({ icon: 'success', title: 'Evento eliminado' });
+            window.location.reload();
         } catch (err) {
-            console.error('Error al eliminar evento:', err);
-            Swal.fire({ icon: 'error', title: 'Error de conexión' });
+            Swal.fire({ icon: 'error', title: err.message });
         }
     };
 
@@ -84,30 +73,22 @@
         const url = id ? '/eventos/' + id : '/eventos';
         const method = id ? 'PUT' : 'POST';
 
-        let result;
-        try {
-            const res = await fetch(url, { method: method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) });
-            const ct = res.headers.get('content-type');
-            result = ct && ct.includes('json')
-                ? await parseJsonResponse(res)
-                : { ok: false, data: { error: 'Respuesta no válida del servidor' } };
-        } catch (err) {
-            console.error('Error al guardar evento:', err);
+        // El modal se cierra antes del aviso (y el aviso va con un respiro) para
+        // que el backdrop de Bootstrap no quede encima de SweetAlert.
+        const cerrarModal = () => {
             const modalInstance = bootstrap.Modal.getInstance(modal);
             if (modalInstance) modalInstance.hide();
-            setTimeout(function () { Swal.fire({ icon: 'error', title: 'Error de conexión' }); }, 150);
-            return;
-        }
-
-        const modalInstance = bootstrap.Modal.getInstance(modal);
-        if (modalInstance) modalInstance.hide();
-        if (result.ok) {
+        };
+        try {
+            await GF.api(url, { method, body: payload }, 'No se pudo guardar el evento');
+            cerrarModal();
             setTimeout(async function () {
                 await Swal.fire({ icon: 'success', title: id ? 'Evento actualizado' : 'Evento creado' });
                 window.location.reload();
             }, 150);
-        } else {
-            setTimeout(function () { Swal.fire({ icon: 'error', title: result.data.error || 'Error' }); }, 150);
+        } catch (err) {
+            cerrarModal();
+            setTimeout(function () { Swal.fire({ icon: 'error', title: err.message }); }, 150);
         }
     });
 })();

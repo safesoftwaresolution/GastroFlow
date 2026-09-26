@@ -281,10 +281,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function refreshLiveStats() {
         try {
-            const resp = await fetch('/admin/dashboard/live-stats', { cache: 'no-store' });
-            if (!resp.ok) return;
-            const data = await resp.json();
-            if (!data.ok) return;
+            const data = await GF.api.getOr('/admin/dashboard/live-stats', null);
+            if (!data || !data.ok) return;
 
             const container = document.getElementById('ventasHoyContainer');
             if (!container) return;

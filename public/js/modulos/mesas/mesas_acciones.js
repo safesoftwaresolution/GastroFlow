@@ -8,8 +8,8 @@ function crearItemResultadoCliente(mod, list, modalClienteMesa, c) {
     <a href="#" class="list-group-item list-group-item-action py-3 border-bottom">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-            <div class="fw-bold text-dark">${c.nombre}</div>
-            <div class="small text-muted">${docInfo}</div>
+            <div class="fw-bold text-dark">${GF.escapeHtml(c.nombre)}</div>
+            <div class="small text-muted">${GF.escapeHtml(docInfo)}</div>
         </div>
         <i class="bi bi-chevron-right text-muted"></i>
       </div>
@@ -134,32 +134,21 @@ $(function () {
   $('#aplicarPropinaMesaBtn').on('click', async function () {
     const valor = Math.max(0, MoneyInput.parse($('#propinaInputMesa').val()));
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/propina`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propina: valor })
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Error');
+      await GF.api.patch(`/api/mesas/pedidos/${mod.pedidoActual.id}/propina`, { propina: valor }, 'No se pudo aplicar la propina');
       mod.propinaPedido = valor;
       mod.renderItems();
-      bootstrap.Modal.getInstance(document.getElementById('propinaModalMesa')).hide();
+      GF.cerrarModal('propinaModalMesa');
       if (valor > 0) Swal.fire({ icon: 'success', title: 'Propina aplicada', text: mod.formatear(valor), timer: 1500, showConfirmButton: false });
     } catch (e) { Swal.fire({ icon: 'error', title: e.message }); }
   });
   
   $('#quitarPropinaMesaBtn').on('click', async function () {
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/propina`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propina: 0 })
-      });
-      if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Error'); }
+      await GF.api.patch(`/api/mesas/pedidos/${mod.pedidoActual.id}/propina`, { propina: 0 }, 'No se pudo quitar la propina');
       mod.propinaPedido = 0;
       $('#propinaInputMesa').val('');
       mod.renderItems();
-      bootstrap.Modal.getInstance(document.getElementById('propinaModalMesa')).hide();
+      GF.cerrarModal('propinaModalMesa');
     } catch (e) { Swal.fire({ icon: 'error', title: e.message }); }
   });
 
@@ -176,11 +165,7 @@ $(function () {
 
     if (mod.pedidoActual?.id) {
       try {
-        await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cliente_id: null })
-        });
+        await GF.api.put(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, { cliente_id: null });
       } catch (err) {
         console.error(err);
         mod.clienteActual = originalCliente;
@@ -216,14 +201,7 @@ $(function () {
 
     toCliente = setTimeout(async () => {
       try {
-        const resp = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(q)}`);
-        if (!resp.ok) {
-          loader.hide();
-          list.html('<div class="list-group-item text-danger text-center">No se pudo buscar</div>').show();
-          return;
-        }
-
-        const clientes = await resp.json();
+        const clientes = await GF.api(`/api/clientes/buscar?q=${encodeURIComponent(q)}`, {}, 'No se pudo buscar');
         list.empty();
         loader.hide();
         list.show();
@@ -304,8 +282,7 @@ $(function () {
         itemIdsParaMover = selected;
       }
 
-      const resp = await fetch('/api/mesas/listar');
-      const todasLasMesas = await resp.json();
+      const todasLasMesas = await GF.api('/api/mesas/listar', {}, 'No se pudieron cargar las mesas');
       let mesasDisponibles;
       if (esParcial) {
         mesasDisponibles = todasLasMesas.filter(m => Number(m.id) !== Number(mod.pedidoActual.mesa_id));
@@ -375,13 +352,14 @@ $(function () {
     try {
       const pendientes = mod.items.filter(i => i.estado === 'pendiente');
       for (const it of pendientes) {
-        await fetch(`/api/mesas/items/${it.id}/enviar`, { method: 'PUT' });
+        // Antes un rechazo del servidor se ignoraba y se mostraba "Enviado a cocina" igual.
+        await GF.api.put(`/api/mesas/items/${it.id}/enviar`);
       }
       await mod.cargarPedido(mod.pedidoActual.id);
       Swal.fire({ icon: 'success', title: 'Enviado a cocina' });
     } catch (err) {
       console.error(err);
-      Swal.fire({ icon: 'error', title: 'No se pudo enviar a cocina' });
+      Swal.fire({ icon: 'error', title: 'No se pudo enviar a cocina', text: err.message });
     }
   });
 
@@ -398,8 +376,7 @@ $(function () {
       const container = $('#listaServiciosDisponibles');
       container.html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>');
       
-      const r = await fetch('/api/servicios/lista');
-      const servicios = await r.json();
+      const servicios = await GF.api('/api/servicios/lista', {}, 'No se pudieron cargar los servicios');
       
       container.empty();
       if (servicios.length === 0) {
@@ -410,12 +387,12 @@ $(function () {
       servicios.forEach(s => {
         container.append(`
           <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 btn-seleccionar-servicio" 
-                  data-id="${s.id}" data-precio="${s.precio}" data-nombre="${s.nombre}">
+                  data-id="${s.id}" data-precio="${s.precio}" data-nombre="${GF.escapeHtml(s.nombre)}">
             <div>
-              <div class="fw-bold">${s.nombre}</div>
-              <div class="text-muted small">${s.descripcion || ''}</div>
+              <div class="fw-bold">${GF.escapeHtml(s.nombre)}</div>
+              <div class="text-muted small">${GF.escapeHtml(s.descripcion || '')}</div>
             </div>
-            <div class="badge bg-primary rounded-pill">$${Number(s.precio).toLocaleString()}</div>
+            <div class="badge bg-primary rounded-pill">${GF.dinero(s.precio)}</div>
           </button>
         `);
       });
@@ -434,21 +411,13 @@ $(function () {
       modalServicios.hide();
       GF.cargandoPantalla('Agregando servicio...');
       
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/servicios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          servicio_id: id,
-          cantidad: 1,
-          precio: precio,
-          nota: 'Servicio agregado'
-        })
-      });
-
-      const data = await r.json();
+      await GF.api.post(`/api/mesas/pedidos/${mod.pedidoActual.id}/servicios`, {
+        servicio_id: id,
+        cantidad: 1,
+        precio: precio,
+        nota: 'Servicio agregado'
+      }, 'Error al agregar servicio');
       GF.cerrarCargando();
-
-      if (!r.ok) throw new Error(data.error || 'Error al agregar servicio');
       
       await mod.cargarPedido(mod.pedidoActual.id);
       GF.toast(`Servicio "${nombre}" agregado`, 'success');

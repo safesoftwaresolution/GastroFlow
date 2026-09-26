@@ -16,12 +16,7 @@ window.POS_QZ = {
     _connecting: null,
 
     async init() {
-        try {
-            const r = await fetch('/configuracion/impresoras');
-            this._config = r.ok ? await r.json() : null;
-        } catch {
-            this._config = null;
-        }
+        this._config = await GF.api.getOr('/configuracion/impresoras', null);
 
         if (this._config?.qz_habilitado && typeof qz !== 'undefined') {
             // Conecta ya al abrir el POS, para que el popup de "Allow" (si aplica)
@@ -134,9 +129,8 @@ window.POS_QZ = {
         if (!ok) return;
 
         try {
-            const r = await fetch(`/facturas/${facturaId}/imprimir-json`);
-            if (!r.ok) return;
-            const payload = await r.json();
+            const payload = await GF.api.getOr(`/facturas/${facturaId}/imprimir-json`, null);
+            if (!payload) return;
 
             const printer = await this._resolverImpresora();
             const cfg = qz.configs.create(printer, { encoding: 'CP858' });

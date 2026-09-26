@@ -13,15 +13,10 @@ if (reenviarForm) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:1em;height:1em;border-width:2px;"></span> Enviando...';
 
         try {
-            const response = await fetch('/auth/reenviar-verificacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const data = await response.json();
+            const data = await GF.api.post('/auth/reenviar-verificacion', { email }, 'No se pudo reenviar el correo.');
             msgBox.className = 'login-alert warning';
             msgBox.style.display = 'flex';
-            msgBox.innerHTML = '<i class="bi bi-info-circle-fill"></i><span>' + (data.message || 'Listo.') + '</span>';
+            msgBox.innerHTML = '<i class="bi bi-info-circle-fill"></i><span>' + GF.escapeHtml(data.message || 'Listo.') + '</span>';
         } catch (error) {
             msgBox.className = 'login-alert error';
             msgBox.style.display = 'flex';

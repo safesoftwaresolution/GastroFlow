@@ -41,8 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lista[0]) inputImpresora.value = lista[0];
         } catch (err) {
             console.warn('QZ: no se pudieron detectar impresoras', err);
-            Swal?.fire('QZ Tray no disponible', 'Verifica que QZ Tray esté instalado y corriendo en esta PC.', 'warning')
-                ?? alert('QZ Tray no disponible en esta PC.');
+            GF.alerta('QZ Tray no disponible', 'Verifica que QZ Tray esté instalado y corriendo en esta PC.', 'warning');
         } finally {
             btnDetectar.disabled = false;
             btnDetectar.innerHTML = '<i class="bi bi-search me-1"></i>Detectar impresoras';
@@ -63,8 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
         } catch (err) {
             console.warn('QZ: prueba fallida', err);
-            Swal?.fire('Prueba fallida', 'No se pudo imprimir/abrir el cajón. Revisa la conexión con QZ Tray.', 'error')
-                ?? alert('Prueba fallida: revisa la conexión con QZ Tray.');
+            GF.alerta('Prueba fallida', 'No se pudo imprimir/abrir el cajón. Revisa la conexión con QZ Tray.', 'error');
         }
     });
 });

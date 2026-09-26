@@ -63,9 +63,7 @@ $(function () {
     });
     if (!form) return;
     try {
-      const r = await fetch(`/api/mesas/${mesaId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Error al actualizar');
+      await GF.api.put(`/api/mesas/${mesaId}`, form, 'Error al actualizar');
       Swal.fire({ icon: 'success', title: 'Mesa actualizada' }).then(() => {
         if (typeof refreshMesas === 'function') refreshMesas();
         else location.reload();
@@ -133,8 +131,11 @@ $(function () {
     if (!numero) return;
     const { value: descripcion } = await Swal.fire({ title: 'Descripción (ubicación o nombre)', input: 'text', showCancelButton: true, inputValidator: v => !v?.trim() ? 'La descripción es obligatoria (ej: Terraza, Interior)' : null });
     if (!descripcion) return;
-    const resp = await fetch('/api/mesas/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ numero, descripcion: descripcion.trim() }) });
-    if (!resp.ok) { const err = await resp.json(); return Swal.fire({ icon: 'error', title: err.error || 'Error' }); }
+    try {
+      await GF.api.post('/api/mesas/crear', { numero, descripcion: descripcion.trim() }, 'No se pudo crear la mesa');
+    } catch (e) {
+      return Swal.fire({ icon: 'error', title: e.message });
+    }
     Swal.fire({ icon: 'success', title: 'Mesa creada' }).then(() => {
       if (typeof refreshMesas === 'function') refreshMesas();
       else location.reload();

@@ -1,5 +1,4 @@
 (function () {
-    const fmtCOP = v => Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
     const fmtPct = v => (v == null ? 'N/A' : Number(v).toFixed(1) + '%');
     let chartInstance = null;
     let loaded = false;
@@ -43,7 +42,7 @@
             <div class="col-md-4">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body text-center">
-                        <div class="fs-4 fw-bold text-warning">${vEqui != null ? fmtCOP(vEqui) : 'N/A'}</div>
+                        <div class="fs-4 fw-bold text-warning">${vEqui != null ? GF.dinero(vEqui) : 'N/A'}</div>
                         <div class="small text-muted">Ventas para punto de equilibrio</div>
                     </div>
                 </div>
@@ -51,7 +50,7 @@
             <div class="col-md-4">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body text-center">
-                        <div class="fs-4 fw-bold text-success">${vMeta != null ? fmtCOP(vMeta) : 'N/A'}</div>
+                        <div class="fs-4 fw-bold text-success">${vMeta != null ? GF.dinero(vMeta) : 'N/A'}</div>
                         <div class="small text-muted">Ventas para alcanzar meta</div>
                     </div>
                 </div>
@@ -65,9 +64,9 @@
                 <td><span class="fw-medium">${p.producto_nombre || '—'}</span>
                     ${p.producto_codigo ? '<small class="text-muted d-block">' + p.producto_codigo + '</small>' : ''}
                 </td>
-                <td class="text-end">${fmtCOP(p.precio_venta)}</td>
-                <td class="text-end">${fmtCOP(p.cvu_porcion)}</td>
-                <td class="text-end fw-semibold">${fmtCOP(p.margen_contribucion_porcion)}</td>
+                <td class="text-end">${GF.dinero(p.precio_venta)}</td>
+                <td class="text-end">${GF.dinero(p.cvu_porcion)}</td>
+                <td class="text-end fw-semibold">${GF.dinero(p.margen_contribucion_porcion)}</td>
                 <td class="text-center">${fmtPct(p.margen_contribucion_pct)}</td>
                 <td class="text-center">${estadoBadge(p.margen_contribucion_pct)}</td>
             </tr>

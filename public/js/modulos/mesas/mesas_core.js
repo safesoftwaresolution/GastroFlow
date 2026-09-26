@@ -16,7 +16,7 @@ window.MesasModule = {
   cerradaStreak: 0,
 
   formatear(valor) {
-    return `$${Number(valor || 0).toLocaleString('es-CO')}`;
+    return GF.dinero(valor);
   },
 
   // Normaliza la entrada de descuentosPorItem a { tipo, valor }.

@@ -19,12 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mod.isSuperadmin && window.COSTEO_TENANT_ID) {
       url += '?tenant_id=' + window.COSTEO_TENANT_ID;
     }
-    fetch(url, {
-      method: 'POST',
-      body: formData,
-      credentials: 'same-origin'
-    })
-      .then(res => res.ok ? res.json() : res.json().then(j => { throw new Error(j.error || res.statusText); }))
+    GF.api(url, { method: 'POST', body: formData }, 'Error al importar')
       .then((result) => {
         const { creados = 0, actualizados = 0, errores = [] } = result;
         let msg = '';

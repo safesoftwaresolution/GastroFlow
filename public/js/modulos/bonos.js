@@ -312,13 +312,10 @@
 
         Swal.fire({ title: 'Emitiendo bono...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const r = await fetch('/bonos', {
+            const data = await GF.api('/bonos', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
-            });
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'No se pudo emitir el bono');
+                body: form
+            }, 'No se pudo emitir el bono');
 
             Swal.fire({
                 icon: 'success',

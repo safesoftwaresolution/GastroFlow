@@ -45,17 +45,10 @@ document.getElementById('registroForm').addEventListener('submit', async functio
     setLoading(true);
 
     try {
-        const response = await fetch('/auth/registro', {
+        const data = await GF.api('/auth/registro', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre_completo, username, email, password, password_confirm })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al crear la cuenta');
-        }
+            body: { nombre_completo, username, email, password, password_confirm }
+        }, 'Error al crear la cuenta');
 
         Swal.fire({
             icon: 'success',

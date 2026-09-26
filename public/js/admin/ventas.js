@@ -113,14 +113,8 @@
             var id = btnEdit.getAttribute('data-id');
             if (!id) return;
 
-            fetch('/admin/ventas/' + id, { credentials: 'same-origin' })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-                .then(function (o) {
-                    if (!o.ok) {
-                        Swal.fire({ icon: 'error', title: 'No se pudo cargar la venta', text: o.data.error || '' });
-                        return;
-                    }
-                    var f = o.data;
+            GF.api('/admin/ventas/' + id)
+                .then(function (f) {
                     document.getElementById('editVentaId').value = f.id;
                     document.getElementById('editVentaNumero').textContent = '#' + (f.numero != null ? f.numero : f.id) + ' — ' + (f.tenant_nombre || '');
                     document.getElementById('editVentaCliente').value = f.cliente_nombre || '';
@@ -133,8 +127,8 @@
                     toggleMixto();
                     if (modalEditar) modalEditar.show();
                 })
-                .catch(function () {
-                    Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo contactar al servidor.' });
+                .catch(function (err) {
+                    Swal.fire({ icon: 'error', title: 'No se pudo cargar la venta', text: err.message });
                 });
         });
     }
@@ -158,25 +152,15 @@
                 monto_transferencia: editTransferencia.value
             };
 
-            fetch('/admin/ventas/' + id, {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-                .then(function (o) {
-                    if (!o.ok) {
-                        Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: o.data.error || '' });
-                        return;
-                    }
+            GF.api.put('/admin/ventas/' + id, payload)
+                .then(function () {
                     if (modalEditar) modalEditar.hide();
                     // Recargamos para que la fila (cliente, badge de pago, total, fecha)
                     // se vea igual que si se hubiera cargado desde cero.
                     window.location.reload();
                 })
-                .catch(function () {
-                    Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo contactar al servidor.' });
+                .catch(function (err) {
+                    Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: err.message });
                 })
                 .finally(function () {
                     btnGuardar.disabled = false;
@@ -226,42 +210,25 @@
                 if (!result.isConfirmed) return;
 
                 // Petición AJAX al backend para eliminar
-                fetch('/admin/ventas/' + id, {
-                    method: 'DELETE',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-                .then(function (o) {
-                    if (o.ok) {
-                        GF.toast(o.data.message || 'Factura eliminada correctamente', 'success', { timer: 2000 });
+                GF.api.delete('/admin/ventas/' + id)
+                .then(function (data) {
+                    GF.toast((data && data.message) || 'Factura eliminada correctamente', 'success', { timer: 2000 });
 
-                        // Eliminar fila
-                        var row = document.querySelector('tr[data-factura-id="' + id + '"]');
-                        if (row) row.remove();
+                    // Eliminar fila
+                    var row = document.querySelector('tr[data-factura-id="' + id + '"]');
+                    if (row) row.remove();
 
-                        // Incrementar contador de sesión
-                        deletedCount++;
-                        if (deletedSessionCountEl) {
-                            deletedSessionCountEl.textContent = deletedCount;
-                        }
-
-                        // Reaplicar filtros y recálculos
-                        applyFilters();
-                    } else {
-                        Swal.fire({ 
-                            icon: 'error', 
-                            title: 'Error al eliminar', 
-                            text: o.data.error || 'No se pudo eliminar la factura.' 
-                        });
+                    // Incrementar contador de sesión
+                    deletedCount++;
+                    if (deletedSessionCountEl) {
+                        deletedSessionCountEl.textContent = deletedCount;
                     }
+
+                    // Reaplicar filtros y recálculos
+                    applyFilters();
                 })
-                .catch(function () { 
-                    Swal.fire({ 
-                        icon: 'error', 
-                        title: 'Error de conexión', 
-                        text: 'No se pudo contactar al servidor.' 
-                    }); 
+                .catch(function (err) {
+                    Swal.fire({ icon: 'error', title: 'Error al eliminar', text: err.message || 'No se pudo eliminar la factura.' });
                 });
             });
         });

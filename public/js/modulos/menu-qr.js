@@ -21,7 +21,6 @@ let cart = {};
 // Estado del modal de personalización mientras está abierto.
 let modalState = null;
 
-function formatPrice(val) { return '$' + Number(val).toLocaleString('es-CO'); }
 
 
 function getCardData(id) {
@@ -121,7 +120,7 @@ function openCustomizeModal(data) {
     modalState = { data: data, qty: 1 };
 
     document.getElementById('modalProductName').textContent = data.nombre;
-    document.getElementById('modalProductPrice').textContent = formatPrice(data.precio);
+    document.getElementById('modalProductPrice').textContent = GF.dinero(data.precio);
 
     const descWrap = document.getElementById('modalProductDescWrap');
     const descEl = document.getElementById('modalProductDesc');
@@ -184,7 +183,7 @@ function renderModalGroups(grupos) {
                         data-precio="${o.precio_adicional}" data-nombre="${GF.escapeHtml(o.nombre)}">
                     <span>${GF.escapeHtml(o.nombre)}</span>
                 </span>
-                <span class="qr-mod-opcion-precio">${Number(o.precio_adicional) > 0 ? '+' + formatPrice(o.precio_adicional) : ''}</span>
+                <span class="qr-mod-opcion-precio">${Number(o.precio_adicional) > 0 ? '+' + GF.dinero(o.precio_adicional) : ''}</span>
             </label>`).join('');
         return `
             <div class="qr-mod-grupo" data-grupo-id="${g.id}" data-tipo="${g.tipo_seleccion}"
@@ -258,7 +257,7 @@ function updateModalTotal() {
     const { precioAdicional } = collectModalSeleccion();
     const qty = (modalState && modalState.qty) || 1;
     const base = (modalState && modalState.data.precio) || 0;
-    document.getElementById('modalAddTotal').textContent = formatPrice((base + precioAdicional) * qty);
+    document.getElementById('modalAddTotal').textContent = GF.dinero((base + precioAdicional) * qty);
     document.getElementById('modalAddBtn').disabled = !modalEsValido();
 }
 
@@ -307,7 +306,7 @@ function updateUI() {
     const bar = document.getElementById('bottomCart');
     if (count > 0) {
         bar.classList.add('show');
-        document.getElementById('cartTotal').textContent = formatPrice(total);
+        document.getElementById('cartTotal').textContent = GF.dinero(total);
         document.getElementById('cartItems').textContent = `${count} producto${count > 1 ? 's' : ''}`;
     } else {
         bar.classList.remove('show');
@@ -334,7 +333,7 @@ function renderOffcanvasList(total) {
                         <div class="cart-item-name">${GF.escapeHtml(item.nombre)}</div>
                         ${toppings ? `<div class="cart-item-extra">${GF.escapeHtml(toppings)}</div>` : ''}
                         ${item.nota ? `<div class="cart-item-nota"><i class="bi bi-chat-left-text me-1"></i>${GF.escapeHtml(item.nota)}</div>` : ''}
-                        <div class="cart-item-price">${formatPrice(unit)}</div>
+                        <div class="cart-item-price">${GF.dinero(unit)}</div>
                     </div>
                     <div class="qty-controls active" style="position: static; background: #f0f2f5; box-shadow: none;">
                         <button class="qty-btn text-danger" onclick="updateLineIdx(${idx}, -1)"><i class="bi bi-dash"></i></button>
@@ -344,7 +343,7 @@ function renderOffcanvasList(total) {
                 </div>`;
         }).join('');
     }
-    document.getElementById('offcanvasTotal').textContent = formatPrice(total);
+    document.getElementById('offcanvasTotal').textContent = GF.dinero(total);
 }
 
 // ----- Estado de la mesa (pedido acumulado + seguimiento) -----
@@ -365,11 +364,7 @@ const MESA_ESTADO = {
     async fetchEstado() {
         if (!window.QR_TOKEN) { return; }
         try {
-            const res = await fetch(`/api/qr/pedidos/estado?qr_token=${encodeURIComponent(window.QR_TOKEN)}`, {
-                headers: { Accept: 'application/json' }
-            });
-            if (!res.ok) { return; }
-            const json = await res.json();
+            const json = await GF.api.getOr(`/api/qr/pedidos/estado?qr_token=${encodeURIComponent(window.QR_TOKEN)}`, null);
             if (json && json.success) { this.render(json.data); }
         } catch (_) {
             // Silencioso: es polling de fondo, no molestar al cliente.
@@ -423,13 +418,13 @@ const MESA_ESTADO = {
         if (resumenEl) { resumenEl.textContent = partes.join('  ·  ') || 'Pedido en curso'; }
 
         const totalEl = document.getElementById('estadoMesaTotal');
-        if (totalEl) { totalEl.textContent = formatPrice(data.pedido.total); }
+        if (totalEl) { totalEl.textContent = GF.dinero(data.pedido.total); }
 
         if (dot) { dot.hidden = !(r.listo > 0); }
 
         if (hint) {
             hint.hidden = false;
-            hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Esta mesa ya tiene un pedido en curso por <strong>${formatPrice(data.pedido.total)}</strong>. Lo que agregues se sumará a esa cuenta.`;
+            hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Esta mesa ya tiene un pedido en curso por <strong>${GF.dinero(data.pedido.total)}</strong>. Lo que agregues se sumará a esa cuenta.`;
         }
     },
 
@@ -443,13 +438,10 @@ const MESA_ESTADO = {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
-            const res = await fetch('/api/qr/mesa/solicitud', {
+            const json = await GF.api('/api/qr/mesa/solicitud', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ qr_token: window.QR_TOKEN, tipo: tipo })
-            });
-            const json = await res.json();
-            if (!res.ok) { throw new Error(json.error || 'No se pudo enviar la solicitud.'); }
+                body: { qr_token: window.QR_TOKEN, tipo: tipo }
+            }, 'No se pudo enviar la solicitud.');
             this._ultimaSolicitud[tipo] = ahora;
             Swal.fire({
                 icon: 'success',
@@ -544,14 +536,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const notas = document.getElementById('pedidoNotas').value.trim();
 
         try {
-            const res = await fetch(`/api/qr/pedidos`, {
+            const data = await GF.api(`/api/qr/pedidos`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ qr_token: window.QR_TOKEN, items, notas })
-            });
-
-            const data = await res.json();
-            if (!res.ok) { throw new Error(data.error || 'No se pudo enviar el pedido.'); }
+                body: { qr_token: window.QR_TOKEN, items, notas }
+            }, 'No se pudo enviar el pedido.');
 
             const numero = data && data.data && data.data.numero;
             Swal.fire({

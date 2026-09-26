@@ -7,20 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = Object.fromEntries(new FormData(formAbrir));
 
             try {
-                const res = await fetch('/caja/abrir', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                if (res.ok) {
-                    Swal.fire('Éxito', 'Turno abierto correctamente', 'success').then(() => location.reload());
-                } else {
-                    const err = await res.json();
-                    Swal.fire('Error', err.error || 'No se pudo abrir caja', 'error');
-                }
+                await GF.api.post('/caja/abrir', formData, 'No se pudo abrir caja');
+                Swal.fire('Éxito', 'Turno abierto correctamente', 'success').then(() => location.reload());
             } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'Error de conexión', 'error');
+                GF.error(error.message);
             }
         });
     }
@@ -44,17 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.isConfirmed) {
                 try {
-                    const res = await fetch(`/caja/${id}/cerrar`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    if (res.ok) {
-                        Swal.fire('Turno Cerrado', 'Arqueo guardado exitosamente', 'success').then(() => location.reload());
-                    }
+                    // Antes, si el servidor rechazaba el cierre no se mostraba nada.
+                    await GF.api.post(`/caja/${id}/cerrar`, formData, 'No se pudo cerrar el turno');
+                    Swal.fire('Turno Cerrado', 'Arqueo guardado exitosamente', 'success').then(() => location.reload());
                 } catch (error) {
-                    console.error(error);
-                    Swal.fire('Error', 'Error de conexión', 'error');
+                    GF.error(error.message);
                 }
             }
         });
@@ -69,18 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = Object.fromEntries(new FormData(formMov));
 
             try {
-                const res = await fetch(`/caja/${id}/movimiento`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                if (res.ok) {
-                    $('#modalMovimiento').modal('hide');
-                    Swal.fire('Éxito', 'Movimiento registrado', 'success').then(() => location.reload());
-                }
+                await GF.api.post(`/caja/${id}/movimiento`, formData, 'Error al registrar');
+                GF.cerrarModal('modalMovimiento');
+                Swal.fire('Éxito', 'Movimiento registrado', 'success').then(() => location.reload());
             } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'Error al registrar', 'error');
+                GF.error(error.message);
             }
         });
     }

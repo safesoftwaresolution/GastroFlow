@@ -25,15 +25,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         btnGuardar.disabled = true;
         try {
-            const res = await fetch('/configuracion/alertas', {
+            const data = await GF.api('/configuracion/alertas', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.error || 'No se pudo guardar la configuración de alertas');
-            }
+                body: payload
+            }, 'No se pudo guardar la configuración de alertas');
             mostrarFeedback('Configuración de alertas guardada.', false);
         } catch (err) {
             mostrarFeedback(err.message, true);

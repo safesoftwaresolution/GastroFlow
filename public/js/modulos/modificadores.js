@@ -213,8 +213,13 @@ document.getElementById('btnGuardarGrupo').addEventListener('click', async () =>
     const payload = { nombre, tipo_seleccion, obligatorio, descuenta_inventario, minimo_selecciones, maximo_selecciones, opciones };
     const url = id ? base + '/api/grupos/' + id : base + '/api/grupos';
     const method = id ? 'PUT' : 'POST';
-    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
-    if (r.ok) { bootstrap.Modal.getInstance(document.getElementById('modalGrupo')).hide(); location.reload(); } else { const e = await r.json(); Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo guardar el grupo' }); }
+    try {
+        await GF.api(url, { method, body: payload }, 'No se pudo guardar el grupo');
+        GF.cerrarModal('modalGrupo');
+        location.reload();
+    } catch (e) {
+        GF.error(e.message);
+    }
 });
 
 document.getElementById('modalGrupo').addEventListener('show.bs.modal', (e) => {
@@ -238,9 +243,8 @@ document.getElementById('modalGrupo').addEventListener('show.bs.modal', (e) => {
 });
 
 async function editarGrupo(grupoId) {
-    const r = await fetch(base + '/api/grupos/' + grupoId, { credentials: 'same-origin' });
-    const g = await r.json();
-    if (!g) return;
+    const g = await GF.api.getOr(base + '/api/grupos/' + grupoId, null);
+    if (!g) return GF.error('No se pudo cargar el grupo');
     document.getElementById('grupoId').value = g.id;
     document.getElementById('modalGrupoTitulo').textContent = 'Editar grupo de toppings';
     document.getElementById('grupoPlantillasWrap').style.display = 'none';
@@ -257,7 +261,7 @@ async function editarGrupo(grupoId) {
     new bootstrap.Modal(document.getElementById('modalGrupo')).show();
 }
 
-function eliminarGrupo(idOrBtn, nombre) {
+async function eliminarGrupo(idOrBtn, nombre) {
     let id, nom;
     if (typeof idOrBtn === 'object' && idOrBtn && idOrBtn.getAttribute) {
         id = idOrBtn.dataset.id;
@@ -266,8 +270,14 @@ function eliminarGrupo(idOrBtn, nombre) {
         id = idOrBtn;
         nom = nombre || '';
     }
-    if (!confirm('¿Eliminar el grupo "' + nom + '"? Se quitará de todos los productos que lo tengan asignado.')) return;
-    fetch(base + '/api/grupos/' + id, { method: 'DELETE', credentials: 'same-origin' }).then(r => { if (r.ok) location.reload(); else r.json().then(e => alert(e.error)); });
+    const ok = await GF.confirmar('Se quitará de todos los productos que lo tengan asignado.', { titulo: `¿Eliminar el grupo "${nom}"?`, confirmar: 'Sí, eliminar', peligro: true });
+    if (!ok) return;
+    try {
+        await GF.api.delete(base + '/api/grupos/' + id, 'No se pudo eliminar el grupo');
+        location.reload();
+    } catch (e) {
+        GF.error(e.message);
+    }
 }
 
 document.addEventListener('click', function (e) {

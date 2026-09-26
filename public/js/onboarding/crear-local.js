@@ -35,16 +35,10 @@ document.getElementById('crearLocalForm').addEventListener('submit', async funct
     setLoading(true);
 
     try {
-        const response = await fetch('/onboarding/crear-local', {
+        const data = await GF.api('/onboarding/crear-local', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'No se pudo crear el local');
-        }
+            body: payload
+        }, 'No se pudo crear el local');
 
         window.location.href = data.redirect || '/onboarding/pendiente';
     } catch (error) {

@@ -1,11 +1,5 @@
 // UI rendering, Search, and Event bindings for Mesas module
 
-function escMesas(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
-
 window.MesasModule.renderItems = function() {
   const tbody = $('#tbodyItems');
   tbody.empty();
@@ -24,9 +18,9 @@ window.MesasModule.renderItems = function() {
     const descBadge = descTxt ? ' <span class="badge bg-success">' + descTxt + '</span>' : '';
     const badgePagado = it.pagado ? '<br><span class="badge bg-success mt-1"><i class="bi bi-check2-circle me-1"></i>Pagado</span>' : '';
     const modsTexto = (it.modificadores && it.modificadores.length)
-      ? '<div class="pedido-item-mods">' + it.modificadores.map(m => escMesas(m.opcion_nombre)).join(', ') + '</div>' : '';
+      ? '<div class="pedido-item-mods">' + it.modificadores.map(m => GF.escapeHtml(m.opcion_nombre)).join(', ') + '</div>' : '';
     const notaTxt = (it.nota != null && String(it.nota).trim() !== '')
-      ? '<div class="pedido-item-nota" title="' + escMesas(it.nota) + '"><i class="bi bi-chat-left-text"></i> ' + escMesas(it.nota) + '</div>'
+      ? '<div class="pedido-item-nota" title="' + GF.escapeHtml(it.nota) + '"><i class="bi bi-chat-left-text"></i> ' + GF.escapeHtml(it.nota) + '</div>'
       : '';
 
     const buttonsHtml = it.pagado
@@ -43,7 +37,7 @@ window.MesasModule.renderItems = function() {
 
     tbody.append(`
       <tr>
-        <td class="td-producto align-middle">${(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto + notaTxt}</td>
+        <td class="td-producto align-middle">${GF.escapeHtml(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto + notaTxt}</td>
         <td class="text-center align-middle">${inputHtml}</td>
         <td class="text-end d-none d-sm-table-cell align-middle">${this.formatear(precio)}</td>
         <td class="text-end td-subtotal align-middle">${it.pagado ? '<span class="text-muted text-decoration-line-through small">' + this.formatear(subtotal) + '</span>' : this.formatear(subtotal)}</td>
@@ -117,9 +111,11 @@ window.MesasModule.seleccionarProducto = async function(p) {
       producto_id: p.id, cantidad: 1, unidad, precio: Number(precio), nota,
       modificadores_seleccion: resultadoMods.seleccion
     };
-    const resp = await fetch(`/api/mesas/pedidos/${this.pedidoActual.id}/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await resp.json();
-    if (!resp.ok) return Swal.fire({ icon: 'error', title: data.error || 'Error al agregar' });
+    try {
+      await GF.api.post(`/api/mesas/pedidos/${this.pedidoActual.id}/items`, body, 'Error al agregar');
+    } catch (e) {
+      return Swal.fire({ icon: 'error', title: e.message });
+    }
     this.currentMesaEstado = 'ocupada';
     await this.cargarPedido(this.pedidoActual.id);
     $('#buscarProductoMesa').val('').focus();
@@ -257,8 +253,7 @@ function actualizarTarjetaMesa(m) {
 // State refresh in live
 window.refreshMesas = async function() {
   try {
-    const resp = await fetch('/api/mesas/listar');
-    const mesas = await resp.json();
+    const mesas = await GF.api('/api/mesas/listar');
     if (!Array.isArray(mesas)) return;
 
     // --- FALLBACK DE SINCRO: Si el panel de pedido está abierto, verificar si sigue abierto en el backend ---
@@ -364,16 +359,19 @@ $(function () {
 
   window.refreshMesas();
 
-  // +/- cantidad en items del pedido (mesa)
-  $(document).on('click', '.btn-mas-item', async function () {
-    const id = $(this).data('item-id');
-    const cant = Number($(this).data('cantidad')) + 1;
+  // Cantidad de un item del pedido: la usan el botón +, el botón - y el campo editable.
+  async function cambiarCantidadItem(id, cantidad) {
     try {
-      const r = await fetch(`/api/mesas/items/${id}/cantidad`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cantidad: cant }) });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Error');
+      await GF.api.put(`/api/mesas/items/${id}/cantidad`, { cantidad }, 'No se pudo cambiar la cantidad');
       await mod.cargarPedido(mod.pedidoActual.id);
-    } catch (e) { Swal.fire({ icon: 'error', title: e.message }); }
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: e.message });
+    }
+  }
+
+  // +/- cantidad en items del pedido (mesa)
+  $(document).on('click', '.btn-mas-item', function () {
+    cambiarCantidadItem($(this).data('item-id'), Number($(this).data('cantidad')) + 1);
   });
 
   $(document).on('change', '.input-cantidad-item', async function () {
@@ -383,24 +381,14 @@ $(function () {
       $(this).val(1);
       return;
     }
-    try {
-      const r = await fetch(`/api/mesas/items/${id}/cantidad`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cantidad: cant }) });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Error');
-      await mod.cargarPedido(mod.pedidoActual.id);
-    } catch (e) { Swal.fire({ icon: 'error', title: e.message }); }
+    await cambiarCantidadItem(id, cant);
   });
 
   $(document).on('click', '.btn-menos-item', async function () {
     const id = $(this).data('item-id');
     const cant = Number($(this).data('cantidad'));
     if (cant <= 1) return;
-    try {
-      const r = await fetch(`/api/mesas/items/${id}/cantidad`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cantidad: cant - 1 }) });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Error');
-      await mod.cargarPedido(mod.pedidoActual.id);
-    } catch (e) { Swal.fire({ icon: 'error', title: e.message }); }
+    await cambiarCantidadItem(id, cant - 1);
   });
 
   $(document).on('click', '.btn-eliminar-item', async function () {
@@ -411,8 +399,7 @@ $(function () {
     const ok = await Swal.fire({ title: '¿Eliminar este item?', icon: 'question', showCancelButton: true, confirmButtonText: 'Sí', cancelButtonText: 'Cancelar' });
     if (!ok.isConfirmed) return;
     try {
-      const r = await fetch(`/api/mesas/items/${itemId}`, { method: 'DELETE' });
-      if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Error'); }
+      await GF.api.delete(`/api/mesas/items/${itemId}`, 'No se pudo eliminar el item');
       // Si era el último item, el backend cancela el pedido y libera la mesa; el evento SSE
       // 'cancelled' puede llegar antes de este punto y ya dejó pedidoActual en null (con su
       // propio aviso), así que solo recargamos si el pedido sigue abierto en este cliente.
@@ -439,11 +426,8 @@ $(function () {
     if (result.isConfirmed) {
       try {
         GF.cargandoPantalla('Vaciando pedido...');
-        const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/limpiar`, { method: 'DELETE' });
-        const data = await r.json();
+        await GF.api.delete(`/api/mesas/pedidos/${mod.pedidoActual.id}/limpiar`, 'Error al vaciar pedido');
         GF.cerrarCargando();
-
-        if (!r.ok) throw new Error(data.error || 'Error al vaciar pedido');
 
         Swal.fire({ icon: 'success', title: 'Pedido vaciado', timer: 2000 });
         const bsOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('canvasPedido'));
@@ -465,8 +449,7 @@ $(function () {
     const q = this.value.trim();
     if (q.length < 2) { $('#resultadosProductoMesa').hide().empty(); return; }
     to = setTimeout(async () => {
-      const resp = await fetch(`/api/productos/buscar?q=${encodeURIComponent(q)}`);
-      const productos = await resp.json();
+      const productos = await GF.api.getOr(`/api/productos/buscar?q=${encodeURIComponent(q)}`, []);
       const list = $('#resultadosProductoMesa');
       list.empty();
       if (productos.length === 0) {

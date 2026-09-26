@@ -520,7 +520,7 @@ $(function () {
             await cargarCola();
         } catch (error) {
             console.error('Error batch:', error);
-            alert('Error al actualizar el lote');
+            GF.toast(error.message || 'Error al actualizar el lote', 'error');
             btn.prop('disabled', false).html(oldHtml);
         }
     });
@@ -529,30 +529,20 @@ $(function () {
     $(document).on('click', '[data-action="prep"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/cocina/item/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'preparando' })
-            });
+            await GF.api.put(`/api/cocina/item/${id}/estado`, { estado: 'preparando' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 
     $(document).on('click', '[data-action="listo"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/cocina/item/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'listo' })
-            });
+            await GF.api.put(`/api/cocina/item/${id}/estado`, { estado: 'listo' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 
@@ -603,15 +593,10 @@ $(function () {
     $(document).on('click', '[data-action="servido"]', async function () {
         const id = this.dataset.id;
         try {
-            await fetch(`/api/mesas/items/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'servido' })
-            });
+            await GF.api.put(`/api/mesas/items/${id}/estado`, { estado: 'servido' }, 'Error al actualizar estado');
             await cargarCola();
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al actualizar estado');
+            GF.toast(error.message, 'error');
         }
     });
 

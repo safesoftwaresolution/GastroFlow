@@ -8,12 +8,7 @@ window.MESAS_MODIFICADORES = {
     async _obtenerGrupos(producto) {
         let grupos = this._cache.get(producto.id);
         if (grupos === undefined) {
-            try {
-                const r = await fetch(`/api/mesas/productos/${producto.id}/modificadores`);
-                grupos = r.ok ? await r.json() : [];
-            } catch (_) {
-                grupos = [];
-            }
+            grupos = await GF.api.getOr(`/api/mesas/productos/${producto.id}/modificadores`, []);
             this._cache.set(producto.id, grupos);
         }
         return grupos;

@@ -33,8 +33,7 @@ async function verMovimientos(id, nombre) {
     new bootstrap.Modal(document.getElementById('modalMovimientos')).show();
 
     try {
-        const r = await fetch(base + '/api/movimientos?insumo_id=' + id);
-        const movs = await r.json();
+        const movs = await GF.api(base + '/api/movimientos?insumo_id=' + id, {}, 'No se pudo cargar el historial');
         tbody.innerHTML = '';
         if (!movs || movs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3">No hay movimientos registrados.</td></tr>';
@@ -46,8 +45,8 @@ async function verMovimientos(id, nombre) {
                     <td class="ps-3 small">${new Date(m.created_at).toLocaleString()}</td>
                     <td><span class="badge ${badge}">${m.tipo.toUpperCase()}</span></td>
                     <td class="text-end fw-bold ${color}">${signo}${Number.parseFloat(m.cantidad).toLocaleString('es-CO')}</td>
-                    <td class="small">${m.documento_referencia || m.referencia || '-'}</td>
-                    <td class="small">${m.proveedor_nombre || '-'}</td>
+                    <td class="small">${GF.escapeHtml(m.documento_referencia || m.referencia || '-')}</td>
+                    <td class="small">${GF.escapeHtml(m.proveedor_nombre || '-')}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -90,17 +89,12 @@ document.getElementById('btnCrearInsumo').addEventListener('click', async () => 
     const btn = document.getElementById('btnCrearInsumo');
     GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/insumos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoInsumo')).hide();
-            await Swal.fire({ icon: 'success', title: 'Insumo creado', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo crear el insumo' });
-        }
+        await GF.api(base + '/api/insumos', { method: 'POST', body: payload }, 'No se pudo crear el insumo');
+        GF.cerrarModal('modalNuevoInsumo');
+        await Swal.fire({ icon: 'success', title: 'Insumo creado', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Error de conexión', text: err.message });
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
         GF.cargando(btn, false);
     }
@@ -193,40 +187,33 @@ document.getElementById('btnConfirmarEntrada').addEventListener('click', async (
     const btn = document.getElementById('btnConfirmarEntrada');
     GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/entrada', {
+        await GF.api(base + '/api/movimientos/entrada', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: {
                 insumo_id: id,
                 cantidad,
                 costo_unitario: costo ? Number.parseFloat(costo) : null,
                 referencia: ref || null,
                 proveedor_id: provId || null,
                 documento_referencia: nFactura || null
-            }),
-            credentials: 'same-origin'
-        });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEntrada')).hide();
-
-            if (modoCompraRapida && colaInsumosCompra.length > 0) {
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Entrada registrada',
-                    text: 'Cargando siguiente insumo...',
-                    timer: 800,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end'
-                });
-                procesarSiguienteInsumo();
-            } else {
-                await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
-                location.reload();
             }
+        }, 'No se pudo registrar la entrada');
+        GF.cerrarModal('modalEntrada');
+
+        if (modoCompraRapida && colaInsumosCompra.length > 0) {
+            await Swal.fire({
+                icon: 'success',
+                title: 'Entrada registrada',
+                text: 'Cargando siguiente insumo...',
+                timer: 800,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+            procesarSiguienteInsumo();
         } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo registrar' });
+            await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
+            location.reload();
         }
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
@@ -280,15 +267,10 @@ document.getElementById('btnConfirmarSalida').addEventListener('click', async ()
     const btn = document.getElementById('btnConfirmarSalida');
     GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/salida', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ insumo_id: id, cantidad, referencia: ref || null }), credentials: 'same-origin' });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSalida')).hide();
-            await Swal.fire({ icon: 'success', title: 'Salida registrada', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo registrar' });
-        }
+        await GF.api(base + '/api/movimientos/salida', { method: 'POST', body: { insumo_id: id, cantidad, referencia: ref || null } }, 'No se pudo registrar');
+        GF.cerrarModal('modalSalida');
+        await Swal.fire({ icon: 'success', title: 'Salida registrada', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
@@ -317,23 +299,13 @@ document.getElementById('btnConfirmarAjuste').addEventListener('click', async ()
     const btn = document.getElementById('btnConfirmarAjuste');
     GF.cargando(btn, true);
     try {
-        const r = await fetch(base + '/api/movimientos/ajuste', {
+        await GF.api(base + '/api/movimientos/ajuste', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                insumo_id: id,
-                cantidad,
-                referencia: ref || 'Ajuste manual'
-            })
-        });
-        if (r.ok) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAjuste')).hide();
-            await Swal.fire({ icon: 'success', title: 'Ajuste aplicado', timer: 1200, showConfirmButton: false });
-            location.reload();
-        } else {
-            const e = await r.json();
-            Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo aplicar' });
-        }
+            body: { insumo_id: id, cantidad, referencia: ref || 'Ajuste manual' }
+        }, 'No se pudo aplicar');
+        GF.cerrarModal('modalAjuste');
+        await Swal.fire({ icon: 'success', title: 'Ajuste aplicado', timer: 1200, showConfirmButton: false });
+        location.reload();
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
@@ -575,9 +547,7 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
     }
     async function cargarListaMercado() {
         const incluir = incluirCerca?.checked;
-        const r = await fetch(base + '/api/lista-mercado?incluir_cerca=' + (incluir ? '1' : '0'), { credentials: 'same-origin' });
-        if (!r.ok) { renderLista([]); return; }
-        const data = await r.json();
+        const data = await GF.api.getOr(base + '/api/lista-mercado?incluir_cerca=' + (incluir ? '1' : '0'), {});
         renderLista(data.lista || []);
     }
     document.getElementById('btnListaMercado').addEventListener('click', function () {

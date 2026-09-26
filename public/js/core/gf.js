@@ -4,6 +4,7 @@
  *
  * Usar esto en vez de reescribir en cada archivo:
  *   GF.api(url, opciones, mensajeError)  fetch + JSON + manejo de errores
+ *   GF.api.get/post/put/patch/delete     atajos; GF.api.getOr(url, porDefecto) no lanza
  *   GF.dinero(n)                         "$ 12.345" (pesos, sin decimales)
  *   GF.escapeHtml(texto)                 para insertar texto del usuario en HTML
  *   GF.toast(mensaje, icono)             aviso pequeño en la esquina
@@ -61,6 +62,17 @@
     api.put = (url, body, mensajeError) => api(url, { method: 'PUT', body }, mensajeError);
     api.patch = (url, body, mensajeError) => api(url, { method: 'PATCH', body }, mensajeError);
     api.delete = (url, mensajeError) => api(url, { method: 'DELETE' }, mensajeError);
+
+    /**
+     * GET que nunca lanza: devuelve `porDefecto` si falla (red o error HTTP).
+     * Para datos accesorios de una pantalla (listas, estadísticas) cuya falla
+     * no debe bloquearla.
+     */
+    api.getOr = (url, porDefecto) =>
+        api(url).then(
+            data => (data == null ? porDefecto : data),
+            () => porDefecto
+        );
 
     // ---------- Formato ----------
 

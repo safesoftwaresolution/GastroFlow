@@ -4,17 +4,8 @@ document.querySelectorAll('.status-select').forEach(select => {
         const id = e.target.dataset.id;
         const estado = e.target.value;
         try {
-            const res = await fetch(`/admin/soporte/${id}/estado`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado })
-            });
-            const data = await res.json();
-            if (data.success) {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Estado actualizado', showConfirmButton: false, timer: 1500 });
-            } else {
-                throw new Error(data.message);
-            }
+            await GF.api.post(`/admin/soporte/${id}/estado`, { estado }, 'No se pudo actualizar el estado');
+            GF.toast('Estado actualizado', 'success', { timer: 1500 });
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
         }
@@ -44,19 +35,9 @@ document.getElementById('replyForm').addEventListener('submit', async (e) => {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
     try {
-        const res = await fetch(`/admin/soporte/${id}/responder`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ respuesta })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            await Swal.fire('Enviado', data.message, 'success');
-            window.location.reload();
-        } else {
-            throw new Error(data.message);
-        }
+        const data = await GF.api.post(`/admin/soporte/${id}/responder`, { respuesta }, 'No se pudo enviar la respuesta');
+        await Swal.fire('Enviado', data.message, 'success');
+        window.location.reload();
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
         btn.disabled = false;

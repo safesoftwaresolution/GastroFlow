@@ -3,16 +3,15 @@
 // No captura nada de $(function(){...}) — vive en el scope más alto posible (S7721).
 async function getOrCreateConsumidorFinal() {
   try {
-    const r = await fetch('/api/clientes/buscar?q=consumidor%20final');
-    const list = await r.json();
+    const list = await GF.api('/api/clientes/buscar?q=consumidor%20final');
     const cf = list.find(c => (c.nombre || '').toLowerCase() === 'consumidor final');
     if (cf) return cf;
   } catch (err) {
     console.warn('No se pudo buscar consumidor final existente:', err);
   }
   try {
-    const r = await fetch('/api/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: 'Consumidor final' }) });
-    if (r.ok) { const cf = await r.json(); return { id: cf.id, nombre: 'Consumidor final' }; }
+    const cf = await GF.api.post('/api/clientes', { nombre: 'Consumidor final' });
+    return { id: cf.id, nombre: 'Consumidor final' };
   } catch (err) {
     console.warn('No se pudo crear consumidor final:', err);
   }
@@ -373,9 +372,8 @@ $(function () {
 
   async function pedidoYaFueFacturadoEnOtroLado() {
     try {
-      const checkResp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}`);
-      if (!checkResp.ok) return false;
-      const checkData = await checkResp.json();
+      const checkData = await GF.api.getOr(`/api/mesas/pedidos/${mod.pedidoActual.id}`, null);
+      if (!checkData) return false;
       return checkData.pedido?.estado === 'cerrado' || checkData.pedido?.estado === 'cancelado';
     } catch (error_) {
       console.error('Error al verificar estado del pedido:', error_);
@@ -493,13 +491,7 @@ $(function () {
     if (!formData) return;
 
     try {
-      const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al registrar el abono');
+      const d = await GF.api.post(`/api/mesas/pedidos/${mod.pedidoActual.id}/abonos`, formData, 'Error al registrar el abono');
 
       await mod.cargarPedido(mod.pedidoActual.id);
 

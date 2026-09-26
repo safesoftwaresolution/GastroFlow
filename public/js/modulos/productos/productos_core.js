@@ -9,14 +9,9 @@ async function guardarParametrosCosteo(id) {
     if (checkboxes.length === 0 && !document.getElementById('productoParametrosCheckboxes')) return;
 
     const parametroIds = Array.from(checkboxes).map(cb => Number.parseInt(cb.value, 10));
-    const r = await fetch('/costeo/api/productos/' + id + '/parametros', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ parametro_ids: parametroIds })
-    });
-    if (!r.ok && r.status !== 403) throw new Error('Error al guardar parámetros de costeo');
+    await GF.api.put('/costeo/api/productos/' + id + '/parametros', { parametro_ids: parametroIds }, 'Error al guardar parámetros de costeo');
   } catch (costeoErr) {
+    if (costeoErr.status === 403) return; // plan sin costeo: se ignora
     console.warn('No se pudieron guardar parámetros de costeo (posiblemente por restricciones de plan):', costeoErr);
   }
 }
@@ -25,18 +20,17 @@ async function guardarParametrosCosteo(id) {
 // (try > if paramContainer > try > if status403).
 async function cargarParametrosCosteoParaEdicion(id, paramContainer) {
   try {
-    const [resAll, resProd] = await Promise.all([
-      fetch('/costeo/api/parametros', { credentials: 'same-origin' }),
-      fetch('/costeo/api/productos/' + id + '/parametros', { credentials: 'same-origin' })
+    // 403 = el plan no incluye costeo: se oculta la sección. Otro error: listas vacías.
+    const leer = url => GF.api(url).catch(e => (e.status === 403 ? 'sin-permiso' : []));
+    const [allParams, productParams] = await Promise.all([
+      leer('/costeo/api/parametros'),
+      leer('/costeo/api/productos/' + id + '/parametros')
     ]);
 
-    if (resAll.status === 403 || resProd.status === 403) {
+    if (allParams === 'sin-permiso' || productParams === 'sin-permiso') {
       paramContainer.classList.add('d-none');
       return;
     }
-
-    const allParams = resAll.ok ? await resAll.json() : [];
-    const productParams = resProd.ok ? await resProd.json() : [];
 
     if (!allParams || allParams.length === 0) {
       paramContainer.classList.add('d-none');
@@ -73,11 +67,7 @@ class ProductManager {
 
   async toggleFavorite(id, nuevoEstado, btn) {
     try {
-      await fetch(`/api/productos/${id}/favorito`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ es_favorito: nuevoEstado })
-      }).then(res => { if (!res.ok) throw new Error('Error al actualizar favorito'); });
+      await GF.api.patch(`/api/productos/${id}/favorito`, { es_favorito: nuevoEstado }, 'Error al actualizar favorito');
 
       btn.data('favorito', nuevoEstado);
       btn.attr('title', nuevoEstado ? 'Quitar de favoritos' : 'Agregar a favoritos');
@@ -94,11 +84,7 @@ class ProductManager {
 
   async togglePideNota(id, nuevoEstado, btn) {
     try {
-      await fetch(`/api/productos/${id}/pide-nota`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pide_nota: nuevoEstado })
-      }).then(res => { if (!res.ok) throw new Error('Error al actualizar la preferencia de nota'); });
+      await GF.api.patch(`/api/productos/${id}/pide-nota`, { pide_nota: nuevoEstado }, 'Error al actualizar la preferencia de nota');
 
       btn.data('pidenota', nuevoEstado ? 1 : 0);
       btn.toggleClass('active', !!nuevoEstado);
@@ -136,13 +122,7 @@ class ProductManager {
     modal.show();
 
     try {
-      const data = await fetch(`/costeo/api/costeo/producto/${productoId}`, {
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
-      }).then(res => {
-        if (!res.ok) return res.json().then(j => { throw new Error(j.error || res.statusText); });
-        return res.json();
-      });
+      const data = await GF.api(`/costeo/api/costeo/producto/${productoId}`);
       this._costeoData = data;
       const fmt = n => (n == null || Number.isNaN(n) ? '-' : GF.dinero(n, 2));
       document.getElementById('costeoDirecto').textContent = fmt(data.costo_materia_prima_porcion ?? data.costo_directo_porcion);
@@ -184,8 +164,8 @@ class ProductManager {
 
     try {
       const [grupos, asignados] = await Promise.all([
-        fetch('/modificadores/api/grupos', { credentials: 'same-origin' }).then(r => r.json()),
-        fetch(`/modificadores/api/productos/${productoId}/grupos`, { credentials: 'same-origin' }).then(r => r.json())
+        GF.api('/modificadores/api/grupos'),
+        GF.api(`/modificadores/api/productos/${productoId}/grupos`)
       ]);
       const asignadosSet = new Set(asignados || []);
 
@@ -200,10 +180,10 @@ class ProductManager {
           label.innerHTML = `
             <input class="form-check-input mt-1 producto-grupo-modificador-cb" type="checkbox" value="${g.id}" ${asignadosSet.has(g.id) ? 'checked' : ''}>
             <span>
-              <strong>${g.nombre}</strong>
+              <strong>${GF.escapeHtml(g.nombre)}</strong>
               <span class="badge bg-light text-dark ms-1">${g.tipo_seleccion === 'multiple' ? 'Elige varias' : 'Elige 1'}</span>
               ${g.obligatorio ? '<span class="badge bg-warning text-dark ms-1">Obligatorio</span>' : ''}
-              <br><small class="text-muted">${(g.opciones || []).map(o => o.nombre).join(', ') || 'Sin opciones'}</small>
+              <br><small class="text-muted">${GF.escapeHtml((g.opciones || []).map(o => o.nombre).join(', ') || 'Sin opciones')}</small>
             </span>`;
           listaEl.appendChild(label);
         });
@@ -222,17 +202,8 @@ class ProductManager {
     if (!productoId) return;
     const grupoIds = Array.from(document.querySelectorAll('.producto-grupo-modificador-cb:checked')).map(cb => Number.parseInt(cb.value, 10));
     try {
-      const r = await fetch(`/modificadores/api/productos/${productoId}/grupos`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ grupo_ids: grupoIds })
-      });
-      if (!r.ok) {
-        const e = await r.json();
-        throw new Error(e.error || 'No se pudo guardar la asignación');
-      }
-      bootstrap.Modal.getInstance(document.getElementById('productoModificadoresModal'))?.hide();
+      await GF.api.put(`/modificadores/api/productos/${productoId}/grupos`, { grupo_ids: grupoIds }, 'No se pudo guardar la asignación');
+      GF.cerrarModal('productoModificadoresModal');
       GF.toast('Modificadores actualizados', 'success');
     } catch (error) {
       GF.toast(error.message || 'Error al guardar modificadores', 'error');
