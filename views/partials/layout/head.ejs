@@ -1,0 +1,16 @@
+<%#
+  Inicio común de las páginas del panel: doctype, head con meta, título y los
+  estilos base (Bootstrap + íconos). La página agrega después sus propios
+  link/style y cierra el head. Uso (en la vista):
+    include('../partials/layout/head', { titulo: 'Bonos - ' + tenant.nombre })
+  Parámetro opcional: viewport (si la página necesita uno distinto).
+%>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="<%= typeof viewport !== 'undefined' ? viewport : 'width=device-width, initial-scale=1.0' %>">
+    <title><%= titulo %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
