@@ -183,8 +183,6 @@ class FacturarPedidoService {
                 );
             }
 
-            await FacturarPedidoService._descontarInventario(tenantId, lineasFactura, facturaId);
-
             await connection.query(`UPDATE pedidos SET estado = 'cerrado', total = ? WHERE id = ?`, [
                 totalConPropina,
                 pedidoId
@@ -222,6 +220,16 @@ class FacturarPedidoService {
             }
 
             await connection.commit();
+
+            // El inventario se descuenta DESPUÉS del commit: usa otra conexión del
+            // pool y sus INSERT en movimientos_inventario (FK a tenants) necesitan
+            // un lock compartido sobre la fila del tenant, que esta transacción tiene
+            // bloqueada (NumeracionRepository) hasta el commit. Dentro de la
+            // transacción se esperaban mutuamente: cada insumo tardaba 50 s (lock
+            // wait timeout) y el descuento fallaba. Ya era best-effort (no bloquea
+            // la venta si falla), así que hacerlo tras el commit no cambia la
+            // semántica.
+            await FacturarPedidoService._descontarInventario(tenantId, lineasFactura, facturaId);
 
             await FacturarPedidoService._ejecutarEfectosSecundariosPostVenta({
                 tenantId,
