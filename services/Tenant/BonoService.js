@@ -3,6 +3,7 @@
  * consulta y validación previa a redimir (la redención en sí, dentro de la
  * transacción de facturación, vive en FacturarPedidoService + BonoRepository.redimir).
  */
+const crypto = require('node:crypto');
 const BonoRepository = require('../../repositories/Tenant/BonoRepository');
 const { hoyColombia } = require('../../utils/dateHelpers');
 const BonoPlantillas = require('./BonoPlantillas');
@@ -120,7 +121,7 @@ class BonoService {
         for (let intento = 0; intento < CODIGO_INTENTOS_MAX; intento++) {
             let sufijo = '';
             for (let i = 0; i < CODIGO_LARGO; i++) {
-                sufijo += CODIGO_CHARS[Math.floor(Math.random() * CODIGO_CHARS.length)];
+                sufijo += CODIGO_CHARS[crypto.randomInt(0, CODIGO_CHARS.length)];
             }
             const codigo = `BONO-${sufijo}`;
             const existente = await BonoRepository.findByCodigo(codigo, tenantId);
@@ -194,7 +195,7 @@ class BonoService {
         return BonoComprobanteService.renderBuffer(tenantId, {
             codigo: 'BONO-XXXXXX',
             origen: origen === 'comprado' ? 'comprado' : 'regalo',
-            valor_inicial: Number.parseFloat(valor) > 0 ? Number.parseFloat(valor) : 0,
+            valor_inicial: Math.max(0, Number.parseFloat(valor) || 0),
             fecha_vencimiento: fecha_vencimiento || null,
             ...normalizarDiseno({ plantilla, destinatario, remitente, mensaje })
         });
