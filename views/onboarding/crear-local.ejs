@@ -1,18 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title || 'Crea tu local' %> - Sistema de Restaurante
-    </title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="/css/auth/login.css?v=<%= assetV %>">
-    <link rel="stylesheet" href="/css/onboarding/crear-local.css?v=<%= assetV %>">
-</head>
-
+<%- include('../partials/layout/auth-head', { titulo: (title || 'Crea tu local') + ' - Sistema de Restaurante', swal: true, css: ['/css/onboarding/crear-local.css'] }) %>
 <body>
 
     <!-- ── Panel izquierdo: marca + progreso ── -->
