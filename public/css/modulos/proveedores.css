@@ -79,3 +79,7 @@
 .btn-light-danger:active {
     opacity: 0.8;
 }
+/* Movido desde views/proveedores/_modal_historial.ejs (bloque <style> embebido) */
+.bg-light-info {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+}

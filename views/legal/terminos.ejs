@@ -1,77 +1,10 @@
-<!DOCTYPE html>
-<html class="dark" lang="es">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Términos y Condiciones | GastroFlow</title>
-<meta name="description" content="Términos y Condiciones de uso de la plataforma GastroFlow.">
-<link rel="canonical" href="https://gastroflow.digital/legal/terminos"/>
-<meta name="theme-color" content="#080b09">
-<link rel="icon" type="image/png" href="/logo.png">
-<%- include('../partials/_analytics') %>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="/js/tailwind-landing.js"></script>
-<style>
-  body { font-family: 'Inter', sans-serif; }
-  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-  .prose-legal h2 { font-size: 1.25rem; font-weight: 700; color: var(--md-sys-color-on-surface, #e2e8f0); margin-top: 2rem; margin-bottom: 0.75rem; }
-  .prose-legal h3 { font-size: 1rem; font-weight: 600; color: var(--md-sys-color-on-surface, #e2e8f0); margin-top: 1.5rem; margin-bottom: 0.5rem; }
-  .prose-legal p  { margin-bottom: 0.875rem; line-height: 1.75; }
-  .prose-legal ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.875rem; }
-  .prose-legal ul li { margin-bottom: 0.35rem; }
-  .prose-legal a  { color: #818cf8; text-decoration: underline; }
-  .prose-legal ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.875rem; }
-  .prose-legal ol li { margin-bottom: 0.35rem; }
-</style>
-</head>
-<body class="bg-background text-on-background">
-
-<!-- Header -->
-<header class="sticky top-0 z-[100] w-full bg-surface/80 backdrop-filter backdrop-blur-md border-b border-outline-variant h-16 flex items-center justify-between px-6 md:px-12">
-  <a href="/" class="flex items-center gap-2" style="text-decoration:none;">
-    <span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings:'FILL' 1;">local_fire_department</span>
-    <span class="font-bold text-xl text-primary tracking-tight">GastroFlow</span>
-  </a>
-  <a href="/auth/login" class="text-sm text-on-surface-variant hover:text-primary transition-colors">Iniciar Sesión</a>
-</header>
-
-<!-- Hero -->
-<section class="max-w-4xl mx-auto px-6 md:px-8 pt-16 pb-6">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="material-symbols-outlined text-primary text-4xl">gavel</span>
-    <h1 class="text-3xl font-bold text-on-surface">Términos y Condiciones</h1>
-  </div>
-  <p class="text-on-surface-variant text-sm">
-    Última actualización: <strong class="text-on-surface">30 de junio de 2026</strong> &nbsp;·&nbsp;
-    Vigente desde: <strong class="text-on-surface">30 de junio de 2026</strong>
-  </p>
-  <div class="mt-4 p-4 rounded-xl glass text-sm text-on-surface-variant border border-yellow-500/20 bg-yellow-500/5">
-    <span class="material-symbols-outlined align-middle text-yellow-400 mr-1" style="font-size:1.1rem;">info</span>
-    Este documento es una plantilla de uso interno. Se recomienda revisarla con un abogado especializado antes de publicarla oficialmente.
-  </div>
-</section>
-
-<!-- Contenido -->
-<main class="max-w-4xl mx-auto px-6 md:px-8 pb-20 prose-legal text-on-surface-variant text-sm">
-  <%- settings.terms_conditions %>
-</main>
-
-<!-- Footer -->
-<footer class="border-t border-outline-variant py-8 px-6 md:px-12 text-center">
-  <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-on-surface-variant">
-    <a href="/" class="hover:text-primary transition-colors">Inicio</a>
-    <span class="hidden md:inline">·</span>
-    <a href="/legal/terminos" class="text-primary font-medium">Términos y Condiciones</a>
-    <span class="hidden md:inline">·</span>
-    <a href="/legal/privacidad" class="hover:text-primary transition-colors">Política de Privacidad</a>
-    <span class="hidden md:inline">·</span>
-    <a href="mailto:legal@gastroflow.app" class="hover:text-primary transition-colors">legal@gastroflow.app</a>
-  </div>
-  <p class="mt-4 text-xs text-on-surface-variant">© <%= new Date().getFullYear() %> GastroFlow Technologies. Todos los derechos reservados.</p>
-</footer>
-
-</body>
-</html>
+<%- include('_documento', {
+    titulo: 'Términos y Condiciones | GastroFlow',
+    descripcion: 'Términos y Condiciones de uso de la plataforma GastroFlow.',
+    canonical: 'https://gastroflow.digital/legal/terminos',
+    icono: 'gavel',
+    h1: 'Términos y Condiciones',
+    contenidoHtml: settings.terms_conditions,
+    activo: 'terminos',
+    email: 'legal@gastroflow.app'
+}) %>

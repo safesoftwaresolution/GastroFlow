@@ -1,6 +1,6 @@
-<% 
-    // Obtener versión desde package.json (opcional) o hardcoded
-    const systemVersion = "v1.3.15"; 
+<%
+    // Versión de package.json (res.locals.version en app.js)
+    const systemVersion = 'v' + (typeof version !== 'undefined' ? version : '1.0.0');
 %>
 <div class="system-version-footer text-center py-2" style="font-size: 0.75rem; color: #94a3b8; opacity: 0.8; user-select: none;">
     <span class="fw-medium">Sistema de Facturación</span> 

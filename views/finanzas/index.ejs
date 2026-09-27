@@ -1,34 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estado de Resultados | Finanzas Corporativas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --finance-navy: #0f172a;
-            --finance-slate: #334155;
-            --finance-border: #e2e8f0;
-            --finance-success: #059669;
-            --finance-danger: #dc2626;
-        }
-        body { background-color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; color: var(--finance-navy); }
-        .card-finance { border: 1px solid var(--finance-border); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: white; }
-        .kpi-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--finance-slate); font-weight: 700; }
-        .kpi-value { font-size: 1.5rem; font-weight: 800; }
-        .sidebar-border { border-left: 4px solid var(--finance-navy); }
-        .sidebar-success { border-left: 4px solid var(--finance-success); }
-        .sidebar-danger { border-left: 4px solid var(--finance-danger); }
-        .table-finance { font-size: 0.85rem; }
-        .table-finance th { background: #f1f5f9; color: var(--finance-slate); text-transform: uppercase; font-size: 0.7rem; }
-        .nav-finance { background: white; border-bottom: 1px solid var(--finance-border); }
-        .btn-finance { border-radius: 4px; font-weight: 600; font-size: 0.85rem; padding: 0.5rem 1rem; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .badge-type { font-size: 0.65rem; padding: 0.3em 0.6em; }
-    </style>
+<%- include('../partials/layout/head', { titulo: 'Estado de Resultados | Finanzas Corporativas' }) %>
+    <%- include('../partials/layout/scripts', { swal: true, chart: true }) %>
+    <link rel="stylesheet" href="/css/modulos/finanzas.css?v=<%= assetV %>">
 </head>
 <body>
     <%- include('../partials/navbar', { user, tenant, allowedByPlan }) %>
@@ -229,9 +201,7 @@
     </div>
 
     <script type="application/json" id="finanzas-data"><%- jsonSeguro({ historico: resumen.historico || [], gastosPorCategoria: resumen.gastosPorCategoria || [] }) %></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/js/core/money-input.js"></script>
-    <script src="/js/modulos/finanzas.js"></script>
+    <script src="/js/core/money-input.js?v=<%= assetV %>"></script>
+    <script src="/js/modulos/finanzas.js?v=<%= assetV %>"></script>
 </body>
 </html>

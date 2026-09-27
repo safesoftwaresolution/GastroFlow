@@ -1,0 +1,19 @@
+<%#
+  Variables CSS --accent* a partir de un color (ver utils/colorAcento.js para
+  resolverlo desde el tenant). Antes cada vista repetía este mismo bloque
+  <style> con las mismas 4 fórmulas de color-mix.
+  Uso:
+    include('../partials/layout/accent-vars', { color: activeAccent, selector: ':root' })
+  Opcional:
+    extendido: false  -> solo emite --accent (sin --accentDark/Soft/Softer)
+-%>
+<style>
+    <%= selector %> {
+        --accent: <%= color %>;
+        <% if (typeof extendido === 'undefined' || extendido) { -%>
+        --accentDark: color-mix(in srgb, <%= color %> 80%, black);
+        --accentSoft: color-mix(in srgb, <%= color %> 8%, white);
+        --accentSofter: color-mix(in srgb, <%= color %> 4%, white);
+        <% } -%>
+    }
+</style>
