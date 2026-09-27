@@ -656,3 +656,207 @@ body {
     overflow: hidden;
 }
 .pedido-item-nota .bi { font-style: normal; margin-right: 2px; opacity: 0.7; }
+
+/* Movido desde views/mesas/_modales.ejs (bloque <style> embebido) */
+    /* Ajustes específicos para que no se sienta cargado */
+    .offcanvas-body {
+        scrollbar-width: thin;
+    }
+
+    .table-pedido-mesas thead th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        background: #f8fafc !important;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 0.75rem 0.5rem !important;
+    }
+
+    .td-producto {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.85rem;
+    }
+
+    .td-subtotal {
+        color: #0f172a;
+        font-size: 0.85rem;
+    }
+
+    #totalPedido {
+        font-size: 1.25rem;
+        color: #0d6efd;
+    }
+
+    /* ===== Panel de Favoritos Lateral ===== */
+    #sidePanelFavoritos {
+        position: fixed;
+        top: 0;
+        right: 420px;
+        /* Ancho del offcanvas de pedido */
+        width: calc(100vw - 420px);
+        height: 100vh;
+        background: #171a1f;
+        z-index: 1050;
+        transition: opacity .25s ease, visibility .25s ease;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        border-right: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    body.offcanvas-open #sidePanelFavoritos {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .fav-panel-inner {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 16px 18px;
+    }
+
+    .fav-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+        flex-shrink: 0;
+    }
+
+    .fav-panel-title {
+        margin: 0;
+        font-weight: 700;
+        font-size: .95rem;
+        color: #fff;
+        letter-spacing: .2px;
+    }
+
+    .fav-panel-title .bi {
+        color: #f5c518;
+    }
+
+    .fav-panel-select {
+        appearance: none;
+        background: #23272e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a6b0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
+        color: #e6e8eb;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 8px;
+        font-size: .78rem;
+        padding: 6px 28px 6px 12px;
+        max-width: 190px;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .fav-panel-select:focus {
+        border-color: #4c8bf5;
+    }
+
+    .fav-panel-select option {
+        background: #23272e;
+        color: #e6e8eb;
+    }
+
+    .fav-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        gap: 10px;
+        align-content: start;
+        overflow-y: auto;
+        padding-right: 4px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .producto-fav-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+        min-height: 78px;
+        padding: 10px 12px;
+        text-align: left;
+        background: #262b33;
+        border: 1px solid rgba(255, 255, 255, .06);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+
+    .producto-fav-card:hover {
+        background: #2d333d;
+        border-color: #4c8bf5;
+        transform: translateY(-2px);
+    }
+
+    .producto-fav-card:active {
+        transform: translateY(0) scale(.98);
+    }
+
+    .fav-card-name {
+        font-size: .74rem;
+        font-weight: 600;
+        line-height: 1.25;
+        color: #eef0f2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .fav-card-price {
+        font-size: .8rem;
+        font-weight: 800;
+        color: #34d399;
+        letter-spacing: .2px;
+    }
+
+    .fav-grid-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: rgba(255, 255, 255, .45);
+        padding: 48px 20px;
+    }
+
+    .fav-grid-empty .bi {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .fav-grid-empty p {
+        font-size: .8rem;
+        margin: 0;
+    }
+
+    @media (max-width: 992px) {
+        #sidePanelFavoritos {
+            right: 400px;
+            width: 300px;
+        }
+
+        .fav-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+    }
+
+    /* Scrollbar personalizado */
+    .fav-grid::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .fav-grid::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .fav-grid::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .18);
+        border-radius: 10px;
+    }
