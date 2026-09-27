@@ -4,19 +4,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/modulos/dashboard.css?v=<%= assetV %>">
-    <% 
-        const activeAccent = (typeof tenant !== 'undefined' && tenant && tenant.config && tenant.config.colores && tenant.config.colores.primary) 
-            ? tenant.config.colores.primary 
-            : ((typeof nav !== 'undefined' && nav.primaryColor) ? nav.primaryColor : '#2e7d46');
-    %>
-    <style>
-        #dashboardRoot {
-            --accent: <%= activeAccent %>;
-            --accentDark: color-mix(in srgb, <%= activeAccent %> 80%, black);
-            --accentSoft: color-mix(in srgb, <%= activeAccent %> 8%, white);
-            --accentSofter: color-mix(in srgb, <%= activeAccent %> 4%, white);
-        }
-    </style>
+    <% const activeAccent = colorAcento(typeof tenant !== 'undefined' ? tenant : null, typeof nav !== 'undefined' ? nav.primaryColor : null) %>
+    <%- include('../partials/layout/accent-vars', { color: activeAccent, selector: '#dashboardRoot' }) %>
 </head>
 
 <body>

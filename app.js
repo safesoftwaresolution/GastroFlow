@@ -36,6 +36,8 @@ app.locals.jsonSeguro = require('./utils/jsonSeguro');
 // navegadores piden los archivos nuevos aunque tengan la versión anterior en
 // caché (Cloudflare fuerza hasta 4 h de caché en el navegador).
 app.locals.assetV = (process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 8) || Date.now().toString(36);
+// Color de acento del tenant para las variables CSS --accent* (ver utils/colorAcento.js)
+app.locals.colorAcento = require('./utils/colorAcento');
 
 // Compresión gzip/brotli para todas las respuestas
 app.use(compression());

@@ -1,18 +1,7 @@
 <%- include('../partials/layout/head', { titulo: 'Gestión de Productos' }) %>
     <link rel="stylesheet" href="/css/modulos/productos.css?v=<%= assetV %>">
-    <style>
-        <% 
-        const activeAccent = (typeof tenant !== 'undefined' && tenant && tenant.config && tenant.config.colores && tenant.config.colores.primary) 
-            ? tenant.config.colores.primary 
-            : '#2e7d46';
-        %>
-        :root {
-            --accent: <%= activeAccent %>;
-            --accentDark: color-mix(in srgb, <%= activeAccent %> 80%, black);
-            --accentSoft: color-mix(in srgb, <%= activeAccent %> 8%, white);
-            --accentSofter: color-mix(in srgb, <%= activeAccent %> 4%, white);
-        }
-    </style>
+    <% const activeAccent = colorAcento(typeof tenant !== 'undefined' ? tenant : null) %>
+    <%- include('../partials/layout/accent-vars', { color: activeAccent, selector: ':root' }) %>
 </head>
 
 <body>
