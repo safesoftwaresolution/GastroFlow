@@ -1,5 +1,6 @@
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const path = require('path');
+const crypto = require('node:crypto');
+const path = require('node:path');
 
 class R2StorageService {
     constructor() {
@@ -35,7 +36,7 @@ class R2StorageService {
         }
 
         const ext = path.extname(originalName) || '.jpg';
-        const fileName = `${folder}/${Date.now()}-${Math.floor(Math.random() * 1000)}${ext}`;
+        const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}${ext}`;
 
         try {
             const command = new PutObjectCommand({
