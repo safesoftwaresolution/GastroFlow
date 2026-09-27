@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Factura #<%= typeof factura.numero !=='undefined' && factura.numero !=null ? factura.numero : factura.id %>
     </title>
-    <link rel="stylesheet" href="/css/core/factura.css">
+    <link rel="stylesheet" href="/css/core/factura.css?v=<%= assetV %>">
 </head>
 
 <body>
@@ -164,7 +164,7 @@
                             </div>
                 </div>
     </div>
-    <script src="/js/modulos/facturas-impresion.js"></script>
+    <script src="/js/modulos/facturas-impresion.js?v=<%= assetV %>"></script>
 </body>
 
 </html>

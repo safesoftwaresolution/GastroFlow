@@ -31,6 +31,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // Helper para incrustar datos en <script> sin riesgo de XSS (ver utils/jsonSeguro.js)
 app.locals.jsonSeguro = require('./utils/jsonSeguro');
+// Versión de los archivos estáticos para las vistas: /js/x.js?v=<%= assetV %>.
+// Cambia en cada deploy (commit de Railway; en local, hora de arranque), así los
+// navegadores piden los archivos nuevos aunque tengan la versión anterior en
+// caché (Cloudflare fuerza hasta 4 h de caché en el navegador).
+app.locals.assetV = (process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 8) || Date.now().toString(36);
 
 // Compresión gzip/brotli para todas las respuestas
 app.use(compression());
