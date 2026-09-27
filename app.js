@@ -4,8 +4,8 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const packageJson = require('./package.json');
 const { optionalAuth } = require('./middleware/auth');
@@ -327,14 +327,12 @@ app.use((err, req, res, next) => {
 
     if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
         res.status(500).json({
-            error: 'Error interno del servidor',
-            message: process.env.NODE_ENV === 'development' ? err.message : 'Error interno'
+            error: 'Error interno del servidor'
         });
     } else {
         res.status(500).render('errors/internal', {
             error: {
-                message: 'Error interno del servidor',
-                stack: process.env.NODE_ENV === 'development' ? err.stack : ''
+                message: 'Error interno del servidor'
             }
         });
     }

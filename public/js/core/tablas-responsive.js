@@ -22,13 +22,13 @@
 
     function encabezados(table) {
         var thead = table.tHead;
-        if (!thead || !thead.rows.length) return null;
+        if (!thead?.rows.length) return null;
         // Última fila del thead (la más específica si hay encabezados agrupados),
         // expandiendo colspan para que el índice coincida con las celdas del body.
         var fila = thead.rows[thead.rows.length - 1];
         var etiquetas = [];
         Array.prototype.forEach.call(fila.cells, function (th) {
-            var texto = (th.getAttribute('data-label') || th.textContent || '').replace(/\s+/g, ' ').trim();
+            var texto = (th.dataset.label || th.textContent || '').replace(/\s+/g, ' ').trim();
             for (var i = 0; i < (th.colSpan || 1); i++) etiquetas.push(texto);
         });
         return etiquetas;
@@ -44,8 +44,8 @@
                 tr.classList.toggle('fila-unica', celdas.length === 1 && (celdas[0].colSpan || 1) > 1);
                 var col = 0;
                 Array.prototype.forEach.call(celdas, function (td) {
-                    if (!td.hasAttribute('data-label') || td.dataset.labelAuto === '1') {
-                        td.setAttribute('data-label', etiquetas[col] || '');
+                    if (!Object.hasOwn(td.dataset, 'label') || td.dataset.labelAuto === '1') {
+                        td.dataset.label = etiquetas[col] || '';
                         td.dataset.labelAuto = '1';
                     }
                     col += td.colSpan || 1;
@@ -126,8 +126,8 @@
         // Filas/tablas nuevas por AJAX. Se ignoran los cambios de atributos
         // (los propios data-label/clases que pone este script).
         new MutationObserver(function (mutaciones) {
-            for (var i = 0; i < mutaciones.length; i++) {
-                if (mutaciones[i].addedNodes.length) {
+            for (const mutacion of mutaciones) {
+                if (mutacion.addedNodes.length) {
                     programar();
                     return;
                 }
@@ -137,7 +137,7 @@
         // Las fuentes web (ej. Plus Jakarta Sans del panel admin) llegan después
         // y ensanchan el texto: una tabla que "cabía" con la fuente de respaldo
         // puede dejar de caber. Se re-evalúa cuando terminan de cargar.
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(programar);
+        document.fonts?.ready?.then(programar);
         window.addEventListener('load', programar);
 
         var t;

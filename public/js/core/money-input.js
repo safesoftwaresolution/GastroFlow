@@ -13,12 +13,24 @@
     }
 
     function format(digits) {
-        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        if (digits == null || digits === '') {
+            return '';
+        }
+        const str = String(digits);
+        const remainder = str.length % 3;
+        let result = remainder ? str.slice(0, remainder) : '';
+        for (let i = remainder; i < str.length; i += 3) {
+            if (result.length > 0) {
+                result += '.';
+            }
+            result += str.slice(i, i + 3);
+        }
+        return result;
     }
 
     function parse(value) {
         const digits = digitsOnly(value);
-        return digits ? parseInt(digits, 10) : 0;
+        return digits ? Number.parseInt(digits, 10) : 0;
     }
 
     function attach(input) {
