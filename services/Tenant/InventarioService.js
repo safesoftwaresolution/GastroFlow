@@ -163,15 +163,16 @@ class InventarioService {
                 `INSERT INTO movimientos_inventario (tenant_id, insumo_id, tipo, cantidad, costo_unitario, referencia) VALUES (?, ?, 'salida', ?, ?, ?)`,
                 [tenantId, insumo_id, cant, insumo.costo_promedio, referencia || null]
             );
-            const nuevoStock = stockActual - cant;
-            const stockValorizadoActual = Number.parseFloat(insumo.stock_valorizado) || 0;
-            const nuevoStockValorizado = stockValorizadoActual - cant;
+            // Resta atómica en la BD: antes se escribía stockActual - cant calculado
+            // sobre una lectura previa (fuera de la transacción), y dos ventas
+            // simultáneas del mismo insumo se pisaban (se perdía un descuento).
             await conn.query(
-                'UPDATE insumos SET stock_actual = ?, stock_valorizado = ? WHERE id = ? AND tenant_id = ?',
-                [nuevoStock, nuevoStockValorizado, insumo_id, tenantId]
+                'UPDATE insumos SET stock_actual = COALESCE(stock_actual, 0) - ?, stock_valorizado = COALESCE(stock_valorizado, 0) - ? WHERE id = ? AND tenant_id = ?',
+                [cant, cant, insumo_id, tenantId]
             );
+            const [[fila]] = await conn.query('SELECT stock_actual FROM insumos WHERE id = ?', [insumo_id]);
             await conn.commit();
-            return { nuevoStock };
+            return { nuevoStock: Number.parseFloat(fila?.stock_actual) || 0 };
         } catch (e) {
             await conn.rollback();
             throw e;
