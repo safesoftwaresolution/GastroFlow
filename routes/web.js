@@ -110,6 +110,24 @@ router.get('/legal/terminos', async (req, res) => {
         res.render('legal/terminos', { settings: {} });
     }
 });
+router.get('/legal/cookies', async (req, res) => {
+    try {
+        const settings = await LandingSettingsService.getAll();
+        res.render('legal/cookies', { settings });
+    } catch (error) {
+        console.error('Error fetching landing settings for cookies policy:', error);
+        res.render('legal/cookies', { settings: {} });
+    }
+});
+router.get('/legal/reembolsos', async (req, res) => {
+    try {
+        const settings = await LandingSettingsService.getAll();
+        res.render('legal/reembolsos', { settings });
+    } catch (error) {
+        console.error('Error fetching landing settings for refund policy:', error);
+        res.render('legal/reembolsos', { settings: {} });
+    }
+});
 
 // --- RUTAS DE TENANT (RESTAURANTE) ---
 router.use('/productos', requireAuthWithTenant, requirePlanFeature('productos'), productosRoutes);

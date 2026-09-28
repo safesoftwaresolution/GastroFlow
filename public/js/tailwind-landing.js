@@ -14,7 +14,7 @@ window.tailwind.config = {
         "surface-container-high": "#292932",
         "secondary": "#c3c0ff",
         "on-tertiary-fixed-variant": "#005321",
-        "primary": "#c0c1ff",
+        "primary": "#6366f1",
         "on-secondary": "#1d00a5",
         "on-primary": "#1000a9",
         "surface-tint": "#c0c1ff",

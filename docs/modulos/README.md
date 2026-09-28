@@ -30,6 +30,8 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 * **[10. Integración de WhatsApp Bot](10_whatsapp_bot.md):** ❌ *Eliminado (2026-09).* Se documenta solo como referencia histórica.
 
 > Facturación electrónica (Factus) y su plan de integración: ver `docs/facturacion-electronica/plan-integracion-factus.md`.
+>
+> Integración contable (Alegra/Siigo) — plan y estrategia (aún no implementado): ver `docs/contabilidad/plan-integracion-contable.md`.
 
 ---
 *Para volver a la documentación técnica general del sistema, haz clic [aquí](../DOCUMENTACION_SISTEMA.md).*

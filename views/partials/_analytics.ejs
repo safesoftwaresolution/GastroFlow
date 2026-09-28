@@ -1,18 +1,77 @@
 <% /*
-  Google Analytics (GA4). Solo se incluye en páginas públicas orientadas a
-  marketing/adquisición (landing, login, registro, legal) -- nunca en el
-  sistema operativo interno detrás de auth (POS, dashboard, etc.), para no
-  mezclar analítica de visitantes con uso real de restaurantes.
+  Google Analytics (GA4) + banner de consentimiento de cookies. Solo se
+  incluye en páginas públicas orientadas a marketing/adquisición (landing,
+  login, registro, legal) -- nunca en el sistema operativo interno detrás de
+  auth (POS, dashboard, etc.), para no mezclar analítica de visitantes con
+  uso real de restaurantes.
 
-  Se activa solo si GA_MEASUREMENT_ID está seteado en el .env (igual que
-  SENTRY_DSN): sin esa variable, este partial no imprime nada.
+  GA se activa solo si GA_MEASUREMENT_ID está seteado en el .env (igual que
+  SENTRY_DSN): sin esa variable, este partial no imprime nada (ni banner,
+  porque no hay cookie no esencial de la que pedir consentimiento).
+
+  GA nunca se dispara hasta que el visitante acepta el banner -- se guarda
+  la elección en localStorage (gf_cookie_consent) y no se vuelve a preguntar.
+  Detalle en /legal/cookies.
 */ %>
 <% if (process.env.GA_MEASUREMENT_ID) { %>
-<script async src="https://www.googletagmanager.com/gtag/js?id=<%= process.env.GA_MEASUREMENT_ID %>"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '<%= process.env.GA_MEASUREMENT_ID %>');
+(function () {
+    var GA_ID = '<%= process.env.GA_MEASUREMENT_ID %>';
+    var KEY = 'gf_cookie_consent';
+
+    function cargarGA() {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+        document.head.appendChild(s);
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', GA_ID);
+    }
+
+    function mostrarBanner() {
+        var barra = document.createElement('div');
+        barra.setAttribute('role', 'dialog');
+        barra.setAttribute('aria-label', 'Aviso de cookies');
+        barra.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#0f172a;color:#e2e8f0;border-top:1px solid rgba(255,255,255,.1);padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;font-family:system-ui,-apple-system,sans-serif;font-size:14px;box-shadow:0 -8px 24px rgba(0,0,0,.35);';
+        barra.innerHTML =
+            '<span style="max-width:640px;line-height:1.5;">' +
+            'Usamos cookies esenciales para el funcionamiento del sitio y, si lo aceptas, cookies analíticas para entender cómo usás nuestras páginas públicas. ' +
+            '<a href="/legal/cookies" style="color:#818cf8;text-decoration:underline;">Más información</a>' +
+            '</span>' +
+            '<span style="display:flex;gap:8px;flex-shrink:0;">' +
+            '<button type="button" id="gfCookieRechazar" style="background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;">Rechazar</button>' +
+            '<button type="button" id="gfCookieAceptar" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;">Aceptar</button>' +
+            '</span>';
+        document.body.appendChild(barra);
+
+        document.getElementById('gfCookieAceptar').addEventListener('click', function () {
+            try { localStorage.setItem(KEY, 'aceptado'); } catch (e) {}
+            barra.remove();
+            cargarGA();
+        });
+        document.getElementById('gfCookieRechazar').addEventListener('click', function () {
+            try { localStorage.setItem(KEY, 'rechazado'); } catch (e) {}
+            barra.remove();
+        });
+    }
+
+    function iniciar() {
+        var eleccion = null;
+        try { eleccion = localStorage.getItem(KEY); } catch (e) {}
+        if (eleccion === 'aceptado') {
+            cargarGA();
+        } else if (eleccion !== 'rechazado') {
+            mostrarBanner();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciar);
+    } else {
+        iniciar();
+    }
+})();
 </script>
 <% } %>

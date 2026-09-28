@@ -1,8 +1,8 @@
 <%#
-  Estructura común de las 2 páginas legales (privacidad.ejs, terminos.ejs):
-  eran prácticamente el mismo archivo copiado, solo cambiaban título, ícono,
-  el email de contacto y el contenido. Se llama con:
-    titulo, descripcion, canonical, icono, h1, contenidoHtml, activo ('privacidad'|'terminos'), email
+  Estructura común de las páginas legales (privacidad.ejs, terminos.ejs,
+  cookies.ejs, reembolsos.ejs). Se llama con:
+    titulo, descripcion, canonical, icono, h1, contenidoHtml,
+    activo ('privacidad'|'terminos'|'cookies'|'reembolsos'), email
 -%>
 <!DOCTYPE html>
 <html class="dark" lang="es">
@@ -31,6 +31,14 @@
   .prose-legal a  { color: #818cf8; text-decoration: underline; }
   .prose-legal ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.875rem; }
   .prose-legal ol li { margin-bottom: 0.35rem; }
+  .prose-legal table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem; }
+  .prose-legal th, .prose-legal td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--md-sys-color-outline-variant, #464554); vertical-align: top; }
+  .prose-legal th { color: var(--md-sys-color-on-surface, #e2e8f0); font-weight: 700; white-space: nowrap; }
+  .prose-legal code { background: rgba(255,255,255,.08); padding: 0.1rem 0.4rem; border-radius: 0.35rem; font-size: 0.85em; }
+  .legal-doc-link { display: block; border-radius: 0.6rem; padding: 0.55rem 0.75rem; font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant, #c7c4d7); text-decoration: none; transition: background-color .15s, color .15s; }
+  .legal-doc-link:hover { background: rgba(255,255,255,.06); color: var(--md-sys-color-on-surface, #e2e8f0); }
+  .legal-doc-link.activo { background: color-mix(in srgb, #6366f1 14%, transparent); color: #a5b4fc; font-weight: 600; }
+  .legal-doc-link.oculto { display: none; }
 </style>
 </head>
 <body class="bg-background text-on-background">
@@ -45,14 +53,14 @@
 </header>
 
 <!-- Hero -->
-<section class="max-w-4xl mx-auto px-6 md:px-8 pt-16 pb-6">
+<section class="max-w-5xl mx-auto px-6 md:px-8 pt-16 pb-6">
   <div class="flex items-center gap-3 mb-4">
     <span class="material-symbols-outlined text-primary text-4xl"><%= icono %></span>
     <h1 class="text-3xl font-bold text-on-surface"><%= h1 %></h1>
   </div>
   <p class="text-on-surface-variant text-sm">
-    Última actualización: <strong class="text-on-surface">30 de junio de 2026</strong> &nbsp;·&nbsp;
-    Vigente desde: <strong class="text-on-surface">30 de junio de 2026</strong>
+    Última actualización: <strong class="text-on-surface">28 de septiembre de 2026</strong> &nbsp;·&nbsp;
+    Vigente desde: <strong class="text-on-surface">28 de septiembre de 2026</strong>
   </p>
   <div class="mt-4 p-4 rounded-xl glass text-sm text-on-surface-variant border border-yellow-500/20 bg-yellow-500/5">
     <span class="material-symbols-outlined align-middle text-yellow-400 mr-1" style="font-size:1.1rem;">info</span>
@@ -60,19 +68,53 @@
   </div>
 </section>
 
-<!-- Contenido -->
-<main class="max-w-4xl mx-auto px-6 md:px-8 pb-20 prose-legal text-on-surface-variant text-sm">
-  <%- contenidoHtml %>
-</main>
+<!-- Contenido + navegación de documentos legales -->
+<div class="max-w-5xl mx-auto px-6 md:px-8 pb-20 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-10 items-start">
+
+  <aside class="order-first lg:order-last lg:sticky lg:top-24">
+    <div class="glass rounded-xl p-4">
+      <p class="text-xs font-bold tracking-wide text-on-surface-variant uppercase mb-3">Documentos Legales</p>
+      <input type="text" id="legalDocSearch" placeholder="Buscar documento..."
+             class="w-full text-sm rounded-lg bg-black/20 border border-outline-variant px-3 py-2 mb-3 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-1 focus:ring-primary">
+      <nav id="legalDocList" class="flex flex-col gap-1">
+        <a href="/legal/terminos" data-nombre="Términos y Condiciones" class="legal-doc-link <%= activo === 'terminos' ? 'activo' : '' %>">Términos y Condiciones</a>
+        <a href="/legal/privacidad" data-nombre="Política de Privacidad" class="legal-doc-link <%= activo === 'privacidad' ? 'activo' : '' %>">Política de Privacidad</a>
+        <a href="/legal/cookies" data-nombre="Política de Cookies" class="legal-doc-link <%= activo === 'cookies' ? 'activo' : '' %>">Política de Cookies</a>
+        <a href="/legal/reembolsos" data-nombre="Reembolsos y Cancelación" class="legal-doc-link <%= activo === 'reembolsos' ? 'activo' : '' %>">Reembolsos y Cancelación</a>
+      </nav>
+      <p id="legalDocVacio" class="text-xs text-on-surface-variant mt-2 hidden">Sin resultados.</p>
+    </div>
+  </aside>
+
+  <main class="prose-legal text-on-surface-variant text-sm min-w-0">
+    <%- contenidoHtml %>
+  </main>
+
+</div>
+
+<script>
+(function () {
+    var input = document.getElementById('legalDocSearch');
+    var vacio = document.getElementById('legalDocVacio');
+    var links = Array.prototype.slice.call(document.querySelectorAll('#legalDocList .legal-doc-link'));
+    if (!input) return;
+    input.addEventListener('input', function () {
+        var q = input.value.trim().toLowerCase();
+        var visibles = 0;
+        links.forEach(function (a) {
+            var coincide = a.dataset.nombre.toLowerCase().indexOf(q) !== -1;
+            a.classList.toggle('oculto', !coincide);
+            if (coincide) visibles++;
+        });
+        vacio.classList.toggle('hidden', visibles > 0);
+    });
+})();
+</script>
 
 <!-- Footer -->
 <footer class="border-t border-outline-variant py-8 px-6 md:px-12 text-center">
   <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-on-surface-variant">
     <a href="/" class="hover:text-primary transition-colors">Inicio</a>
-    <span class="hidden md:inline">·</span>
-    <a href="/legal/terminos" class="<%= activo === 'terminos' ? 'text-primary font-medium' : 'hover:text-primary transition-colors' %>">Términos y Condiciones</a>
-    <span class="hidden md:inline">·</span>
-    <a href="/legal/privacidad" class="<%= activo === 'privacidad' ? 'text-primary font-medium' : 'hover:text-primary transition-colors' %>">Política de Privacidad</a>
     <span class="hidden md:inline">·</span>
     <a href="mailto:<%= email %>" class="hover:text-primary transition-colors"><%= email %></a>
   </div>
