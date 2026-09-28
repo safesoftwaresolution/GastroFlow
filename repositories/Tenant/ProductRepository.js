@@ -141,7 +141,7 @@ class ProductRepository {
     static async create(tenantId, productData) {
         const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
             productData;
-        const result = await db.query(
+        const [result] = await db.query(
             'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 tenantId,
@@ -167,7 +167,7 @@ class ProductRepository {
     static async update(id, tenantId, productData) {
         const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
             productData;
-        const result = await db.query(
+        const [result] = await db.query(
             'UPDATE productos SET codigo = ?, nombre = ?, precio_unidad = ?, categoria_id = ?, descripcion = ?, imagen_url = ?, tributo = ?, tasa_impuesto = ? WHERE id = ? AND tenant_id = ?',
             [
                 codigo,

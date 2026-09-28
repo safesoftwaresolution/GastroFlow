@@ -17,6 +17,7 @@ const ADMIN_SECTIONS = [
         collapsible: true,
         items: [
             { key: 'tenants', label: 'Restaurantes', icon: 'bi-building', href: '/admin/tenants' },
+            { key: 'productos', label: 'Catálogo de Productos', icon: 'bi-box-seam', href: '/admin/productos' },
             {
                 key: 'onboarding',
                 label: 'Onboarding',

@@ -94,7 +94,7 @@ class ProductosController {
             if (!tenantId) {
                 return res.status(403).json({ error: 'Contexto de tenant no disponible' });
             }
-            const result = await ProductService.create(tenantId, req.body);
+            const result = await ProductService.create(tenantId, req.body, req.user?.id);
             res.status(201).json(result);
         } catch (error) {
             console.error('Error al crear producto:', error);
@@ -117,7 +117,7 @@ class ProductosController {
             if (precio_unidad === undefined || precio_unidad === null) {
                 return res.status(400).json({ error: 'precio_unidad es requerido' });
             }
-            await ProductService.updatePrecio(id, tenantId, precio_unidad);
+            await ProductService.updatePrecio(id, tenantId, precio_unidad, req.user?.id);
             res.json({ message: 'Precio actualizado' });
         } catch (error) {
             console.error('Error al actualizar precio:', error);
@@ -135,7 +135,7 @@ class ProductosController {
             if (!tenantId) {
                 return res.status(403).json({ error: 'Contexto de tenant no disponible' });
             }
-            const result = await ProductService.update(parseInt(req.params.id), tenantId, req.body);
+            const result = await ProductService.update(parseInt(req.params.id), tenantId, req.body, req.user?.id);
             res.json(result);
         } catch (error) {
             console.error('Error al actualizar producto:', error);
@@ -158,7 +158,7 @@ class ProductosController {
             if (!tenantId) {
                 return res.status(403).json({ error: 'Contexto de tenant no disponible' });
             }
-            const result = await ProductService.delete(parseInt(req.params.id), tenantId);
+            const result = await ProductService.delete(parseInt(req.params.id), tenantId, req.user?.id);
             res.json(result);
         } catch (error) {
             console.error('Error al eliminar producto:', error);
@@ -323,7 +323,7 @@ class ProductosController {
             }
             const id = parseInt(req.params.id, 10);
             const { es_favorito } = req.body;
-            await ProductService.toggleFavorite(id, tenantId, es_favorito);
+            await ProductService.toggleFavorite(id, tenantId, es_favorito, req.user?.id);
             res.json({ message: 'Estado de favorito actualizado' });
         } catch (error) {
             console.error('Error al actualizar favorito:', error);
@@ -340,7 +340,7 @@ class ProductosController {
             }
             const id = parseInt(req.params.id, 10);
             const { pide_nota } = req.body;
-            await ProductService.togglePideNota(id, tenantId, pide_nota);
+            await ProductService.togglePideNota(id, tenantId, pide_nota, req.user?.id);
             res.json({ message: 'Preferencia de nota actualizada' });
         } catch (error) {
             console.error('Error al actualizar pide_nota:', error);

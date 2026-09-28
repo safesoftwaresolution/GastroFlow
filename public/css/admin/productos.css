@@ -1,0 +1,137 @@
+.filter-card {
+    background: var(--sa-surface);
+    border: 1px solid var(--sa-border);
+    border-radius: var(--sa-radius-md);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 14px;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+}
+
+.filter-field.justify-content-end {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--sa-text-secondary);
+}
+
+.productos-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--sa-text-secondary);
+    border-bottom: 1px solid var(--sa-border);
+    padding: 12px 16px;
+}
+
+.productos-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--sa-border);
+    color: var(--sa-text-primary);
+    vertical-align: middle;
+}
+
+.badge-estado {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge-estado.activo {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--sa-success);
+}
+
+.badge-estado.inactivo {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--sa-danger);
+}
+
+/* Modal de detalle / auditoría */
+.detalle-producto-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 20px;
+    margin-bottom: 20px;
+}
+
+.detalle-producto-grid .campo-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--sa-text-secondary);
+    margin-bottom: 2px;
+}
+
+.detalle-producto-grid .campo-valor {
+    font-weight: 600;
+}
+
+.auditoria-timeline {
+    border-left: 2px solid var(--sa-border);
+    padding-left: 16px;
+    margin-left: 4px;
+}
+
+.auditoria-evento {
+    position: relative;
+    padding-bottom: 18px;
+}
+
+.auditoria-evento::before {
+    content: '';
+    position: absolute;
+    left: -21px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sa-accent);
+}
+
+.auditoria-evento .evento-titulo {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.auditoria-evento .evento-meta {
+    font-size: 12px;
+    color: var(--sa-text-secondary);
+    margin-bottom: 6px;
+}
+
+.auditoria-evento .cambio-campo {
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.auditoria-evento .cambio-campo .valor-antes {
+    color: var(--sa-danger);
+    text-decoration: line-through;
+}
+
+.auditoria-evento .cambio-campo .valor-despues {
+    color: var(--sa-success);
+    font-weight: 600;
+}

@@ -6,8 +6,34 @@
 
 const ProductRepository = require('../../repositories/Tenant/ProductRepository');
 const CategoryRepository = require('../../repositories/Admin/CategoryRepository');
+const ProductoAuditoriaRepository = require('../../repositories/Tenant/ProductoAuditoriaRepository');
 const PromocionService = require('./PromocionService');
 const db = require('../../config/database');
+
+// Campos que importa auditar (precio y catálogo, no flags de UI como es_favorito/pide_nota).
+const CAMPOS_AUDITABLES = [
+    'codigo',
+    'nombre',
+    'precio_unidad',
+    'categoria_id',
+    'descripcion',
+    'imagen_url',
+    'tributo',
+    'tasa_impuesto'
+];
+
+/** Diff campo por campo entre el producto antes y después de un update (comparación laxa: MySQL puede devolver 100 donde el form manda "100"). */
+function calcularDiff(antes, despues) {
+    const cambios = {};
+    for (const campo of CAMPOS_AUDITABLES) {
+        const valorAntes = antes[campo] ?? null;
+        const valorDespues = despues[campo] ?? null;
+        if (String(valorAntes ?? '') !== String(valorDespues ?? '')) {
+            cambios[campo] = { antes: valorAntes, despues: valorDespues };
+        }
+    }
+    return cambios;
+}
 
 class ProductService {
     /**
@@ -55,7 +81,7 @@ class ProductService {
      * @returns {Promise<Object>} Created product result
      * @throws {Error} If validation fails or duplicate code
      */
-    static async create(tenantId, productData) {
+    static async create(tenantId, productData, usuarioId = null) {
         const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
             productData;
 
@@ -85,6 +111,8 @@ class ProductService {
                         : null
             });
 
+            await ProductoAuditoriaRepository.registrar(tenantId, result.insertId, 'creado', usuarioId, null);
+
             return {
                 id: result.insertId,
                 message: 'Producto creado exitosamente'
@@ -104,7 +132,7 @@ class ProductService {
      * @returns {Promise<Object>} Update result
      * @throws {Error} If product not found or validation fails
      */
-    static async update(id, tenantId, productData) {
+    static async update(id, tenantId, productData, usuarioId = null) {
         const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
             productData;
 
@@ -124,23 +152,30 @@ class ProductService {
             }
         }
 
+        const datosNuevos = {
+            codigo: codigo.trim(),
+            nombre: nombre.trim(),
+            precio_unidad: Number.parseFloat(precio_unidad) || 0,
+            categoria_id: categoria_id || 1,
+            descripcion: descripcion ? descripcion.trim() : null,
+            imagen_url: imagen_url || null,
+            tributo: tributo || null,
+            tasa_impuesto:
+                tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== ''
+                    ? Number.parseFloat(tasa_impuesto)
+                    : null
+        };
+
         try {
-            const result = await ProductRepository.update(id, tenantId, {
-                codigo: codigo.trim(),
-                nombre: nombre.trim(),
-                precio_unidad: Number.parseFloat(precio_unidad) || 0,
-                categoria_id: categoria_id || 1,
-                descripcion: descripcion ? descripcion.trim() : null,
-                imagen_url: imagen_url || null,
-                tributo: tributo || null,
-                tasa_impuesto:
-                    tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== ''
-                        ? Number.parseFloat(tasa_impuesto)
-                        : null
-            });
+            const result = await ProductRepository.update(id, tenantId, datosNuevos);
 
             if (result.affectedRows === 0) {
                 throw new Error('No se pudo actualizar el producto');
+            }
+
+            const cambios = calcularDiff(existingProduct, datosNuevos);
+            if (Object.keys(cambios).length > 0) {
+                await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, cambios);
             }
 
             return { message: 'Producto actualizado exitosamente' };
@@ -159,7 +194,7 @@ class ProductService {
      * @param {number} precioUnidad - New unit price
      * @returns {Promise<Object>}
      */
-    static async updatePrecio(id, tenantId, precioUnidad) {
+    static async updatePrecio(id, tenantId, precioUnidad, usuarioId = null) {
         const existing = await ProductRepository.findById(id, tenantId);
         if (!existing) {
             throw new Error('Producto no encontrado');
@@ -167,6 +202,11 @@ class ProductService {
         const result = await ProductRepository.updatePrecio(id, tenantId, precioUnidad);
         if (result.affectedRows === 0) {
             throw new Error('No se pudo actualizar el precio');
+        }
+        if (String(existing.precio_unidad) !== String(precioUnidad)) {
+            await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, {
+                precio_unidad: { antes: existing.precio_unidad, despues: precioUnidad }
+            });
         }
         return { message: 'Precio actualizado' };
     }
@@ -177,7 +217,7 @@ class ProductService {
      * @returns {Promise<Object>} Delete result
      * @throws {Error} If product not found
      */
-    static async delete(id, tenantId) {
+    static async delete(id, tenantId, usuarioId = null) {
         const producto = await ProductRepository.findById(id, tenantId);
         if (!producto) {
             throw new Error('Producto no encontrado');
@@ -187,6 +227,8 @@ class ProductService {
         if (result.affectedRows === 0) {
             throw new Error('No se pudo desactivar el producto');
         }
+
+        await ProductoAuditoriaRepository.registrar(tenantId, id, 'desactivado', usuarioId, null);
 
         return { message: 'Producto eliminado exitosamente' };
     }
@@ -272,12 +314,26 @@ class ProductService {
      * @param {boolean} esFavorito - Favorite status
      * @returns {Promise<Object>} Update result
      */
-    static async toggleFavorite(id, tenantId, esFavorito) {
-        return await ProductRepository.toggleFavorite(id, tenantId, esFavorito);
+    static async toggleFavorite(id, tenantId, esFavorito, usuarioId = null) {
+        const existing = await ProductRepository.findById(id, tenantId);
+        const result = await ProductRepository.toggleFavorite(id, tenantId, esFavorito);
+        if (existing && Number(Boolean(existing.es_favorito)) !== Number(Boolean(esFavorito))) {
+            await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, {
+                es_favorito: { antes: !!existing.es_favorito, despues: !!esFavorito }
+            });
+        }
+        return result;
     }
 
-    static async togglePideNota(id, tenantId, pideNota) {
-        return await ProductRepository.togglePideNota(id, tenantId, pideNota);
+    static async togglePideNota(id, tenantId, pideNota, usuarioId = null) {
+        const existing = await ProductRepository.findById(id, tenantId);
+        const result = await ProductRepository.togglePideNota(id, tenantId, pideNota);
+        if (existing && Number(Boolean(existing.pide_nota)) !== Number(Boolean(pideNota))) {
+            await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, {
+                pide_nota: { antes: !!existing.pide_nota, despues: !!pideNota }
+            });
+        }
+        return result;
     }
 }
 

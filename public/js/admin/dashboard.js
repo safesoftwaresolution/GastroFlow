@@ -349,6 +349,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            // Quitar filas de restaurantes que ya no vienen en la respuesta (ej. se
+            // desactivaron): si no, se quedan congeladas con su rango viejo y, como
+            // las filas vivas se van moviendo al final en cada refresco, terminan
+            // flotando hacia arriba con el paso del tiempo.
+            const nombresVivos = new Set(data.ventasHoyPorTenant.map(v => v.nombre));
+            container.querySelectorAll('[data-tenant-row]').forEach(row => {
+                if (!nombresVivos.has(row.getAttribute('data-tenant-row'))) {
+                    row.remove();
+                }
+            });
+
             // ── Actualizar el punto de HOY en el gráfico multi-tenant ──────────
             if (chartTenants && chartTenants.data && chartTenants.data.datasets) {
                 let chartActualizado = false;
