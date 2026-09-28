@@ -525,15 +525,27 @@
                             <!-- Hidden inputs to submit Quill HTML content -->
                             <input type="hidden" name="privacy_policy" id="privacy_policy_input">
                             <input type="hidden" name="terms_conditions" id="terms_conditions_input">
+                            <input type="hidden" name="cookies_policy" id="cookies_policy_input">
+                            <input type="hidden" name="refund_policy" id="refund_policy_input">
 
                             <div class="mb-4">
                                 <label class="form-label d-block mb-2">Política de Privacidad</label>
                                 <div id="editor_privacy" style="min-height: 250px;"><%- settings.privacy_policy %></div>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label class="form-label d-block mb-2">Términos y Condiciones de Uso</label>
                                 <div id="editor_terms" style="min-height: 250px;"><%- settings.terms_conditions %></div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label d-block mb-2">Política de Cookies</label>
+                                <div id="editor_cookies" style="min-height: 250px;"><%- settings.cookies_policy %></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block mb-2">Política de Reembolsos y Cancelación</label>
+                                <div id="editor_refund" style="min-height: 250px;"><%- settings.refund_policy %></div>
                             </div>
                         </div>
 
@@ -585,15 +597,43 @@
             }
         });
 
+        const quillCookies = new Quill('#editor_cookies', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+
+        const quillRefund = new Quill('#editor_refund', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+
         // Set hidden fields values on submit
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
             // Get Quill's internal HTML representation
             const privacyHtml = quillPrivacy.root.innerHTML;
             const termsHtml = quillTerms.root.innerHTML;
+            const cookiesHtml = quillCookies.root.innerHTML;
+            const refundHtml = quillRefund.root.innerHTML;
 
             document.getElementById('privacy_policy_input').value = privacyHtml;
             document.getElementById('terms_conditions_input').value = termsHtml;
+            document.getElementById('cookies_policy_input').value = cookiesHtml;
+            document.getElementById('refund_policy_input').value = refundHtml;
         });
 
         // Live color preview logic
