@@ -32,7 +32,7 @@ class ProveedoresController {
     static async show(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const proveedor = await ProveedorService.getById(parseInt(req.params.id), tenantId);
+            const proveedor = await ProveedorService.getById(Number.parseInt(req.params.id, 10), tenantId);
             res.json(proveedor);
         } catch (error) {
             res.status(error.message === 'Proveedor no encontrado' ? 404 : 500).json({ error: error.message });
@@ -54,7 +54,7 @@ class ProveedoresController {
     static async update(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const result = await ProveedorService.update(parseInt(req.params.id), tenantId, req.body);
+            const result = await ProveedorService.update(Number.parseInt(req.params.id, 10), tenantId, req.body);
             res.json(result);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -65,7 +65,7 @@ class ProveedoresController {
     static async destroy(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const result = await ProveedorService.delete(parseInt(req.params.id), tenantId);
+            const result = await ProveedorService.delete(Number.parseInt(req.params.id, 10), tenantId);
             res.json(result);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -78,7 +78,10 @@ class ProveedoresController {
     static async listFacturas(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const facturas = await ProveedorFacturaService.listByProveedor(tenantId, parseInt(req.params.id));
+            const facturas = await ProveedorFacturaService.listByProveedor(
+                tenantId,
+                Number.parseInt(req.params.id, 10)
+            );
             res.json(facturas);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -89,7 +92,7 @@ class ProveedoresController {
     static async storeFactura(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const proveedorId = parseInt(req.params.id);
+            const proveedorId = Number.parseInt(req.params.id, 10);
             if (!req.file) {
                 throw new Error('No se subió ningún archivo');
             }
@@ -98,6 +101,7 @@ class ProveedoresController {
                 proveedor_id: proveedorId,
                 numero_factura: req.body.numero_factura,
                 fecha_emision: req.body.fecha_emision,
+                fecha_vencimiento: req.body.fecha_vencimiento || null,
                 monto_total: req.body.monto_total,
                 archivo_nombre: req.file.originalname,
                 archivo_contenido: req.file.buffer,
@@ -117,7 +121,7 @@ class ProveedoresController {
     static async showFactura(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const factura = await ProveedorFacturaService.getById(parseInt(req.params.facturaId), tenantId);
+            const factura = await ProveedorFacturaService.getById(Number.parseInt(req.params.facturaId, 10), tenantId);
 
             res.setHeader('Content-Type', factura.archivo_tipo);
             res.setHeader('Content-Disposition', `inline; filename="${factura.archivo_nombre}"`);
@@ -127,11 +131,22 @@ class ProveedoresController {
         }
     }
 
+    // PATCH /proveedores/facturas/:facturaId/pagar
+    static async pagarFactura(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            await ProveedorFacturaService.marcarComoPagada(Number.parseInt(req.params.facturaId, 10), tenantId);
+            res.json({ success: true, message: 'Factura marcada como pagada' });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     // DELETE /proveedores/facturas/:facturaId
     static async destroyFactura(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            await ProveedorFacturaService.delete(parseInt(req.params.facturaId), tenantId);
+            await ProveedorFacturaService.delete(Number.parseInt(req.params.facturaId, 10), tenantId);
             res.json({ success: true, message: 'Factura eliminada' });
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -144,7 +159,10 @@ class ProveedoresController {
     static async getHistorialCostos(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const history = await ProveedorReporteRepository.getHistorialCostos(tenantId, parseInt(req.params.id));
+            const history = await ProveedorReporteRepository.getHistorialCostos(
+                tenantId,
+                Number.parseInt(req.params.id, 10)
+            );
             res.json(history);
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -27,11 +27,26 @@
                     <option value="30" <%= dias == 30 ? 'selected' : '' %>>Mes Contable</option>
                     <option value="90" <%= dias == 90 ? 'selected' : '' %>>Trimestre</option>
                 </select>
+                <a class="btn btn-outline-dark btn-finance" href="/finanzas/exportar-pdf?dias=<%= dias %>">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
+                </a>
                 <button class="btn btn-dark btn-finance" data-bs-toggle="modal" data-bs-target="#modalNuevoGasto">
                     <i class="bi bi-plus-lg me-2"></i>Registrar Operación
                 </button>
             </div>
         </div>
+
+        <%
+            // Badge de variación vs. el periodo anterior (mismo largo, inmediatamente antes).
+            const variacionBadge = (pct, bienSiSube = true) => {
+                if (pct === null || pct === undefined) return '';
+                const sube = pct >= 0;
+                const bueno = sube === bienSiSube;
+                const color = bueno ? 'text-success' : 'text-danger';
+                const icono = sube ? 'bi-arrow-up-short' : 'bi-arrow-down-short';
+                return `<span class="small fw-bold ${color}"><i class="bi ${icono}"></i>${Math.abs(pct).toFixed(1)}%</span> <span class="small text-muted">vs. periodo anterior</span>`;
+            };
+        %>
 
         <!-- Fila de KPIs Sobrios -->
         <div class="row g-3 mb-4">
@@ -39,14 +54,14 @@
                 <div class="card card-finance sidebar-success p-3">
                     <div class="kpi-title mb-1">Ingresos Operativos</div>
                     <div class="kpi-value text-success">$<%= Number(resumen.ingresos).toLocaleString('es-CO') %></div>
-                    <div class="small text-muted mt-2">Ventas de productos y servicios</div>
+                    <div class="small text-muted mt-2"><%- variacionBadge(resumen.variacionIngresos, true) %></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card card-finance sidebar-danger p-3">
                     <div class="kpi-title mb-1">Costos y Gastos</div>
                     <div class="kpi-value text-danger">$<%= Number(resumen.egresos).toLocaleString('es-CO') %></div>
-                    <div class="small text-muted mt-2">Inventario, nómina y operación</div>
+                    <div class="small text-muted mt-2"><%- variacionBadge(resumen.variacionEgresos, false) %></div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -55,7 +70,7 @@
                     <div class="kpi-value <%= resumen.utilidad >= 0 ? 'text-primary' : 'text-danger' %>">
                         $<%= Number(resumen.utilidad).toLocaleString('es-CO') %>
                     </div>
-                    <div class="small text-muted mt-2">Flujo de caja neto acumulado</div>
+                    <div class="small text-muted mt-2"><%- variacionBadge(resumen.variacionUtilidad, true) %></div>
                 </div>
             </div>
         </div>
@@ -100,6 +115,93 @@
                     <% } else { %>
                         <div class="text-center py-5 text-muted small">No se registran egresos.</div>
                     <% } %>
+                </div>
+            </div>
+
+            <!-- Desglose de Egresos Totales -->
+            <div class="col-lg-6 mt-4">
+                <div class="card card-finance h-100 p-4">
+                    <h6 class="fw-bold mb-3">Desglose de Egresos Totales</h6>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                        <span class="text-muted">Caja (inventario, gastos manuales)</span>
+                        <span class="fw-bold">$<%= Number(resumen.egresosCaja).toLocaleString('es-CO') %></span>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                        <span class="text-muted">Costos fijos (prorrateado)</span>
+                        <span class="fw-bold">$<%= Number(resumen.costosFijosPeriodo).toLocaleString('es-CO') %></span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted">Facturas de proveedor del periodo</span>
+                        <span class="fw-bold">$<%= Number(resumen.proveedoresPeriodo).toLocaleString('es-CO') %></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingresos por Forma de Pago -->
+            <div class="col-lg-6 mt-4">
+                <div class="card card-finance h-100 p-4">
+                    <h6 class="fw-bold mb-3">Ingresos por Forma de Pago</h6>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                        <span class="text-muted"><i class="bi bi-cash-coin me-1"></i>Efectivo</span>
+                        <span class="fw-bold">$<%= Number(resumen.desglosePago.efectivo).toLocaleString('es-CO') %></span>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                        <span class="text-muted"><i class="bi bi-credit-card me-1"></i>Transferencia</span>
+                        <span class="fw-bold">$<%= Number(resumen.desglosePago.transferencia).toLocaleString('es-CO') %></span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted"><i class="bi bi-gift me-1"></i>Bonos redimidos</span>
+                        <span class="fw-bold">$<%= Number(resumen.desglosePago.bono).toLocaleString('es-CO') %></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cuentas por Pagar -->
+            <div class="col-12 mt-4">
+                <div class="card card-finance">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0">Cuentas por Pagar Pendientes</h6>
+                        <% const totalPorPagar = (resumen.cuentasPorPagar || []).reduce((s, f) => s + Number(f.monto_total), 0); %>
+                        <span class="small text-muted">Total: <strong class="text-danger">$<%= totalPorPagar.toLocaleString('es-CO') %></strong></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-finance table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Proveedor</th>
+                                    <th>N° Factura</th>
+                                    <th>Vence</th>
+                                    <th class="text-end pe-4">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (resumen.cuentasPorPagar && resumen.cuentasPorPagar.length > 0) { %>
+                                    <% resumen.cuentasPorPagar.forEach(f => {
+                                        const vencida = f.fecha_vencimiento && new Date(f.fecha_vencimiento) < new Date(new Date().toDateString());
+                                    %>
+                                        <tr>
+                                            <td class="ps-4"><%= f.proveedor_nombre %></td>
+                                            <td class="text-muted"><%= f.numero_factura || '-' %></td>
+                                            <td>
+                                                <% if (f.fecha_vencimiento) { %>
+                                                    <span class="<%= vencida ? 'text-danger fw-bold' : 'text-muted' %>">
+                                                        <%= new Date(f.fecha_vencimiento).toLocaleDateString('es-CO') %><%= vencida ? ' (vencida)' : '' %>
+                                                    </span>
+                                                <% } else { %>
+                                                    <span class="text-muted">Sin fecha</span>
+                                                <% } %>
+                                            </td>
+                                            <td class="text-end pe-4 fw-bold">$<%= Number(f.monto_total).toLocaleString('es-CO') %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">No hay cuentas por pagar pendientes.</td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -162,21 +264,21 @@
                 <div class="modal-body p-4">
                     <form id="formGasto">
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Tipo de Operación</label>
+                            <label for="gastoTipo" class="form-label small fw-bold">Tipo de Operación</label>
                             <select class="form-select" id="gastoTipo">
                                 <option value="salida">EGRESO (Gasto / Pago)</option>
                                 <option value="entrada">INGRESO (Inyección / Otro)</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Monto del Movimiento</label>
+                            <label for="gastoMonto" class="form-label small fw-bold">Monto del Movimiento</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="text" inputmode="decimal" class="form-control money-input" id="gastoMonto" required placeholder="0">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Centro de Costo / Categoría</label>
+                            <label for="gastoCategoria" class="form-label small fw-bold">Centro de Costo / Categoría</label>
                             <select class="form-select" id="gastoCategoria">
                                 <option value="General">General</option>
                                 <option value="Servicios">Servicios Públicos</option>
@@ -187,7 +289,7 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Justificación Comercial</label>
+                            <label for="gastoMotivo" class="form-label small fw-bold">Justificación Comercial</label>
                             <textarea class="form-control" id="gastoMotivo" rows="2" placeholder="Ej: Pago de factura energía eléctrica abril 2024"></textarea>
                         </div>
                     </form>

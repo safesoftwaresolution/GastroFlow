@@ -10,19 +10,19 @@
 
                 <!-- ─── Sección principal (simple) ─── -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Nombre del insumo <span class="text-danger">*</span></label>
+                    <label for="nuevoNombre" class="form-label fw-semibold">Nombre del insumo <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="nuevoNombre" placeholder="Ej: Pollo, Tomate, Harina..."
                         required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
+                    <label for="nuevoCodigo" class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="nuevoCodigo" placeholder="Ej: PLL-001" required>
                     <div class="form-text">Referencia corta para identificar el insumo.</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Categoría</label>
+                    <label for="nuevoCategoriaId" class="form-label fw-semibold">Categoría</label>
                     <select class="form-select" id="nuevoCategoriaId">
                         <option value="">Sin categoría</option>
                         <% categoriasInsumo.forEach(c=> { %>
@@ -35,7 +35,7 @@
 
                 <!-- Campo dinámico para Cerámicas -->
                 <div class="mb-3 d-none" id="containerPrecioVenta">
-                    <label class="form-label fw-semibold text-primary">Precio de Venta Unitario <span class="text-danger">*</span></label>
+                    <label for="nuevoPrecioVenta" class="form-label fw-semibold text-primary">Precio de Venta Unitario <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="text" inputmode="decimal" class="form-control money-input" id="nuevoPrecioVenta" placeholder="0">
@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Proveedor Principal</label>
+                    <label for="nuevoProveedorId" class="form-label fw-semibold">Proveedor Principal</label>
                     <select class="form-select" id="nuevoProveedorId">
                         <option value="">Sin proveedor</option>
                         <% (typeof proveedores !=='undefined' ? proveedores : []).forEach(p=> { %>
@@ -57,7 +57,7 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-4">
-                        <label class="form-label fw-semibold">Unidad</label>
+                        <label for="nuevoUnidadBase" class="form-label fw-semibold">Unidad</label>
                         <select class="form-select" id="nuevoUnidadBase">
                             <option value="g">g (gramos)</option>
                             <option value="ml">ml (mililitros)</option>
@@ -66,13 +66,13 @@
                         <div class="form-text">¿Cómo se mide este insumo?</div>
                     </div>
                     <div class="col-4">
-                        <label class="form-label fw-semibold">Stock inicial</label>
+                        <label for="nuevoStockInicial" class="form-label fw-semibold">Stock inicial</label>
                         <input type="number" step="0.01" class="form-control" id="nuevoStockInicial" value="0" min="0"
                             placeholder="0">
                         <div class="form-text">Cuánto tienes ahora.</div>
                     </div>
                     <div class="col-4">
-                        <label class="form-label fw-semibold">Stock mínimo</label>
+                        <label for="nuevoStockMinimo" class="form-label fw-semibold">Stock mínimo</label>
                         <input type="number" step="0.01" class="form-control" id="nuevoStockMinimo" value="0" min="0"
                             placeholder="0">
                         <div class="form-text">Alerta si baja de este nivel.</div>
@@ -100,7 +100,7 @@
                                 </p>
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <label class="form-label small">Unidad de compra</label>
+                                        <label for="nuevoUnidadMedidaId" class="form-label small">Unidad de compra</label>
                                         <select class="form-select form-select-sm" id="nuevoUnidadMedidaId">
                                             <option value="">Seleccione...</option>
                                             <% unidadesCompra.forEach(u=> { %>
@@ -114,7 +114,7 @@
                                         <div class="form-text">Ej: bolsa, litro, kilo...</div>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label small">Presentación (cantidad en unidad base)</label>
+                                        <label for="nuevoCantidadCompra" class="form-label small">Presentación (cantidad en unidad base)</label>
                                         <input type="number" step="0.01" class="form-control form-control-sm"
                                             id="nuevoCantidadCompra" value="1" min="0.01"
                                             title="Cuántas unidades base trae cada presentación de compra. Ej: 1 bolsa = 1000g">
@@ -122,7 +122,7 @@
                                     </div>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Precio de compra (por presentación)</label>
+                                    <label for="nuevoPrecioCompra" class="form-label small">Precio de compra (por presentación)</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">$</span>
                                         <input type="text" inputmode="decimal" class="form-control money-input" id="nuevoPrecioCompra"
@@ -132,7 +132,7 @@
                                     </div>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Rendimiento neto (%)</label>
+                                    <label for="nuevoRendimiento" class="form-label small">Rendimiento neto (%)</label>
                                     <input type="number" step="1" min="1" max="100" class="form-control form-control-sm"
                                         id="nuevoRendimiento" value="100"
                                         title="% del insumo comprado que queda utilizable tras limpiar/pelar/cocinar">
@@ -173,17 +173,17 @@
 
                 <!-- ─── Sección principal ─── -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Nombre del insumo <span class="text-danger">*</span></label>
+                    <label for="editNombre" class="form-label fw-semibold">Nombre del insumo <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="editNombre" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
+                    <label for="editCodigo" class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="editCodigo" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Categoría</label>
+                    <label for="editCategoriaId" class="form-label fw-semibold">Categoría</label>
                     <select class="form-select" id="editCategoriaId">
                         <option value="">Sin categoría</option>
                         <% categoriasInsumo.forEach(c=> { %>
@@ -195,7 +195,7 @@
                 </div>
 
                 <div class="mb-3 d-none" id="editContainerPrecioVenta">
-                    <label class="form-label fw-semibold text-primary">Precio de Venta Unitario <span class="text-danger">*</span></label>
+                    <label for="editPrecioVenta" class="form-label fw-semibold text-primary">Precio de Venta Unitario <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="text" inputmode="decimal" class="form-control money-input" id="editPrecioVenta" placeholder="0">
@@ -203,7 +203,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Proveedor Principal</label>
+                    <label for="editProveedorId" class="form-label fw-semibold">Proveedor Principal</label>
                     <select class="form-select" id="editProveedorId">
                         <option value="">Sin proveedor</option>
                         <% (typeof proveedores !=='undefined' ? proveedores : []).forEach(p=> { %>
@@ -216,7 +216,7 @@
 
                 <div class="row g-3 mb-1">
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold">Unidad</label>
+                        <label for="editUnidadBase" class="form-label fw-semibold">Unidad</label>
                         <select class="form-select" id="editUnidadBase">
                             <option value="g">g (gramos)</option>
                             <option value="ml">ml (mililitros)</option>
@@ -224,11 +224,11 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold">Existencias actuales</label>
+                        <label for="editStockActual" class="form-label fw-semibold">Existencias actuales</label>
                         <input type="number" step="0.0001" class="form-control" id="editStockActual" min="0">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold">Stock mínimo</label>
+                        <label for="editStockMinimo" class="form-label fw-semibold">Stock mínimo</label>
                         <input type="number" step="0.01" class="form-control" id="editStockMinimo" value="0" min="0">
                     </div>
                 </div>
@@ -252,7 +252,7 @@
                             <div class="accordion-body pt-2 pb-3">
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <label class="form-label small">Unidad de compra</label>
+                                        <label for="editUnidadMedidaId" class="form-label small">Unidad de compra</label>
                                         <select class="form-select form-select-sm" id="editUnidadMedidaId">
                                             <option value="">Seleccione...</option>
                                             <% unidadesCompra.forEach(u=> { %>
@@ -263,19 +263,19 @@
                                         </select>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label small">Presentación (cantidad en unidad base)</label>
+                                        <label for="editCantidadCompra" class="form-label small">Presentación (cantidad en unidad base)</label>
                                         <input type="number" step="0.01" class="form-control form-control-sm" id="editCantidadCompra">
                                     </div>
                                 </div>
                                     <div class="mb-2">
-                                    <label class="form-label small">Precio de compra (por presentación)</label>
+                                    <label for="editPrecioCompra" class="form-label small">Precio de compra (por presentación)</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">$</span>
                                         <input type="text" inputmode="decimal" class="form-control money-input" id="editPrecioCompra">
                                     </div>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Rendimiento neto (%)</label>
+                                    <label for="editRendimiento" class="form-label small">Rendimiento neto (%)</label>
                                     <input type="number" step="1" min="1" max="100" class="form-control form-control-sm"
                                         id="editRendimiento"
                                         title="% del insumo comprado que queda utilizable tras limpiar/pelar/cocinar">
@@ -312,12 +312,12 @@
                 <input type="hidden" id="entradaInsumoId">
 
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">¿Cuánto entró? (Cantidad en <span id="entradaUnidadLabel">g</span>)</label>
+                    <label for="entradaCantidad" class="form-label small fw-bold">¿Cuánto entró? (Cantidad en <span id="entradaUnidadLabel">g</span>)</label>
                     <input type="number" step="0.0001" class="form-control" id="entradaCantidad">
                 </div>
 
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">¿Cuánto pagaste en total por esta compra?</label>
+                    <label for="entradaCostoTotal" class="form-label small fw-bold">¿Cuánto pagaste en total por esta compra?</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="text" inputmode="decimal" class="form-control money-input" id="entradaCostoTotal"
@@ -328,7 +328,7 @@
 
                 <div class="row g-2 mb-2">
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">Proveedor</label>
+                        <label for="entradaProveedorId" class="form-label small fw-bold">Proveedor</label>
                         <select class="form-select" id="entradaProveedorId">
                             <option value="">Seleccione proveedor...</option>
                             <% (typeof proveedores !=='undefined' ? proveedores : []).forEach(p=> { %>
@@ -339,13 +339,13 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">N° Factura / Referencia</label>
+                        <label for="entradaFactura" class="form-label small fw-bold">N° Factura / Referencia</label>
                         <input type="text" class="form-control" id="entradaFactura" placeholder="Ej: F-123">
                     </div>
                 </div>
 
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">Notas o descripción</label>
+                    <label for="entradaRef" class="form-label small fw-bold">Notas o descripción</label>
                     <input type="text" class="form-control" id="entradaRef" placeholder="Ej: Compra mensual">
                 </div>
             </div>
@@ -363,8 +363,8 @@
             <div class="modal-header fw-bold">📤 Registrar Gasto / Salida - <span id="salidaInsumoNombre"></span></div>
             <div class="modal-body"><input type="hidden" id="salidaInsumoId">
                 <p class="small text-muted">Disponible: <span id="salidaDisponible">0</span></p><label
-                    class="form-label">¿Cuánto salió / se gastó?</label><input type="number" step="0.0001"
-                    class="form-control" id="salidaCantidad"><label class="form-label mt-2">Referencia</label><input
+                    for="salidaCantidad" class="form-label">¿Cuánto salió / se gastó?</label><input type="number" step="0.0001"
+                    class="form-control" id="salidaCantidad"><label for="salidaRef" class="form-label mt-2">Referencia</label><input
                     type="text" class="form-control" id="salidaRef">
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-secondary"
@@ -391,7 +391,7 @@
                 </p>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">¿Qué acción deseas realizar?</label>
+                    <div class="form-label fw-bold">¿Qué acción deseas realizar?</div>
                     <div class="d-flex gap-3">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="ajusteTipo" id="adjSuma" value="suma"
@@ -410,7 +410,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Cantidad a ajustar</label>
+                    <label for="ajusteCantidad" class="form-label fw-bold">Cantidad a ajustar</label>
                     <input type="number" step="0.0001" class="form-control form-control-lg" id="ajusteCantidad"
                         placeholder="0.00">
                     <div class="form-text">Ingresa el valor absoluto. El sistema lo sumará o restará según tu elección
@@ -418,7 +418,7 @@
                 </div>
 
                 <div class="mb-1">
-                    <label class="form-label fw-bold">Motivo / Referencia</label>
+                    <label for="ajusteRef" class="form-label fw-bold">Motivo / Referencia</label>
                     <input type="text" class="form-control" id="ajusteRef" value="Ajuste manual">
                 </div>
             </div>
@@ -522,7 +522,7 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Buscar insumo</label>
+                    <label for="buscarInsumoCompra" class="form-label fw-bold">Buscar insumo</label>
                     <input type="text" class="form-control" id="buscarInsumoCompra" list="listaInsumosDatalist" placeholder="Escribe el nombre o código...">
                     <datalist id="listaInsumosDatalist">
                         <% (typeof insumos !== 'undefined' ? insumos : []).forEach(i => { %>

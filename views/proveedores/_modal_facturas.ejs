@@ -20,26 +20,30 @@
                             <input type="hidden" id="facturaProveedorId">
                             <div class="row g-2">
                                 <div class="col-6 col-md-4">
-                                    <label class="small text-muted mb-1">N° Factura</label>
-                                    <input type="text" class="form-control form-control-sm" name="numero_factura"
+                                    <label for="numero_factura" class="small text-muted mb-1">N° Factura</label>
+                                    <input type="text" class="form-control form-control-sm" id="numero_factura" name="numero_factura"
                                         placeholder="Ej: FAC-123" required>
                                 </div>
                                 <div class="col-6 col-md-4">
-                                    <label class="small text-muted mb-1">Fecha</label>
-                                    <input type="date" class="form-control form-control-sm" name="fecha_emision"
+                                    <label for="fecha_emision" class="small text-muted mb-1">Fecha</label>
+                                    <input type="date" class="form-control form-control-sm" id="fecha_emision" name="fecha_emision"
                                         required>
                                 </div>
+                                <div class="col-6 col-md-4">
+                                    <label for="fecha_vencimiento" class="small text-muted mb-1">Vence (opcional)</label>
+                                    <input type="date" class="form-control form-control-sm" id="fecha_vencimiento" name="fecha_vencimiento">
+                                </div>
                                 <div class="col-12 col-md-4">
-                                    <label class="small text-muted mb-1">Monto Total</label>
+                                    <label for="monto_total" class="small text-muted mb-1">Monto Total</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" step="0.01" class="form-control" name="monto_total"
+                                        <input type="number" step="0.01" class="form-control" id="monto_total" name="monto_total"
                                             placeholder="0.00" required>
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-9">
-                                    <label class="small text-muted mb-1">Archivo (PDF o Imagen, máx. 2MB)</label>
-                                    <input type="file" class="form-control form-control-sm" name="archivo"
+                                    <label for="archivo" class="small text-muted mb-1">Archivo (PDF o Imagen, máx. 2MB)</label>
+                                    <input type="file" class="form-control form-control-sm" id="archivo" name="archivo"
                                         accept="application/pdf,image/*" required>
                                 </div>
                                 <div class="col-12 col-md-3 d-flex align-items-end">
@@ -59,6 +63,7 @@
                             <tr>
                                 <th>Fecha</th>
                                 <th>N° Factura</th>
+                                <th>Vence / Estado</th>
                                 <th class="text-end">Monto</th>
                                 <th class="text-center">Archivo</th>
                                 <th class="text-end">Acciones</th>

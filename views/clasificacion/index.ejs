@@ -23,15 +23,15 @@
         <div class="clasif-filters-card">
             <div class="row g-2 align-items-end">
                 <div class="col-6 col-md-3">
-                    <label class="form-label">Desde</label>
+                    <label for="clasifDesde" class="form-label">Desde</label>
                     <input type="date" id="clasifDesde" class="form-control">
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label">Hasta</label>
+                    <label for="clasifHasta" class="form-label">Hasta</label>
                     <input type="date" id="clasifHasta" class="form-control">
                 </div>
                 <div class="col-8 col-md-4">
-                    <label class="form-label">Categoría</label>
+                    <label for="clasifCategoria" class="form-label">Categoría</label>
                     <select id="clasifCategoria" class="form-select">
                         <option value="">Todas las categorías</option>
                         <% (categorias || []).forEach(function (c) { %>

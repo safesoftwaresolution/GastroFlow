@@ -3,27 +3,27 @@
         <form id="form-edit-fiscal" onsubmit="return handleFormSubmit(event, <%= selectedTenant.id %>, 'fiscal')">
             <div class="row g-4">
                 <div class="col-md-4">
-                    <label class="form-label">NIT / RUT</label>
-                    <input type="text" name="nit" class="form-control" value="<%= selectedTenant.nit || '' %>"
+                    <label for="fiscalNit" class="form-label">NIT / RUT</label>
+                    <input type="text" id="fiscalNit" name="nit" class="form-control" value="<%= selectedTenant.nit || '' %>"
                         placeholder="000.000.000-0">
                 </div>
                 <div class="col-md-8">
-                    <label class="form-label">Dirección Fiscal</label>
-                    <input type="text" name="direccion" class="form-control"
+                    <label for="fiscalDireccion" class="form-label">Dirección Fiscal</label>
+                    <input type="text" id="fiscalDireccion" name="direccion" class="form-control"
                         value="<%= selectedTenant.direccion || '' %>" placeholder="Calle ...">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Ciudad</label>
-                    <input type="text" name="ciudad" class="form-control" value="<%= selectedTenant.ciudad || '' %>">
+                    <label for="fiscalCiudad" class="form-label">Ciudad</label>
+                    <input type="text" id="fiscalCiudad" name="ciudad" class="form-control" value="<%= selectedTenant.ciudad || '' %>">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Teléfono de Contacto</label>
-                    <input type="text" name="telefono" class="form-control"
+                    <label for="fiscalTelefono" class="form-label">Teléfono de Contacto</label>
+                    <input type="text" id="fiscalTelefono" name="telefono" class="form-control"
                         value="<%= selectedTenant.telefono || '' %>">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Régimen Fiscal</label>
-                    <select name="regimen_fiscal" class="form-select">
+                    <label for="fiscalRegimenFiscal" class="form-label">Régimen Fiscal</label>
+                    <select name="regimen_fiscal" id="fiscalRegimenFiscal" class="form-select">
                         <option value="No responsable de IVA" <%=selectedTenant.regimen_fiscal==='No responsable de IVA'
                             ? 'selected' : '' %>>No responsable de IVA</option>
                         <option value="Responsable de IVA" <%=selectedTenant.regimen_fiscal==='Responsable de IVA'
@@ -33,7 +33,7 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Tributo por Defecto (productos nuevos)</label>
+                    <label for="tributoDefaultSelect" class="form-label">Tributo por Defecto (productos nuevos)</label>
                     <select name="tributo_default" id="tributoDefaultSelect" class="form-select">
                         <option value="iva_19" data-tasa="19.00" <%=selectedTenant.tributo_default==='iva_19'
                             ? 'selected' : '' %>>IVA 19%</option>
@@ -48,7 +48,7 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Tasa de Impuesto por Defecto (%)</label>
+                    <label for="tasaImpuestoDefaultInput" class="form-label">Tasa de Impuesto por Defecto (%)</label>
                     <input type="number" name="tasa_impuesto_default" id="tasaImpuestoDefaultInput" class="form-control"
                         step="0.01" min="0" max="100"
                         value="<%= selectedTenant.tasa_impuesto_default != null ? selectedTenant.tasa_impuesto_default : 8.00 %>">
@@ -84,8 +84,8 @@
         <form id="form-estado-factus" class="row g-2 align-items-end mb-4"
             onsubmit="return handleFacturacionElectronicaEstadoSubmit(event, <%= selectedTenant.id %>)">
             <div class="col-md-4">
-                <label class="form-label">Cambiar estado</label>
-                <select name="estado" class="form-select">
+                <label for="factusEstadoSelect" class="form-label">Cambiar estado</label>
+                <select name="estado" id="factusEstadoSelect" class="form-select">
                     <option value="deshabilitado" <%= fe.estado === 'deshabilitado' ? 'selected' : '' %>>Deshabilitado</option>
                     <option value="pruebas" <%= fe.estado === 'pruebas' ? 'selected' : '' %>>Pruebas</option>
                     <option value="activo" <%= fe.estado === 'activo' ? 'selected' : '' %>>Activo</option>
@@ -98,41 +98,42 @@
                 </small>
             </div>
         </form>
+
         <form id="form-edit-factus" onsubmit="return handleFacturacionElectronicaSubmit(event, <%= selectedTenant.id %>)">
             <div class="row g-4">
                 <div class="col-md-4">
-                    <label class="form-label">Ambiente</label>
-                    <select name="ambiente" class="form-select">
+                    <label for="factusAmbiente" class="form-label">Ambiente</label>
+                    <select name="ambiente" id="factusAmbiente" class="form-select">
                         <option value="sandbox" <%= fe.ambiente === 'sandbox' ? 'selected' : '' %>>Sandbox (pruebas)</option>
                         <option value="produccion" <%= fe.ambiente === 'produccion' ? 'selected' : '' %>>Producción</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Código Municipio DANE</label>
-                    <input type="text" name="codigo_municipio_dane" class="form-control"
+                    <label for="factusCodigoMunicipioDane" class="form-label">Código Municipio DANE</label>
+                    <input type="text" id="factusCodigoMunicipioDane" name="codigo_municipio_dane" class="form-control"
                         value="<%= fe.codigo_municipio_dane || '' %>" placeholder="Ej: 05001">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Tipo de Organización</label>
-                    <input type="text" name="tipo_organizacion" class="form-control"
+                    <label for="factusTipoOrganizacion" class="form-label">Tipo de Organización</label>
+                    <input type="text" id="factusTipoOrganizacion" name="tipo_organizacion" class="form-control"
                         value="<%= fe.tipo_organizacion || '' %>" placeholder="persona_natural / persona_juridica">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Client ID</label>
-                    <input type="text" name="client_id" class="form-control" value="<%= fe.client_id || '' %>">
+                    <label for="factusClientId" class="form-label">Client ID</label>
+                    <input type="text" id="factusClientId" name="client_id" class="form-control" value="<%= fe.client_id || '' %>">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Client Secret</label>
-                    <input type="password" name="client_secret" class="form-control"
+                    <label for="factusClientSecret" class="form-label">Client Secret</label>
+                    <input type="password" id="factusClientSecret" name="client_secret" class="form-control"
                         placeholder="<%= fe.client_secret_configurado ? '••••••••  (dejar vacío para no cambiar)' : '' %>">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Usuario API Factus</label>
-                    <input type="text" name="api_usuario" class="form-control" value="<%= fe.api_usuario || '' %>">
+                    <label for="factusApiUsuario" class="form-label">Usuario API Factus</label>
+                    <input type="text" id="factusApiUsuario" name="api_usuario" class="form-control" value="<%= fe.api_usuario || '' %>">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Contraseña API Factus</label>
-                    <input type="password" name="api_password" class="form-control"
+                    <label for="factusApiPassword" class="form-label">Contraseña API Factus</label>
+                    <input type="password" id="factusApiPassword" name="api_password" class="form-control"
                         placeholder="<%= fe.api_password_configurado ? '••••••••  (dejar vacío para no cambiar)' : '' %>">
                 </div>
                 <div class="col-12">

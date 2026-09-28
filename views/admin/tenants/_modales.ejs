@@ -10,28 +10,28 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Nombre del Restaurante</label>
-                            <input name="nombre" class="form-control" placeholder="Ej: Pizzería Roma" required>
+                            <label for="createTenantNombre" class="form-label">Nombre del Restaurante</label>
+                            <input id="createTenantNombre" name="nombre" class="form-control" placeholder="Ej: Pizzería Roma" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Slug de acceso</label>
-                            <input name="slug" class="form-control" placeholder="pizzeria-roma" required>
+                            <label for="createTenantSlug" class="form-label">Slug de acceso</label>
+                            <input id="createTenantSlug" name="slug" class="form-control" placeholder="pizzeria-roma" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">NIT / Documento</label>
-                            <input name="nit" class="form-control" placeholder="NIT o Cédula">
+                            <label for="createTenantNit" class="form-label">NIT / Documento</label>
+                            <input id="createTenantNit" name="nit" class="form-control" placeholder="NIT o Cédula">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Ciudad</label>
-                            <input name="ciudad" class="form-control">
+                            <label for="createTenantCiudad" class="form-label">Ciudad</label>
+                            <input id="createTenantCiudad" name="ciudad" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Correo Electrónico (Reportes)</label>
-                            <input type="email" name="email" class="form-control" placeholder="admin@restaurante.com">
+                            <label for="createTenantEmail" class="form-label">Correo Electrónico (Reportes)</label>
+                            <input type="email" id="createTenantEmail" name="email" class="form-control" placeholder="admin@restaurante.com">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Tipo de Negocio</label>
-                            <select name="config[tipo_negocio]" class="form-select">
+                            <label for="createTenantTipoNegocio" class="form-label">Tipo de Negocio</label>
+                            <select id="createTenantTipoNegocio" name="config[tipo_negocio]" class="form-select">
                                 <option value="restaurante">🍴 Restaurante</option>
                                 <option value="comidas_rapidas">🍔 Comidas Rápidas</option>
                                 <option value="panaderia">🥯 Panadería / Repostería</option>
@@ -39,9 +39,9 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Color Corporativo</label>
+                            <label for="createTenantColor" class="form-label">Color Corporativo</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="color" name="config[colors][primary]"
+                                <input type="color" id="createTenantColor" name="config[colors][primary]"
                                     class="form-control form-control-color"
                                     style="width: 45px; height: 38px; padding: 2px;" value="#6366f1">
                                 <span class="small text-muted">Este color se usará para el Navbar y
@@ -52,20 +52,20 @@
                         <hr>
                         <h6 class="fw-bold mt-2">Usuario Administrador del Local</h6>
                         <div class="col-md-6">
-                            <label class="form-label">Nombre del Administrador</label>
-                            <input name="admin_nombre_completo" class="form-control" placeholder="Nombre completo">
+                            <label for="createTenantAdminNombre" class="form-label">Nombre del Administrador</label>
+                            <input id="createTenantAdminNombre" name="admin_nombre_completo" class="form-control" placeholder="Nombre completo">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Correo del Administrador</label>
-                            <input name="admin_email" type="email" class="form-control" placeholder="admin@correo.com">
+                            <label for="createTenantAdminEmail" class="form-label">Correo del Administrador</label>
+                            <input id="createTenantAdminEmail" name="admin_email" type="email" class="form-control" placeholder="admin@correo.com">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Nombre de Usuario (Login)</label>
-                            <input name="admin_username" class="form-control" required>
+                            <label for="createTenantAdminUsername" class="form-label">Nombre de Usuario (Login)</label>
+                            <input id="createTenantAdminUsername" name="admin_username" class="form-control" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Contraseña inicial</label>
-                            <input name="admin_password" type="password" class="form-control" required minlength="6">
+                            <label for="createTenantAdminPassword" class="form-label">Contraseña inicial</label>
+                            <input id="createTenantAdminPassword" name="admin_password" type="password" class="form-control" required minlength="6">
                         </div>
                     </div>
                 </div>
@@ -89,19 +89,19 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input name="username" class="form-control" required>
+                        <label for="createUserUsername" class="form-label">Username</label>
+                        <input id="createUserUsername" name="username" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Correo Electrónico (Reportes)</label>
-                        <input name="email" type="email" class="form-control" placeholder="usuario@correo.com">
+                        <label for="createUserEmail" class="form-label">Correo Electrónico (Reportes)</label>
+                        <input id="createUserEmail" name="email" type="email" class="form-control" placeholder="usuario@correo.com">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input name="password" type="password" class="form-control" required>
+                        <label for="createUserPassword" class="form-label">Contraseña</label>
+                        <input id="createUserPassword" name="password" type="password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Roles (puedes marcar más de uno)</label>
+                        <div class="form-label">Roles (puedes marcar más de uno)</div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="rol_nombres[]" value="mesero" id="createRolMesero" checked>
                             <label class="form-check-label" for="createRolMesero">Mesero</label>
@@ -140,11 +140,11 @@
                 <input type="hidden" id="modalPasswordUserId">
                 <input type="hidden" id="modalPasswordTenantId">
                 <div class="mb-3">
-                    <label class="form-label">Nueva Clave para <strong id="modalPasswordUsername"></strong></label>
+                    <label for="modalPasswordNew" class="form-label">Nueva Clave para <strong id="modalPasswordUsername"></strong></label>
                     <input type="password" id="modalPasswordNew" class="form-control" placeholder="Nueva contraseña">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Confirmar Clave</label>
+                    <label for="modalPasswordConfirm" class="form-label">Confirmar Clave</label>
                     <input type="password" id="modalPasswordConfirm" class="form-control">
                 </div>
             </div>
@@ -167,7 +167,7 @@
                 <input type="hidden" id="modalCorreoUserId">
                 <input type="hidden" id="modalCorreoTenantId">
                 <div class="mb-3">
-                    <label class="form-label">Correo para <strong id="modalCorreoUsername"></strong></label>
+                    <label for="modalCorreoInput" class="form-label">Correo para <strong id="modalCorreoUsername"></strong></label>
                     <input type="email" id="modalCorreoInput" class="form-control" placeholder="usuario@correo.com">
                 </div>
             </div>

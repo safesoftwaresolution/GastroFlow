@@ -19,8 +19,8 @@ const getSectionIcon = function(secName) {
         <% (secciones || []).forEach(function(sec) { %>
             <div class="section-card" data-section-name="<%= sec.seccion %>">
                 <div class="section-card-header">
-                    <label class="mb-0 d-flex align-items-center gap-3 cursor-pointer flex-grow-1">
-                        <input type="checkbox" class="section-check hidden-checkbox">
+                    <label for="sec_check_<%= sec.seccion.toLowerCase().replace(/[^a-z0-9]/g, '_') %>" class="mb-0 d-flex align-items-center gap-3 cursor-pointer flex-grow-1">
+                        <input type="checkbox" id="sec_check_<%= sec.seccion.toLowerCase().replace(/[^a-z0-9]/g, '_') %>" class="section-check hidden-checkbox">
                         <span class="custom-checkbox">
                             <i class="bi bi-check-lg"></i>
                         </span>
@@ -36,8 +36,8 @@ const getSectionIcon = function(secName) {
                 <div class="section-card-body">
                     <div class="d-flex flex-column gap-1">
                         <% (sec.permisos || []).forEach(function(p) { %>
-                            <label class="permiso-item-row">
-                                <input type="checkbox" class="permiso-check hidden-checkbox" value="<%= p.id %>" data-permiso-id="<%= p.id %>">
+                            <label for="permiso_check_<%= p.id %>" class="permiso-item-row">
+                                <input type="checkbox" id="permiso_check_<%= p.id %>" class="permiso-check hidden-checkbox" value="<%= p.id %>" data-permiso-id="<%= p.id %>">
                                 <span class="custom-checkbox">
                                     <i class="bi bi-check-lg"></i>
                                 </span>

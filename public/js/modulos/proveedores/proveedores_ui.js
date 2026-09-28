@@ -40,7 +40,7 @@ $(function () {
           showConfirmButton: false
         }).then(() => location.reload());
       } catch (error) {
-        GF.error(error.message);
+        GF.handleError(error, 'No se pudo guardar el proveedor');
       }
     });
   }
@@ -93,7 +93,7 @@ $(function () {
       this.reset();
       await window.cargarFacturas(proveedorId);
     } catch (error) {
-      Swal.fire('Error', error.message || 'Error de red o archivo demasiado grande', 'error');
+      GF.handleError(error, 'Error de red o archivo demasiado grande');
     } finally {
       btn.disabled = false;
       btn.innerHTML = originalHtml;

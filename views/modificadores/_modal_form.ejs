@@ -12,8 +12,8 @@
                                 <input type="hidden" id="grupoId">
 
                                 <div class="mb-3" id="grupoPlantillasWrap">
-                                        <label class="form-label fw-semibold small text-muted text-uppercase">¿Empezar
-                                                desde una plantilla?</label>
+                                        <div class="form-label fw-semibold small text-muted text-uppercase">¿Empezar
+                                                desde una plantilla?</div>
                                         <div class="d-flex flex-wrap gap-2">
                                                 <button type="button" class="btn btn-sm btn-outline-secondary btn-plantilla"
                                                         data-plantilla="salsas"><i class="bi bi-egg-fried me-1"></i>Salsas</button>
@@ -31,15 +31,15 @@
                                 <hr class="my-3">
 
                                 <div class="mb-3">
-                                        <label class="form-label fw-semibold">Nombre del grupo <span
+                                        <label for="grupoNombre" class="form-label fw-semibold">Nombre del grupo <span
                                                         class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="grupoNombre"
                                                 placeholder="Ej: Elige tu salsa, Toppings extra">
                                 </div>
 
                                 <div class="mb-3">
-                                        <label class="form-label fw-semibold">¿El cliente puede elegir varias opciones
-                                                a la vez?</label>
+                                        <div class="form-label fw-semibold">¿El cliente puede elegir varias opciones
+                                                a la vez?</div>
                                         <div class="btn-group w-100" role="group">
                                                 <button type="button" class="btn btn-outline-primary grupo-seleccion-btn active"
                                                         data-valor="unica">No, solo una <span class="d-none d-sm-inline">(ej: la salsa)</span></button>
@@ -78,13 +78,13 @@
                                         <div class="collapse" id="grupoAvanzado">
                                                 <div class="row mt-2">
                                                         <div class="mb-2 col-md-6">
-                                                                <label class="form-label small text-muted">Mínimo que debe
+                                                                <label for="grupoMinimo" class="form-label small text-muted">Mínimo que debe
                                                                         elegir</label>
                                                                 <input type="number" min="0" class="form-control form-control-sm"
                                                                         id="grupoMinimo" value="0">
                                                         </div>
                                                         <div class="mb-2 col-md-6">
-                                                                <label class="form-label small text-muted">Máximo que puede
+                                                                <label for="grupoMaximo" class="form-label small text-muted">Máximo que puede
                                                                         elegir</label>
                                                                 <input type="number" min="1" class="form-control form-control-sm"
                                                                         id="grupoMaximo" placeholder="Vacío = sin límite">
@@ -97,7 +97,7 @@
 
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div>
-                                                <label class="form-label fw-semibold mb-0">Opciones</label>
+                                                <div class="form-label fw-semibold mb-0">Opciones</div>
                                                 <div class="form-text mt-0">Ej: "BBQ", "Tocineta". El precio extra es
                                                         opcional (déjalo en 0 si no cobras adicional).</div>
                                         </div>

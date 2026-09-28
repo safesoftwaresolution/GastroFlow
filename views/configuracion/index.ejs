@@ -16,39 +16,39 @@
                     <div class="card-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Nombre del Negocio</label>
-                                <input type="text" class="form-control" name="nombre_negocio"
+                                <label for="nombre_negocio" class="form-label">Nombre del Negocio</label>
+                                <input type="text" class="form-control" id="nombre_negocio" name="nombre_negocio"
                                     value="<%= config.nombre_negocio || '' %>" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">NIT/RUT</label>
-                                <input type="text" class="form-control" name="nit" value="<%= config.nit || '' %>">
+                                <label for="nit" class="form-label">NIT/RUT</label>
+                                <input type="text" class="form-control" id="nit" name="nit" value="<%= config.nit || '' %>">
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Dirección</label>
-                                <input type="text" class="form-control" name="direccion"
+                                <label for="direccion" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="direccion" name="direccion"
                                     value="<%= config.direccion || '' %>">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Teléfono</label>
-                                <input type="text" class="form-control" name="telefono"
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="telefono" name="telefono"
                                     value="<%= config.telefono || '' %>">
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Logo del Negocio</label>
-                                <input type="file" class="form-control" name="logo" accept="image/*">
+                                <label for="logo" class="form-label">Logo del Negocio</label>
+                                <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
                                 <% if (config.logo_src) { %>
                                     <img src="<%= config.logo_src %>" alt="Logo actual" class="mt-2"
                                         style="max-width: 200px;">
                                     <% } %>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">QR para Transferencias</label>
-                                <input type="file" class="form-control" name="qr" accept="image/*">
+                                <label for="qr" class="form-label">QR para Transferencias</label>
+                                <input type="file" class="form-control" id="qr" name="qr" accept="image/*">
                                 <% if (config.qr_src) { %>
                                     <img src="<%= config.qr_src %>" alt="QR actual" class="mt-2"
                                         style="max-width: 150px;">
@@ -57,8 +57,8 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-12">
-                                <label class="form-label">Pie de Página</label>
-                                <textarea class="form-control" name="pie_pagina"
+                                <label for="pie_pagina" class="form-label">Pie de Página</label>
+                                <textarea class="form-control" id="pie_pagina" name="pie_pagina"
                                     rows="3"><%= config.pie_pagina || '' %></textarea>
                             </div>
                         </div>
@@ -72,14 +72,14 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label">Ancho del Papel (mm)</label>
-                                <input type="number" class="form-control" name="ancho_papel"
+                                <label for="ancho_papel" class="form-label">Ancho del Papel (mm)</label>
+                                <input type="number" class="form-control" id="ancho_papel" name="ancho_papel"
                                     value="<%= config.ancho_papel || 80 %>" min="58" max="80">
                                 <small class="text-muted">Recomendado: 80mm para facturas estándar</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Tamaño de Fuente</label>
-                                <select class="form-control" name="font_size">
+                                <label for="font_size" class="form-label">Tamaño de Fuente</label>
+                                <select class="form-control" id="font_size" name="font_size">
                                     <option value="1" <%=(config.font_size || 1)==1 ? 'selected' : '' %>>Normal</option>
                                     <option value="2" <%=(config.font_size || 1)==2 ? 'selected' : '' %>>Grande</option>
                                 </select>
@@ -105,7 +105,7 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-8">
-                                <label class="form-label">Impresora</label>
+                                <label for="qzImpresoraSelect" class="form-label">Impresora</label>
                                 <div class="input-group">
                                     <select class="form-control" id="qzImpresoraSelect"></select>
                                     <button type="button" class="btn btn-outline-secondary" id="qzBtnDetectar">
@@ -137,8 +137,8 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Comando de apertura de cajón (avanzado)</label>
-                                <input type="text" class="form-control" name="cajon_comando_hex"
+                                <label for="cajon_comando_hex" class="form-label">Comando de apertura de cajón (avanzado)</label>
+                                <input type="text" class="form-control" id="cajon_comando_hex" name="cajon_comando_hex"
                                     value="<%= config.cajon_comando_hex || '' %>" placeholder="1B 70 00 19 FA (estándar)">
                                 <small class="text-muted">Déjalo vacío salvo que tu cajón use un comando ESC/POS distinto al estándar.</small>
                             </div>
@@ -180,19 +180,19 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Correo de notificación</label>
+                                <label for="alertasEmail" class="form-label">Correo de notificación</label>
                                 <input type="email" class="form-control" id="alertasEmail"
                                     value="<%= alertasConfig.email_notificacion || '' %>"
                                     placeholder="<%= tenant && tenant.email ? tenant.email : 'correo@negocio.com' %>">
                                 <small class="text-muted">Si lo dejas vacío se usa el correo del negocio.</small>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Mesa sin facturar (horas)</label>
+                                <label for="alertasUmbralHorasMesa" class="form-label">Mesa sin facturar (horas)</label>
                                 <input type="number" class="form-control" id="alertasUmbralHorasMesa" min="1" max="24"
                                     value="<%= alertasConfig.umbral_horas_mesa %>">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Caída de ventas (%)</label>
+                                <label for="alertasUmbralVentas" class="form-label">Caída de ventas (%)</label>
                                 <input type="number" class="form-control" id="alertasUmbralVentas" min="1" max="100"
                                     value="<%= alertasConfig.umbral_caida_ventas_pct %>">
                             </div>

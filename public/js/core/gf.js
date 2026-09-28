@@ -9,6 +9,8 @@
  *   GF.escapeHtml(texto)                 para insertar texto del usuario en HTML
  *   GF.toast(mensaje, icono)             aviso pequeño en la esquina
  *   GF.alerta / GF.exito / GF.error      diálogos (SweetAlert2)
+ *   GF.handleError(err, fallback)        manejo y log centralizado de excepciones con alerta al usuario
+ *   GF.tableError(tbody, cols, msg, err) estado de error en tabla y registro en consola
  *   GF.confirmar(mensaje, opciones)      true/false
  *   GF.cargando(boton, true|false)       spinner y deshabilitar un botón
  *   GF.tiempoReal.on(evento, handler)    eventos SSE del tenant (una sola conexión por página)
@@ -134,7 +136,46 @@
 
     /** GF.exito('Guardado') o GF.exito('Título', 'detalle'). Igual GF.error. */
     const exito = (a, b) => (b === undefined ? alerta('Listo', a, 'success') : alerta(a, b, 'success'));
-    const error = (a, b) => (b === undefined ? alerta('Error', a, 'error') : alerta(a, b, 'error'));
+    const error = (a, b) => {
+        if (a instanceof Error) {
+            console.error('[GastroFlow Error]:', a);
+            return alerta('Error', a.message || 'Ha ocurrido un error inesperado', 'error');
+        }
+        if (b instanceof Error) {
+            console.error(`[GastroFlow Error: ${a}]:`, b);
+            return alerta(a, b.message || 'Ha ocurrido un error inesperado', 'error');
+        }
+        return b === undefined ? alerta('Error', a, 'error') : alerta(a, b, 'error');
+    };
+
+    /**
+     * Manejador centralizado de excepciones en acciones / llamadas asíncronas.
+     * Registra en consola con console.error y muestra un diálogo de error amigable al usuario.
+     * @param {Error|string|any} err Excepción o error capturado
+     * @param {string} [mensajeFallback] Mensaje por defecto si el error no tiene mensaje
+     */
+    function handleError(err, mensajeFallback = 'Ha ocurrido un error inesperado') {
+        console.error('[GastroFlow Error]:', err);
+        const mensaje = (err && (err.message || (typeof err === 'string' ? err : null))) || mensajeFallback;
+        return alerta('Error', mensaje, 'error');
+    }
+
+    /**
+     * Muestra una fila de error centrada en un <tbody> y registra la excepción en consola.
+     * Útil en listados y tablas para evitar popups invasivos y mantener la traza técnica.
+     * @param {HTMLElement|string} tbody Elemento tbody o su ID (sin #)
+     * @param {number} colSpan Cantidad de columnas de la tabla
+     * @param {string} [mensaje] Mensaje legible para el usuario
+     * @param {Error|any} [err] Excepción técnica capturada (opcional)
+     */
+    function tableError(tbody, colSpan, mensaje = 'Error al cargar los datos', err = null) {
+        if (err) {
+            console.error('[GastroFlow Table Error]:', err);
+        }
+        const el = typeof tbody === 'string' ? document.getElementById(tbody) : tbody;
+        if (!el) return;
+        el.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-danger py-3">${escapeHtml(mensaje)}</td></tr>`;
+    }
 
     /** Pregunta sí/no. Devuelve true si confirmó. */
     async function confirmar(mensaje, opciones) {
@@ -242,6 +283,8 @@
         alerta,
         exito,
         error,
+        handleError,
+        tableError,
         confirmar,
         cargando,
         cargandoPantalla,

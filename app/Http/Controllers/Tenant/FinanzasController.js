@@ -15,7 +15,7 @@ class FinanzasController {
                     .render('errors/internal', { error: { message: 'Contexto de tenant no disponible' } });
             }
 
-            const dias = parseInt(req.query.dias) || 30;
+            const dias = Number.parseInt(req.query.dias, 10) || 30;
             const data = await FinanzasService.getDashboardData(tenantId, dias);
 
             // Obtener categorías para el modal de nuevo gasto
@@ -40,12 +40,28 @@ class FinanzasController {
     }
 
     /**
+     * Descarga el estado financiero del periodo en PDF
+     */
+    static async exportarPdf(req, res) {
+        try {
+            const dias = Number.parseInt(req.query.dias, 10) || 30;
+            const buffer = await FinanzasService.generarPdfMensual(req.tenant, dias);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="estado-financiero-${dias}dias.pdf"`);
+            res.send(buffer);
+        } catch (e) {
+            console.error('Error exportando PDF de finanzas:', e);
+            res.status(500).json({ error: 'No se pudo generar el PDF' });
+        }
+    }
+
+    /**
      * API para obtener datos de gráficos
      */
     static async getChartData(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const dias = parseInt(req.query.dias) || 30;
+            const dias = Number.parseInt(req.query.dias, 10) || 30;
             const data = await FinanzasService.getDashboardData(tenantId, dias);
             res.json(data);
         } catch (e) {

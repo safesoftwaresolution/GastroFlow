@@ -8,7 +8,7 @@
             <form id="ordenCompraForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Proveedor</label>
+                        <label for="oc_proveedor_id" class="form-label">Proveedor</label>
                         <select class="form-select" id="oc_proveedor_id" required>
                             <option value="">Selecciona un proveedor...</option>
                             <% proveedores.forEach(function (p) { %>
@@ -17,11 +17,11 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Notas (opcional)</label>
+                        <label for="oc_notas" class="form-label">Notas (opcional)</label>
                         <textarea class="form-control" id="oc_notas" rows="2"></textarea>
                     </div>
 
-                    <label class="form-label">Insumos a pedir</label>
+                    <div class="form-label fw-semibold">Insumos a pedir</div>
                     <div id="ocLineasContainer"></div>
                     <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btnAgregarLinea">
                         <i class="bi bi-plus-lg me-1"></i>Agregar insumo

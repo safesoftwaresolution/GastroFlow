@@ -3,25 +3,25 @@
         <form id="form-edit-general" onsubmit="return handleFormSubmit(event, <%= selectedTenant.id %>, 'general')">
             <div class="row g-4">
                 <div class="col-md-6">
-                    <label class="form-label">Nombre Comercial</label>
-                    <input type="text" name="nombre" class="form-control" value="<%= selectedTenant.nombre %>" required>
+                    <label for="editNombreComercial" class="form-label">Nombre Comercial</label>
+                    <input type="text" id="editNombreComercial" name="nombre" class="form-control" value="<%= selectedTenant.nombre %>" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Correo Electrónico para Reportes</label>
-                    <input type="email" name="email" class="form-control" value="<%= selectedTenant.email || '' %>"
+                    <label for="editEmailReportes" class="form-label">Correo Electrónico para Reportes</label>
+                    <input type="email" id="editEmailReportes" name="email" class="form-control" value="<%= selectedTenant.email || '' %>"
                         placeholder="correo@ejemplo.com">
                     <div class="form-text">A este correo llegarán los reportes automáticos
                         mensuales.</div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Identificador (Slug)</label>
+                    <label for="editSlugIdentificador" class="form-label">Identificador (Slug)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted">/tienda/</span>
-                        <input type="text" class="form-control bg-light" value="<%= selectedTenant.slug %>" disabled>
+                        <input type="text" id="editSlugIdentificador" class="form-control bg-light" value="<%= selectedTenant.slug %>" disabled>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Tipo de Negocio</label>
+                    <label for="editTipoNegocio" class="form-label">Tipo de Negocio</label>
                     <select name="tipo_negocio" id="editTipoNegocio" class="form-select">
                         <option value="restaurante" <%=selectedTenant.config &&
                             selectedTenant.config.tipo_negocio==='restaurante' ? 'selected' : '' %>>🍴 Restaurante
@@ -37,7 +37,7 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Plan de Servicio</label>
+                    <div class="form-label">Plan de Servicio</div>
                     <div class="d-flex align-items-center gap-2">
                         <% if (selectedTenant.plan) { %>
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
@@ -49,13 +49,13 @@
                                     <a href="/admin/planes?tenantId=<%= selectedTenant.id %>"
                                         class="btn btn-outline-secondary btn-sm ms-auto">
                                         <i class="bi bi-credit-card me-1"></i>Gestionar plan y facturación
-                                    </a>
+                                        </a>
                     </div>
                     <div class="form-text">El plan, tamaño y add-ons se gestionan desde
                         Planes &amp; Add-ons.</div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Color Corporativo</label>
+                    <label for="editConfigColorGeneral" class="form-label">Color Corporativo</label>
                     <div class="d-flex align-items-center gap-3">
                         <input type="color" id="editConfigColorGeneral" class="form-control form-control-color"
                             style="width: 50px; height: 50px;"

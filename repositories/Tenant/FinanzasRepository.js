@@ -70,7 +70,7 @@ class FinanzasRepository {
      */
     static async getHistoricoDiario(tenantId, fechaInicio, fechaFin) {
         const [rows] = await db.query(
-            `SELECT 
+            `SELECT
                 ${SQL_COLOMBIA.dia('created_at')} as fecha,
                 SUM(CASE WHEN tipo = 'entrada' THEN monto ELSE 0 END) as ingresos,
                 SUM(CASE WHEN tipo = 'salida' THEN monto ELSE 0 END) as egresos
@@ -81,6 +81,37 @@ class FinanzasRepository {
             [tenantId, fechaInicio, fechaFin]
         );
         return rows;
+    }
+
+    /** Suma de costos fijos mensuales activos (arriendo, servicios, nómina...), sin prorratear. */
+    static async getCostosFijosActivosMensual(tenantId) {
+        const [[row]] = await db.query(
+            `SELECT COALESCE(SUM(monto_mensual), 0) AS total FROM costos_fijos WHERE tenant_id = ? AND activo = 1`,
+            [tenantId]
+        );
+        return Number.parseFloat(row.total) || 0;
+    }
+
+    /**
+     * Ingresos por forma de pago dentro del periodo, a partir de `facturas`
+     * (no de caja_movimientos: ahí es donde vive el desglose efectivo/transferencia/bono).
+     * Excluye sub-facturas de eventos (evento_id) igual que el resto del sistema, para no duplicar.
+     */
+    static async getDesglosePorFormaPago(tenantId, utcDesde, utcHasta) {
+        const [[row]] = await db.query(
+            `SELECT
+                COALESCE(SUM(monto_efectivo), 0) AS efectivo,
+                COALESCE(SUM(monto_transferencia), 0) AS transferencia,
+                COALESCE(SUM(monto_bono), 0) AS bono
+            FROM facturas
+            WHERE tenant_id = ? AND evento_id IS NULL AND fecha >= ? AND fecha < ?`,
+            [tenantId, utcDesde, utcHasta]
+        );
+        return {
+            efectivo: Number.parseFloat(row.efectivo) || 0,
+            transferencia: Number.parseFloat(row.transferencia) || 0,
+            bono: Number.parseFloat(row.bono) || 0
+        };
     }
 }
 

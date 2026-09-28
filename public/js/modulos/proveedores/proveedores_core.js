@@ -49,7 +49,7 @@ window.cargarHistorial = async function(proveedorId) {
       tbody.insertAdjacentHTML('beforeend', tr);
     });
   } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar historial</td></tr>';
+    GF.tableError(tbody, 5, 'Error al cargar historial', error);
   }
 };
 
@@ -77,7 +77,7 @@ window.editProveedor = async function(id) {
     const modal = new bootstrap.Modal(document.getElementById('proveedorModal'));
     modal.show();
   } catch (error) {
-    Swal.fire('Error', 'No se pudo cargar el proveedor', 'error');
+    GF.handleError(error, 'No se pudo cargar el proveedor');
   }
 };
 
@@ -99,7 +99,7 @@ window.deleteProveedor = async function(id) {
       Swal.fire('Eliminado', 'Proveedor eliminado correctamente.', 'success')
         .then(() => location.reload());
     } catch (error) {
-      GF.error(error.message);
+      GF.handleError(error, 'No se pudo eliminar el proveedor');
     }
   }
 };
@@ -119,7 +119,7 @@ window.cargarFacturas = async function(proveedorId) {
   const msgVacio = document.getElementById('sinFacturasMsg');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
   if (containerMovil) containerMovil.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
 
   try {
@@ -137,11 +137,13 @@ window.cargarFacturas = async function(proveedorId) {
     facturas.forEach(f => {
       const fecha = f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString() : 'N/A';
       const monto = GF.dinero(f.monto_total);
+      const estadoHtml = estadoFacturaHtml(f);
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="small">${fecha}</td>
         <td class="fw-bold">${GF.escapeHtml(f.numero_factura || '-')}</td>
+        <td>${estadoHtml}</td>
         <td class="text-end fw-bold text-dark">${monto}</td>
         <td class="text-center">
           <a href="/proveedores/facturas/${f.id}/ver" target="_blank" class="btn btn-sm btn-light border" title="Ver archivo">
@@ -149,6 +151,7 @@ window.cargarFacturas = async function(proveedorId) {
           </a>
         </td>
         <td class="text-end">
+          ${f.estado === 'pendiente' ? `<button class="btn btn-sm btn-outline-success border-0" onclick="pagarFactura(${f.id}, ${proveedorId})" title="Marcar como pagada"><i class="bi bi-check-lg"></i></button>` : ''}
           <button class="btn btn-sm btn-outline-danger border-0" onclick="eliminarFactura(${f.id}, ${proveedorId})" title="Eliminar">
             <i class="bi bi-x-lg"></i>
           </button>
@@ -164,14 +167,18 @@ window.cargarFacturas = async function(proveedorId) {
                 <span class="small text-muted">${fecha}</span>
                 <span class="fw-bold text-success">${monto}</span>
               </div>
-              <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex justify-content-between align-items-center mb-1">
                 <div class="small fw-bold text-dark">
                   <i class="bi bi-file-earmark-text me-1"></i>${GF.escapeHtml(f.numero_factura || 'S/N')}
                 </div>
+                ${estadoHtml}
+              </div>
+              <div class="d-flex justify-content-end">
                 <div class="btn-group">
                   <a href="/proveedores/facturas/${f.id}/ver" target="_blank" class="btn btn-sm btn-white border shadow-sm px-3">
                     <i class="bi bi-eye text-primary"></i>
                   </a>
+                  ${f.estado === 'pendiente' ? `<button class="btn btn-sm btn-white border shadow-sm px-3 ms-1" onclick="pagarFactura(${f.id}, ${proveedorId})"><i class="bi bi-check-lg text-success"></i></button>` : ''}
                   <button class="btn btn-sm btn-white border shadow-sm px-3 ms-1" onclick="eliminarFactura(${f.id}, ${proveedorId})">
                     <i class="bi bi-trash text-danger"></i>
                   </button>
@@ -184,8 +191,33 @@ window.cargarFacturas = async function(proveedorId) {
       }
     });
   } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar facturas</td></tr>';
+    GF.tableError(tbody, 6, 'Error al cargar facturas', error);
     if (containerMovil) containerMovil.innerHTML = '<div class="text-center text-danger small">Error al cargar</div>';
+  }
+};
+
+/** Badge de estado de pago + vencimiento (vencida en rojo si sigue pendiente). */
+function estadoFacturaHtml(f) {
+  if (f.estado === 'pagada') {
+    return '<span class="badge bg-success-subtle text-success border border-success-subtle">Pagada</span>';
+  }
+  if (!f.fecha_vencimiento) {
+    return '<span class="badge bg-secondary-subtle text-secondary border">Pendiente</span>';
+  }
+  const vencida = new Date(f.fecha_vencimiento) < new Date(new Date().toDateString());
+  const fechaVence = new Date(f.fecha_vencimiento).toLocaleDateString();
+  return vencida
+    ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Vencida ${fechaVence}</span>`
+    : `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Vence ${fechaVence}</span>`;
+}
+
+window.pagarFactura = async function(facturaId, proveedorId) {
+  try {
+    await GF.api(`/proveedores/facturas/${facturaId}/pagar`, { method: 'PATCH' }, 'No se pudo marcar como pagada');
+    await window.cargarFacturas(proveedorId);
+    GF.toast('Factura marcada como pagada');
+  } catch (error) {
+    GF.handleError(error, 'No se pudo marcar como pagada');
   }
 };
 
@@ -205,7 +237,7 @@ window.eliminarFactura = async function(facturaId, proveedorId) {
       await window.cargarFacturas(proveedorId);
       Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1000, showConfirmButton: false });
     } catch (error) {
-      Swal.fire('Error', error.message, 'error');
+      GF.handleError(error, 'No se pudo eliminar la factura');
     }
   }
 };

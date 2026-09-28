@@ -5,7 +5,7 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold fs-13 text-secondary mb-2">Restaurante</label>
+                        <label for="selectTenant" class="form-label fw-bold fs-13 text-secondary mb-2">Restaurante</label>
                         <div class="form-select-wrapper">
                             <select id="selectTenant">
                                 <% (tenants || []).forEach(function(t) { %>
@@ -16,7 +16,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold fs-13 text-secondary mb-2">Usuario</label>
+                        <label for="selectUsuario" class="form-label fw-bold fs-13 text-secondary mb-2">Usuario</label>
                         <div class="form-select-wrapper">
                             <select id="selectUsuario">
                                 <option value="">-- Seleccione un usuario --</option>

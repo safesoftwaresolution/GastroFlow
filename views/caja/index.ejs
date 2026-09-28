@@ -31,23 +31,23 @@
                             <form id="formAbrirCaja">
                                 <div class="row gx-2">
                                     <div class="col-6 mb-3 text-start">
-                                        <label class="form-label fw-bold small text-muted"><i class="bi bi-cash me-1"></i>Base Efectivo (Físico)</label>
+                                        <label for="monto_inicial_efectivo" class="form-label fw-bold small text-muted"><i class="bi bi-cash me-1"></i>Base Efectivo (Físico)</label>
                                         <div class="input-group input-group-lg">
                                             <span class="input-group-text bg-white border-end-0 text-success fw-bold">$</span>
-                                            <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" name="monto_inicial_efectivo" placeholder="0" required autofocus>
+                                            <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" id="monto_inicial_efectivo" name="monto_inicial_efectivo" placeholder="0" required autofocus>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-3 text-start">
-                                        <label class="form-label fw-bold small text-muted"><i class="bi bi-bank me-1"></i>Base Transferencias</label>
+                                        <label for="monto_inicial_transferencia" class="form-label fw-bold small text-muted"><i class="bi bi-bank me-1"></i>Base Transferencias</label>
                                         <div class="input-group input-group-lg">
                                             <span class="input-group-text bg-white border-end-0 text-primary fw-bold">$</span>
-                                            <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" name="monto_inicial_transferencia" placeholder="0" value="0">
+                                            <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" id="monto_inicial_transferencia" name="monto_inicial_transferencia" placeholder="0" value="0">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-4 text-start">
-                                    <label class="form-label fw-bold small text-muted">Notas de apertura (Opcional)</label>
-                                    <textarea class="form-control rounded-3" name="notas" rows="2" placeholder="Ej: Recibido por Samuel..."></textarea>
+                                    <label for="notas_apertura" class="form-label fw-bold small text-muted">Notas de apertura (Opcional)</label>
+                                    <textarea class="form-control rounded-3" id="notas_apertura" name="notas" rows="2" placeholder="Ej: Recibido por Samuel..."></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow-sm py-3">
                                     <i class="bi bi-unlock me-2"></i>Abrir Turno de Caja
@@ -218,17 +218,17 @@
 
                                     <form id="formCerrarCaja" data-id="<%= estado.sesion.id %>">
                                         <div class="mb-3 text-start">
-                                            <label class="form-label small fw-bold"><i class="bi bi-cash me-1"></i>Efectivo Físico Contado</label>
+                                            <label for="monto_final_real" class="form-label small fw-bold"><i class="bi bi-cash me-1"></i>Efectivo Físico Contado</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-white">$</span>
-                                                <input type="text" inputmode="decimal" name="monto_final_real"
+                                                <input type="text" inputmode="decimal" id="monto_final_real" name="monto_final_real"
                                                     class="form-control fw-bold fs-5 text-success money-input" required placeholder="0">
                                             </div>
                                             <div class="form-text text-muted small">Cuenta todos los billetes/monedas reales.</div>
                                         </div>
                                         <div class="mb-4 text-start">
-                                            <label class="form-label small fw-bold">Notas de cierre</label>
-                                            <textarea class="form-control" name="notas" rows="3"
+                                            <label for="notas_cierre" class="form-label small fw-bold">Notas de cierre</label>
+                                            <textarea class="form-control" id="notas_cierre" name="notas" rows="3"
                                                 placeholder="Ej: Todo cuadra perfecto..."></textarea>
                                         </div>
                                         <button type="submit" class="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow-sm">
@@ -254,15 +254,15 @@
                         <div class="modal-body">
                             <input type="hidden" name="tipo" id="tipoMov">
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Monto</label>
+                                <label for="movMonto" class="form-label small fw-bold">Monto</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="text" inputmode="decimal" name="monto" class="form-control money-input" required>
+                                    <input type="text" inputmode="decimal" id="movMonto" name="monto" class="form-control money-input" required>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Motivo / Descripción</label>
-                                <input type="text" name="motivo" class="form-control"
+                                <label for="movMotivo" class="form-label small fw-bold">Motivo / Descripción</label>
+                                <input type="text" id="movMotivo" name="motivo" class="form-control"
                                     placeholder="Ej: Compra de hielo, Pago propina..." required>
                             </div>
                         </div>

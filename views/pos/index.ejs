@@ -163,7 +163,7 @@
             <div class="modal-body px-4 py-3">
                 <div class="pos-pago-items mb-3" id="posPagoItems"></div>
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-muted text-uppercase ls-wider">Forma de pago</label>
+                    <div class="form-label fw-semibold small text-muted text-uppercase ls-wider">Forma de pago</div>
                     <div class="pos-pago-methods">
                         <button class="pos-method-btn active" data-method="efectivo">
                             <i class="bi bi-cash me-2"></i>Efectivo
@@ -176,7 +176,7 @@
                 </div>
                 <div id="posEfectivoSection">
                     <div class="mb-2">
-                        <label class="form-label fw-semibold small text-muted text-uppercase">Recibido</label>
+                        <label for="posEfectivoRecibido" class="form-label fw-semibold small text-muted text-uppercase">Recibido</label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text fw-bold">$</span>
                             <input type="text" inputmode="decimal" id="posEfectivoRecibido" class="form-control fw-bold money-input"
@@ -381,16 +381,16 @@
             <div class="modal-body">
                 <form id="posFormNuevoCliente">
                     <div class="mb-3">
-                        <label class="form-label fw-medium">Nombre <span class="text-danger">*</span></label>
+                        <label for="posNuevoClienteNombre" class="form-label fw-medium">Nombre <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="posNuevoClienteNombre" required>
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label fw-medium">Teléfono</label>
+                            <label for="posNuevoClienteTel" class="form-label fw-medium">Teléfono</label>
                             <input type="text" class="form-control" id="posNuevoClienteTel">
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-medium">Dirección</label>
+                            <label for="posNuevoClienteDir" class="form-label fw-medium">Dirección</label>
                             <input type="text" class="form-control" id="posNuevoClienteDir">
                         </div>
                     </div>

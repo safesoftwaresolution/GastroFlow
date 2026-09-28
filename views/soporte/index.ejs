@@ -18,8 +18,8 @@
                         <div class="card-body">
                             <form id="soporteForm">
                                 <div class="mb-3">
-                                    <label class="form-label">Tipo de Solicitud</label>
-                                    <select class="form-select" name="tipo" required>
+                                    <label for="soporteTipo" class="form-label">Tipo de Solicitud</label>
+                                    <select class="form-select" id="soporteTipo" name="tipo" required>
                                         <option value="">Seleccione una opción...</option>
                                         <option value="bug">🐞 Reportar un Error (Bug)</option>
                                         <option value="mejora">💡 Sugerir una Mejora</option>
@@ -28,8 +28,8 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" name="descripcion" rows="5" placeholder="Por favor explica detalladamente tu solicitud, error o consulta..." required></textarea>
+                                    <label for="soporteDescripcion" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="soporteDescripcion" name="descripcion" rows="5" placeholder="Por favor explica detalladamente tu solicitud, error o consulta..." required></textarea>
                                 </div>
                                 <div class="d-grid">
                                     <button type="submit" class="btn btn-primary" id="btnSubmit">

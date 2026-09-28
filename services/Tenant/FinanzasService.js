@@ -4,7 +4,28 @@
 
 const FinanzasRepository = require('../../repositories/Tenant/FinanzasRepository');
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
+const ProveedorFacturaRepository = require('../../repositories/Tenant/ProveedorFacturaRepository');
 const db = require('../../config/database');
+const { hoyColombia, sumarDias, rangoUtcColombia } = require('../../utils/dateHelpers');
+const PdfMaker = require('../Shared/PdfMaker');
+const {
+    formatMoney,
+    statCard,
+    sectionTitle,
+    footerText,
+    tableHeaderCell,
+    tableCell,
+    emptyRow,
+    zebraTableLayout
+} = require('../Shared/PdfDocHelpers');
+
+/** Variación porcentual de `actual` frente a `anterior` (null si no hay base de comparación). */
+function variacionPct(actual, anterior) {
+    if (!anterior) {
+        return actual > 0 ? 100 : 0;
+    }
+    return ((actual - anterior) / Math.abs(anterior)) * 100;
+}
 
 class FinanzasService {
     /**
@@ -21,7 +42,7 @@ class FinanzasService {
             sesion_id: sesion ? sesion.id : null,
             usuario_id: finalUsuarioId,
             tipo: 'entrada',
-            monto: parseFloat(monto) || 0,
+            monto: Number.parseFloat(monto) || 0,
             motivo: detalle || `Venta Factura #${factura_id}`,
             categoria_gasto: esCeramica ? 'Venta Cerámica' : 'Venta General',
             referencia_tipo: 'venta',
@@ -52,7 +73,7 @@ class FinanzasService {
      * No requiere una sesión de caja abierta (movimiento administrativo, fuera de turno).
      */
     static async registrarMovimientoManual(tenantId, { monto, motivo, categoria, tipo, usuario_id }) {
-        const montoNum = parseFloat(monto);
+        const montoNum = Number.parseFloat(monto);
         if (!montoNum || montoNum <= 0) {
             throw new Error('El monto debe ser mayor a 0');
         }
@@ -75,36 +96,188 @@ class FinanzasService {
     }
 
     /**
-     * Obtiene el resumen para el dashboard financiero
+     * Obtiene el resumen para el dashboard financiero.
+     *
+     * "egresos"/"utilidad" son las cifras REALES: además de los egresos de caja
+     * (caja_movimientos) incluyen los costos fijos activos (prorrateados sobre
+     * 30 días -- costos_fijos no tiene fecha, es un valor mensual recurrente) y
+     * las facturas de proveedor emitidas en el periodo (proveedor_facturas).
+     * Antes de este cambio esos dos se ignoraban por completo y la "utilidad"
+     * mostrada podía ser positiva aunque el restaurante estuviera en rojo.
      */
     static async getDashboardData(tenantId, dias = 30) {
-        const hoy = new Date();
-        const inicio = new Date();
-        inicio.setDate(hoy.getDate() - dias);
+        const hoyDia = hoyColombia();
+        const inicioDia = sumarDias(hoyDia, -(dias - 1));
+        const { utcDesde, utcHasta } = rangoUtcColombia(inicioDia, hoyDia);
 
-        const resumen = await FinanzasRepository.getResumenPeriodo(tenantId, inicio, hoy);
-        const porCategoria = await FinanzasRepository.getPorCategoria(tenantId, 'salida', inicio, hoy);
-        const historico = await FinanzasRepository.getHistoricoDiario(tenantId, inicio, hoy);
+        // Periodo anterior, de la misma longitud, inmediatamente antes -- para las comparativas.
+        const finAnteriorDia = sumarDias(inicioDia, -1);
+        const inicioAnteriorDia = sumarDias(finAnteriorDia, -(dias - 1));
+        const { utcDesde: utcDesdeAnt, utcHasta: utcHastaAnt } = rangoUtcColombia(inicioAnteriorDia, finAnteriorDia);
 
-        // También obtener los últimos 10 movimientos para el "Libro Diario"
-        const [movimientos] = await db.query(
-            `SELECT * FROM caja_movimientos 
-            WHERE tenant_id = ? 
-            ORDER BY created_at DESC LIMIT 10`,
-            [tenantId]
-        );
+        const [
+            resumen,
+            resumenAnterior,
+            porCategoria,
+            historico,
+            costosFijosMensual,
+            proveedoresPeriodo,
+            proveedoresPeriodoAnterior,
+            desglosePago,
+            cuentasPorPagar,
+            [movimientos]
+        ] = await Promise.all([
+            FinanzasRepository.getResumenPeriodo(tenantId, utcDesde, utcHasta),
+            FinanzasRepository.getResumenPeriodo(tenantId, utcDesdeAnt, utcHastaAnt),
+            FinanzasRepository.getPorCategoria(tenantId, 'salida', utcDesde, utcHasta),
+            FinanzasRepository.getHistoricoDiario(tenantId, utcDesde, utcHasta),
+            FinanzasRepository.getCostosFijosActivosMensual(tenantId),
+            ProveedorFacturaRepository.sumaPorPeriodo(tenantId, inicioDia, hoyDia),
+            ProveedorFacturaRepository.sumaPorPeriodo(tenantId, inicioAnteriorDia, finAnteriorDia),
+            FinanzasRepository.getDesglosePorFormaPago(tenantId, utcDesde, utcHasta),
+            ProveedorFacturaRepository.findPendientes(tenantId),
+            db.query(`SELECT * FROM caja_movimientos WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 10`, [tenantId])
+        ]);
 
-        const ingresos = parseFloat((resumen || []).find(r => r.tipo === 'entrada')?.total) || 0;
-        const egresos = parseFloat((resumen || []).find(r => r.tipo === 'salida')?.total) || 0;
+        const costosFijosPeriodo = (costosFijosMensual / 30) * dias;
+
+        const ingresos = Number.parseFloat((resumen || []).find(r => r.tipo === 'entrada')?.total) || 0;
+        const egresosCaja = Number.parseFloat((resumen || []).find(r => r.tipo === 'salida')?.total) || 0;
+        const egresos = egresosCaja + costosFijosPeriodo + proveedoresPeriodo;
+        const utilidad = ingresos - egresos;
+
+        const ingresosAnt = Number.parseFloat((resumenAnterior || []).find(r => r.tipo === 'entrada')?.total) || 0;
+        const egresosCajaAnt = Number.parseFloat((resumenAnterior || []).find(r => r.tipo === 'salida')?.total) || 0;
+        const egresosAnt = egresosCajaAnt + costosFijosPeriodo + proveedoresPeriodoAnterior;
+        const utilidadAnt = ingresosAnt - egresosAnt;
 
         return {
             ingresos,
+            egresosCaja,
+            costosFijosPeriodo,
+            proveedoresPeriodo,
             egresos,
-            utilidad: ingresos - egresos,
+            utilidad,
+            variacionIngresos: variacionPct(ingresos, ingresosAnt),
+            variacionEgresos: variacionPct(egresos, egresosAnt),
+            variacionUtilidad: variacionPct(utilidad, utilidadAnt),
+            desglosePago,
+            cuentasPorPagar,
             gastosPorCategoria: porCategoria,
             historico,
-            movimientos
+            movimientos,
+            dias
         };
+    }
+
+    /**
+     * Genera el PDF del estado financiero del periodo (pdfmake, sin Chromium).
+     */
+    static async generarPdfMensual(tenant, dias) {
+        const data = await this.getDashboardData(tenant.id, dias);
+        const hoyStr = new Date().toLocaleDateString('es-CO');
+
+        const variacionTexto = pct => {
+            if (pct === null) {
+                return '';
+            }
+            const signo = pct >= 0 ? '+' : '';
+            return ` (${signo}${pct.toFixed(1)}% vs. periodo anterior)`;
+        };
+
+        const categoriaTable = () => {
+            const body = [[tableHeaderCell('Categoría'), tableHeaderCell('Total', 'right')]];
+            if (data.gastosPorCategoria && data.gastosPorCategoria.length > 0) {
+                for (const c of data.gastosPorCategoria) {
+                    body.push([tableCell(c.categoria_gasto), tableCell(formatMoney(c.total), 'right')]);
+                }
+            } else {
+                body.push(emptyRow('Sin egresos de caja en el periodo.', 2));
+            }
+            return { table: { headerRows: 1, widths: ['*', 'auto'], body }, layout: zebraTableLayout() };
+        };
+
+        const cuentasPorPagarTable = () => {
+            const body = [
+                [
+                    tableHeaderCell('Proveedor'),
+                    tableHeaderCell('N° Factura'),
+                    tableHeaderCell('Vence'),
+                    tableHeaderCell('Monto', 'right')
+                ]
+            ];
+            if (data.cuentasPorPagar && data.cuentasPorPagar.length > 0) {
+                for (const f of data.cuentasPorPagar) {
+                    body.push([
+                        tableCell(f.proveedor_nombre),
+                        tableCell(f.numero_factura || '-'),
+                        tableCell(
+                            f.fecha_vencimiento ? new Date(f.fecha_vencimiento).toLocaleDateString('es-CO') : '-'
+                        ),
+                        tableCell(formatMoney(f.monto_total), 'right')
+                    ]);
+                }
+            } else {
+                body.push(emptyRow('No hay cuentas por pagar pendientes.', 4));
+            }
+            return {
+                table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto'], body },
+                layout: zebraTableLayout()
+            };
+        };
+
+        const docDefinition = {
+            content: [
+                { text: tenant.nombre, alignment: 'center', fontSize: 20, bold: true, color: '#4f46e5' },
+                {
+                    text: `Estado Financiero - Últimos ${dias} días (al ${hoyStr})`,
+                    alignment: 'center',
+                    fontSize: 12,
+                    color: '#666666',
+                    margin: [0, 4, 0, 20]
+                },
+                {
+                    columns: [
+                        statCard('Ingresos', formatMoney(data.ingresos) + variacionTexto(data.variacionIngresos), {
+                            valueColor: '#16a34a'
+                        }),
+                        statCard('Egresos Totales', formatMoney(data.egresos) + variacionTexto(data.variacionEgresos), {
+                            valueColor: '#dc2626'
+                        }),
+                        statCard('Utilidad', formatMoney(data.utilidad) + variacionTexto(data.variacionUtilidad), {
+                            valueColor: data.utilidad >= 0 ? '#4f46e5' : '#dc2626'
+                        })
+                    ],
+                    columnGap: 12,
+                    margin: [0, 0, 0, 10]
+                },
+                sectionTitle('Desglose de Egresos', '#4f46e5'),
+                {
+                    ul: [
+                        `Caja (compras de inventario, gastos manuales): ${formatMoney(data.egresosCaja)}`,
+                        `Costos fijos del periodo (prorrateado): ${formatMoney(data.costosFijosPeriodo)}`,
+                        `Facturas de proveedor del periodo: ${formatMoney(data.proveedoresPeriodo)}`
+                    ],
+                    margin: [0, 0, 0, 10]
+                },
+                sectionTitle('Ingresos por Forma de Pago', '#4f46e5'),
+                {
+                    ul: [
+                        `Efectivo: ${formatMoney(data.desglosePago.efectivo)}`,
+                        `Transferencia: ${formatMoney(data.desglosePago.transferencia)}`,
+                        `Bonos redimidos: ${formatMoney(data.desglosePago.bono)}`
+                    ],
+                    margin: [0, 0, 0, 10]
+                },
+                sectionTitle('Egresos de Caja por Categoría', '#4f46e5'),
+                categoriaTable(),
+                sectionTitle('Cuentas por Pagar Pendientes', '#4f46e5'),
+                cuentasPorPagarTable(),
+                footerText('Este reporte fue generado de forma automática.')
+            ]
+        };
+
+        return PdfMaker.renderPdf(docDefinition);
     }
 }
 

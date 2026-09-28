@@ -31,6 +31,14 @@ class ProveedorFacturaService {
         return ProveedorFacturaRepository.create(tenantId, data);
     }
 
+    static async marcarComoPagada(id, tenantId) {
+        const ok = await ProveedorFacturaRepository.marcarComoPagada(id, tenantId);
+        if (!ok) {
+            throw new Error('Factura no encontrada o ya estaba pagada');
+        }
+        return true;
+    }
+
     static async delete(id, tenantId) {
         return ProveedorFacturaRepository.delete(id, tenantId);
     }

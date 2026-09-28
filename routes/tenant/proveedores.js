@@ -56,6 +56,13 @@ router.post(
 // Ver/Descargar factura
 router.get('/facturas/:facturaId/ver', requirePermission('proveedores.facturas'), ProveedoresController.showFactura);
 
+// Marcar factura como pagada
+router.patch(
+    '/facturas/:facturaId/pagar',
+    requirePermission('proveedores.facturas'),
+    ProveedoresController.pagarFactura
+);
+
 // Eliminar factura
 router.delete('/facturas/:facturaId', requirePermission('proveedores.facturas'), ProveedoresController.destroyFactura);
 

@@ -14,19 +14,19 @@
                         </div>
                         <div class="plan-body">
                             <div class="mb-3">
-                                <label class="small text-muted fw-bold">Descripción Detallada (PDF)</label>
+                                <label for="pdd-<%= p.id %>" class="small text-muted fw-bold">Descripción Detallada (PDF)</label>
                                 <textarea class="form-control form-control-sm" id="pdd-<%= p.id %>" rows="3"
                                     style="font-size: 0.75rem;"><%= p.descripcion_detallada %></textarea>
                             </div>
                             <div class="mb-2">
-                                <label class="small text-muted fw-bold">Características incluidas</label>
+                                <div class="small text-muted fw-bold">Características incluidas</div>
                                 <div class="feat-check-grid">
                                     <% for (var mi=0; mi < (planModules ? planModules.length : 0); mi++) {
                                         var modSlug = planModules[mi];
                                         var modLabel = (moduleLabels && moduleLabels[modSlug]) || modSlug;
                                         var checked = p.caracteristicas && p.caracteristicas.includes(modSlug);
                                     %>
-                                        <label class="feat-check-item">
+                                        <label class="feat-check-item" for="pc-<%= p.id %>-<%= modSlug %>">
                                             <input type="checkbox" id="pc-<%= p.id %>-<%= modSlug %>"
                                                 data-plan-module="<%= modSlug %>" <%= checked ? 'checked' : '' %>>
                                             <%= modLabel %>
@@ -35,13 +35,13 @@
                                 </div>
                             </div>
                             <div class="section-lbl">Precio mensual por tamaño</div>
-                            <div class="price-row"><label>Pequeño</label><input type="text" inputmode="decimal" class="price-input money-input"
+                            <div class="price-row"><label for="pp-<%= p.id %>-pequeno">Pequeño</label><input type="text" inputmode="decimal" class="price-input money-input"
                                     id="pp-<%= p.id %>-pequeno" value="<%= Number(p.precio_pequeno || 0).toLocaleString('es-CO') %>">
                             </div>
-                            <div class="price-row"><label>Mediano</label><input type="text" inputmode="decimal" class="price-input money-input"
+                            <div class="price-row"><label for="pp-<%= p.id %>-mediano">Mediano</label><input type="text" inputmode="decimal" class="price-input money-input"
                                     id="pp-<%= p.id %>-mediano" value="<%= Number(p.precio_mediano || 0).toLocaleString('es-CO') %>">
                             </div>
-                            <div class="price-row"><label>Grande</label> <input type="text" inputmode="decimal" class="price-input money-input"
+                            <div class="price-row"><label for="pp-<%= p.id %>-grande">Grande</label> <input type="text" inputmode="decimal" class="price-input money-input"
                                     id="pp-<%= p.id %>-grande" value="<%= Number(p.precio_grande || 0).toLocaleString('es-CO') %>"></div>
                             <button class="btn-savep mt-2" onclick="savePlanCompleto(<%= p.id %>)">
                                 <i class="bi bi-floppy me-1"></i>Guardar Cambios

@@ -92,24 +92,24 @@
                 <div class="modal-body">
                     <input type="hidden" id="promocionId">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label for="promoNombre" class="form-label">Nombre</label>
                         <input type="text" id="promoNombre" class="form-control" placeholder="Ej. Martes de pizza">
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <label class="form-label">Tipo de descuento</label>
+                            <label for="promoValorTipo" class="form-label">Tipo de descuento</label>
                             <select id="promoValorTipo" class="form-select">
                                 <option value="porcentaje">Porcentaje (%)</option>
                                 <option value="valor">Valor fijo ($)</option>
                             </select>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label">Valor</label>
+                            <label for="promoValor" class="form-label">Valor</label>
                             <input type="number" id="promoValor" class="form-control" min="1" step="1" placeholder="Ej. 20">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label d-block">¿Cómo se activa?</label>
+                        <div class="form-label d-block fw-semibold">¿Cómo se activa?</div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="promoActivacion" id="activacionVenta" value="venta" checked>
                             <label class="form-check-label" for="activacionVenta">Por la venta del producto (siempre que se venda)</label>
@@ -122,7 +122,7 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label d-block">Días de la semana <span class="text-muted small">(ninguno marcado = todos los días)</span></label>
+                        <div class="form-label d-block fw-semibold">Días de la semana <span class="text-muted small">(ninguno marcado = todos los días)</span></div>
                         <div class="d-flex flex-wrap gap-3">
                             <% const diasLabel = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb', dom: 'Dom' }; %>
                             <% Object.keys(diasLabel).forEach(function (d) { %>
@@ -135,27 +135,27 @@
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <label class="form-label">Hora inicio <span class="text-muted small">(vacío = todo el día)</span></label>
+                            <label for="promoHoraInicio" class="form-label">Hora inicio <span class="text-muted small">(vacío = todo el día)</span></label>
                             <input type="time" id="promoHoraInicio" class="form-control">
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label">Hora fin</label>
+                            <label for="promoHoraFin" class="form-label">Hora fin</label>
                             <input type="time" id="promoHoraFin" class="form-control">
                         </div>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <label class="form-label">Vigente desde <span class="text-muted small">(opcional)</span></label>
+                            <label for="promoFechaInicio" class="form-label">Vigente desde <span class="text-muted small">(opcional)</span></label>
                             <input type="date" id="promoFechaInicio" class="form-control">
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label">Vigente hasta <span class="text-muted small">(opcional)</span></label>
+                            <label for="promoFechaFin" class="form-label">Vigente hasta <span class="text-muted small">(opcional)</span></label>
                             <input type="date" id="promoFechaFin" class="form-control">
                         </div>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
-                            <label class="form-label">Productos específicos <span class="text-muted small">(ninguno = todos)</span></label>
+                            <label for="promoProductos" class="form-label">Productos específicos <span class="text-muted small">(ninguno = todos)</span></label>
                             <select id="promoProductos" class="form-select" multiple size="6">
                                 <% productos.forEach(function (p) { %>
                                     <option value="<%= p.id %>"><%= p.nombre %></option>
@@ -163,7 +163,7 @@
                             </select>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label">Categorías específicas <span class="text-muted small">(ninguna = todas)</span></label>
+                            <label for="promoCategorias" class="form-label">Categorías específicas <span class="text-muted small">(ninguna = todas)</span></label>
                             <select id="promoCategorias" class="form-select" multiple size="6">
                                 <% categorias.forEach(function (c) { %>
                                     <option value="<%= c.id %>"><%= c.nombre %></option>

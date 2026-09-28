@@ -92,7 +92,8 @@ body {
     gap: 6px;
 }
 
-.filter-group label {
+.filter-group label,
+.filter-group .filter-label {
     font-size: 12px;
     font-weight: 700;
     color: #7a8499;

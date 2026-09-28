@@ -24,7 +24,7 @@
                         <form id="formConfigCosteo">
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">Método de costos operativos indirectos</label>
+                                    <label for="configMetodo" class="form-label">Método de costos operativos indirectos</label>
                                     <select class="form-select" name="metodo_indirectos" id="configMetodo">
                                         <option value="porcentaje">Porcentaje sobre costo materia prima (empaques, gas, variación)</option>
                                         <option value="costo_fijo">Costos fijos repartidos en unidades vendidas</option>
@@ -32,7 +32,7 @@
                                     <small class="text-muted">La merma real de cada insumo se configura en su ficha (Rendimiento %), no acá.</small>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Método de fijación de precio</label>
+                                    <label for="configMetodoPrecio" class="form-label">Método de fijación de precio</label>
                                     <select class="form-select" name="metodo_precio" id="configMetodoPrecio">
                                         <option value="margen">Margen de ganancia objetivo</option>
                                         <option value="factor">Factor de carga (multiplicador)</option>
@@ -42,14 +42,14 @@
                             </div>
                             <div class="row mb-3" id="rowPorcentaje">
                                 <div class="col-md-4">
-                                    <label class="form-label">Costos operativos indirectos (%)</label>
+                                    <label for="configPorcentaje" class="form-label">Costos operativos indirectos (%)</label>
                                     <input type="number" class="form-control" name="porcentaje_indirectos" id="configPorcentaje" step="0.01" min="0" placeholder="10">
                                     <small class="text-muted">Sobre costo materia prima. Ej: 10</small>
                                 </div>
                             </div>
                             <div class="row mb-3 d-none" id="rowCostoFijo">
                                 <div class="col-12">
-                                    <label class="form-label fw-bold">Estructura de costos fijos</label>
+                                    <div class="form-label fw-bold">Estructura de costos fijos</div>
                                     <p class="small text-muted mb-2">Arriendo, personal, internet, etc. Solo se suman los activos. Costo fijo por porción = Total costos fijos ÷ Unidades estimadas al mes.</p>
                                     <div class="table-responsive mb-2">
                                         <table class="table table-sm table-hover" id="tablaCostosFijos">
@@ -63,31 +63,31 @@
                                     <% } %>
                                 </div>
                                 <div class="col-md-4 mt-3">
-                                    <label class="form-label">Unidades estimadas al mes (porciones/platos)</label>
+                                    <label for="configPlatosMes" class="form-label">Unidades estimadas al mes (porciones/platos)</label>
                                     <input type="number" class="form-control" name="platos_estimados_mes" id="configPlatosMes" min="1" placeholder="500" title="Total de porciones o platos que esperas vender al mes (mix de todos los productos)">
                                     <small class="text-muted">Total de porciones o platos que estimas vender al mes. El costo fijo se reparte entre estas unidades.</small>
                                 </div>
                             </div>
                             <div class="row mb-3 d-none" id="rowFactor">
                                 <div class="col-md-4">
-                                    <label class="form-label">Factor de carga</label>
+                                    <label for="configFactor" class="form-label">Factor de carga</label>
                                     <input type="number" class="form-control" name="factor_carga" id="configFactor" step="0.01" min="1" placeholder="2.5">
                                     <small class="text-muted">Precio sugerido = CVU × factor. Ej: 2.5</small>
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Margen de ganancia esperado (%)</label>
+                                    <label for="configMargen" class="form-label">Margen de ganancia esperado (%)</label>
                                     <input type="number" class="form-control" name="margen_objetivo_default" id="configMargen" step="0.01" min="0" max="100" placeholder="65">
                                     <small class="text-muted">Precio = Costo total ÷ (1 − Margen). Ej: 65</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Margen mínimo para alerta (%)</label>
+                                    <label for="configMargenMinimoAlerta" class="form-label">Margen mínimo para alerta (%)</label>
                                     <input type="number" class="form-control" name="margen_minimo_alerta" id="configMargenMinimoAlerta" step="0.01" min="0" max="100" placeholder="30">
                                     <small class="text-muted">Productos por debajo aparecen en Alertas</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Ganancia neta deseada ($/mes)</label>
+                                    <label for="configGananciaDeseada" class="form-label">Ganancia neta deseada ($/mes)</label>
                                     <input type="text" inputmode="decimal" class="form-control money-input" name="ganancia_neta_deseada_mensual" id="configGananciaDeseada" placeholder="0">
                                     <small class="text-muted">Meta de utilidad mensual para calcular ventas necesarias</small>
                                 </div>
@@ -137,11 +137,11 @@
                                     <div class="modal-body">
                                         <input type="hidden" id="costoFijoId">
                                         <div class="mb-2">
-                                            <label class="form-label">Nombre</label>
+                                            <label for="costoFijoNombre" class="form-label">Nombre</label>
                                             <input type="text" class="form-control" id="costoFijoNombre" placeholder="Ej: Arriendo, Mesero, Internet" required>
                                         </div>
                                         <div class="mb-2">
-                                            <label class="form-label">Monto mensual ($)</label>
+                                            <label for="costoFijoMonto" class="form-label">Monto mensual ($)</label>
                                             <input type="text" inputmode="decimal" class="form-control money-input" id="costoFijoMonto" value="0">
                                         </div>
                                         <div class="form-check">

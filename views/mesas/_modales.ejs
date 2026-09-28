@@ -245,7 +245,7 @@
             <div class="modal-body">
                 <p class="small text-muted mb-2">Monto que deja el cliente como propina (se suma al total):</p>
                 <div class="mb-3">
-                    <label class="form-label">Monto ($)</label>
+                    <label for="propinaInputMesa" class="form-label">Monto ($)</label>
                     <input type="text" inputmode="decimal" id="propinaInputMesa" class="form-control money-input" placeholder="0"
                         value="0">
                 </div>
@@ -294,7 +294,7 @@
                      total y lo que quede pendiente es lo que se cobra en efectivo/transferencia. -->
                 <div class="card border-2 border-primary-subtle bg-light mb-4">
                     <div class="card-body">
-                        <label class="form-label fw-semibold mb-2"><i class="bi bi-gift-fill text-primary me-1"></i>¿El cliente tiene un bono?</label>
+                        <label for="codigoBonoInput" class="form-label fw-semibold mb-2"><i class="bi bi-gift-fill text-primary me-1"></i>¿El cliente tiene un bono?</label>
                         <div class="input-group">
                             <input type="text" id="codigoBonoInput" class="form-control text-uppercase" placeholder="Ej. BONO-XK7F2Q" maxlength="20">
                             <button type="button" class="btn btn-primary" id="btnValidarBono">Aplicar bono</button>

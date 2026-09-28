@@ -104,35 +104,35 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">Color Primario</label>
+                                        <label for="color_primary" class="form-label">Color Primario</label>
                                         <div class="color-picker-wrapper">
                                             <input type="color" class="color-picker-input" id="color_primary" name="color_primary" value="<%= settings.color_primary %>">
                                             <span class="color-picker-value" id="val_color_primary"><%= settings.color_primary %></span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Color Primario (Hover)</label>
+                                        <label for="color_primary_hover" class="form-label">Color Primario (Hover)</label>
                                         <div class="color-picker-wrapper">
                                             <input type="color" class="color-picker-input" id="color_primary_hover" name="color_primary_hover" value="<%= settings.color_primary_hover %>">
                                             <span class="color-picker-value" id="val_color_primary_hover"><%= settings.color_primary_hover %></span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Color de Acento</label>
+                                        <label for="color_accent" class="form-label">Color de Acento</label>
                                         <div class="color-picker-wrapper">
                                             <input type="color" class="color-picker-input" id="color_accent" name="color_accent" value="<%= settings.color_accent %>">
                                             <span class="color-picker-value" id="val_color_accent"><%= settings.color_accent %></span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Color de Fondo General</label>
+                                        <label for="color_background" class="form-label">Color de Fondo General</label>
                                         <div class="color-picker-wrapper">
                                             <input type="color" class="color-picker-input" id="color_background" name="color_background" value="<%= settings.color_background %>">
                                             <span class="color-picker-value" id="val_color_background"><%= settings.color_background %></span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Color del Texto</label>
+                                        <label for="color_text" class="form-label">Color del Texto</label>
                                         <div class="color-picker-wrapper">
                                             <input type="color" class="color-picker-input" id="color_text" name="color_text" value="<%= settings.color_text %>">
                                             <span class="color-picker-value" id="val_color_text"><%= settings.color_text %></span>
@@ -140,7 +140,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Vista Previa en Tiempo Real</label>
+                                    <div class="form-label">Vista Previa en Tiempo Real</div>
                                     <div class="preview-mockup" id="live-preview-mockup">
                                         <h5 style="color: var(--preview-text, #e9efea); font-weight: 800; font-size: 1.1rem; margin-bottom: 0.2rem;">
                                             Gastro<span style="color: var(--preview-primary, #3fc46d);">Flow</span>
@@ -366,17 +366,17 @@
                                 <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 1: Básico</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-4">
-                                        <label class="form-label small">Nombre del Plan</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan1_title" value="<%= settings.plan1_title %>" required>
+                                        <label for="plan1_title" class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan1_title" name="plan1_title" value="<%= settings.plan1_title %>" required>
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label small">Breve Descripción</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan1_desc" value="<%= settings.plan1_desc %>" required>
+                                        <label for="plan1_desc" class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan1_desc" name="plan1_desc" value="<%= settings.plan1_desc %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Características del Plan (Una por línea)</label>
-                                    <textarea class="form-control form-control-sm font-monospace" name="plan1_features" rows="4" placeholder="Ej:&#10;Punto de Venta (POS)&#10;Ventas y Facturación" required><%= settings.plan1_features %></textarea>
+                                    <label for="plan1_features" class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" id="plan1_features" name="plan1_features" rows="4" placeholder="Ej:&#10;Punto de Venta (POS)&#10;Ventas y Facturación" required><%= settings.plan1_features %></textarea>
                                 </div>
                             </div>
 
@@ -385,17 +385,17 @@
                                 <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 2: Recomendado</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-4">
-                                        <label class="form-label small">Nombre del Plan</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan2_title" value="<%= settings.plan2_title %>" required>
+                                        <label for="plan2_title" class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan2_title" name="plan2_title" value="<%= settings.plan2_title %>" required>
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label small">Breve Descripción</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan2_desc" value="<%= settings.plan2_desc %>" required>
+                                        <label for="plan2_desc" class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan2_desc" name="plan2_desc" value="<%= settings.plan2_desc %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Características del Plan (Una por línea)</label>
-                                    <textarea class="form-control form-control-sm font-monospace" name="plan2_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Básico&#10;Fichas técnicas y Costeo" required><%= settings.plan2_features %></textarea>
+                                    <label for="plan2_features" class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" id="plan2_features" name="plan2_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Básico&#10;Fichas técnicas y Costeo" required><%= settings.plan2_features %></textarea>
                                 </div>
                             </div>
 
@@ -404,17 +404,17 @@
                                 <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 3: Multisede / Enterprise</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-4">
-                                        <label class="form-label small">Nombre del Plan</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan3_title" value="<%= settings.plan3_title %>" required>
+                                        <label for="plan3_title" class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan3_title" name="plan3_title" value="<%= settings.plan3_title %>" required>
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label small">Breve Descripción</label>
-                                        <input type="text" class="form-control form-control-sm" name="plan3_desc" value="<%= settings.plan3_desc %>" required>
+                                        <label for="plan3_desc" class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" id="plan3_desc" name="plan3_desc" value="<%= settings.plan3_desc %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Características del Plan (Una por línea)</label>
-                                    <textarea class="form-control form-control-sm font-monospace" name="plan3_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Pro&#10;Dashboard multi-sede" required><%= settings.plan3_features %></textarea>
+                                    <label for="plan3_features" class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" id="plan3_features" name="plan3_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Pro&#10;Dashboard multi-sede" required><%= settings.plan3_features %></textarea>
                                 </div>
                             </div>
                         </div>
@@ -433,17 +433,17 @@
                                 <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 1</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label small">Autor</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial1_author" value="<%= settings.testimonial1_author %>" required>
+                                        <label for="testimonial1_author" class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial1_author" name="testimonial1_author" value="<%= settings.testimonial1_author %>" required>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small">Rol / Restaurante</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial1_role" value="<%= settings.testimonial1_role %>" required>
+                                        <label for="testimonial1_role" class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial1_role" name="testimonial1_role" value="<%= settings.testimonial1_role %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Cita o Comentario</label>
-                                    <textarea class="form-control form-control-sm" name="testimonial1_quote" rows="2" required><%= settings.testimonial1_quote %></textarea>
+                                    <label for="testimonial1_quote" class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" id="testimonial1_quote" name="testimonial1_quote" rows="2" required><%= settings.testimonial1_quote %></textarea>
                                 </div>
                             </div>
 
@@ -451,17 +451,17 @@
                                 <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 2</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label small">Autor</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial2_author" value="<%= settings.testimonial2_author %>" required>
+                                        <label for="testimonial2_author" class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial2_author" name="testimonial2_author" value="<%= settings.testimonial2_author %>" required>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small">Rol / Restaurante</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial2_role" value="<%= settings.testimonial2_role %>" required>
+                                        <label for="testimonial2_role" class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial2_role" name="testimonial2_role" value="<%= settings.testimonial2_role %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Cita o Comentario</label>
-                                    <textarea class="form-control form-control-sm" name="testimonial2_quote" rows="2" required><%= settings.testimonial2_quote %></textarea>
+                                    <label for="testimonial2_quote" class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" id="testimonial2_quote" name="testimonial2_quote" rows="2" required><%= settings.testimonial2_quote %></textarea>
                                 </div>
                             </div>
 
@@ -469,17 +469,17 @@
                                 <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 3</h6>
                                 <div class="row g-3 mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label small">Autor</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial3_author" value="<%= settings.testimonial3_author %>" required>
+                                        <label for="testimonial3_author" class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial3_author" name="testimonial3_author" value="<%= settings.testimonial3_author %>" required>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small">Rol / Restaurante</label>
-                                        <input type="text" class="form-control form-control-sm" name="testimonial3_role" value="<%= settings.testimonial3_role %>" required>
+                                        <label for="testimonial3_role" class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" id="testimonial3_role" name="testimonial3_role" value="<%= settings.testimonial3_role %>" required>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="form-label small">Cita o Comentario</label>
-                                    <textarea class="form-control form-control-sm" name="testimonial3_quote" rows="2" required><%= settings.testimonial3_quote %></textarea>
+                                    <label for="testimonial3_quote" class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" id="testimonial3_quote" name="testimonial3_quote" rows="2" required><%= settings.testimonial3_quote %></textarea>
                                 </div>
                             </div>
                         </div>
@@ -529,22 +529,22 @@
                             <input type="hidden" name="refund_policy" id="refund_policy_input">
 
                             <div class="mb-4">
-                                <label class="form-label d-block mb-2">Política de Privacidad</label>
+                                <div class="form-label d-block mb-2">Política de Privacidad</div>
                                 <div id="editor_privacy" style="min-height: 250px;"><%- settings.privacy_policy %></div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label d-block mb-2">Términos y Condiciones de Uso</label>
+                                <div class="form-label d-block mb-2">Términos y Condiciones de Uso</div>
                                 <div id="editor_terms" style="min-height: 250px;"><%- settings.terms_conditions %></div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label d-block mb-2">Política de Cookies</label>
+                                <div class="form-label d-block mb-2">Política de Cookies</div>
                                 <div id="editor_cookies" style="min-height: 250px;"><%- settings.cookies_policy %></div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label d-block mb-2">Política de Reembolsos y Cancelación</label>
+                                <div class="form-label d-block mb-2">Política de Reembolsos y Cancelación</div>
                                 <div id="editor_refund" style="min-height: 250px;"><%- settings.refund_policy %></div>
                             </div>
                         </div>
