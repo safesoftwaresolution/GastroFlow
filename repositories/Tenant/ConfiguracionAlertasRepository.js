@@ -67,7 +67,8 @@ class ConfiguracionAlertasRepository {
      */
     static async findAllActivas() {
         const [rows] = await db.query(
-            `SELECT ca.*, t.email AS tenant_email, t.nombre AS tenant_nombre, t.activo AS tenant_activo
+            `SELECT ca.*, t.email AS tenant_email, t.nombre AS tenant_nombre, t.activo AS tenant_activo,
+                    t.config AS tenant_config
              FROM configuracion_alertas ca
              JOIN tenants t ON t.id = ca.tenant_id
              WHERE ca.alertas_activas = 1 AND t.activo = 1`

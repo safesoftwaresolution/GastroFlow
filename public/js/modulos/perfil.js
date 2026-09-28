@@ -12,6 +12,17 @@ function previewImage(input) {
     }
 }
 
+function toggleDia(btn) {
+    btn.classList.toggle('btn-primary');
+    btn.classList.toggle('btn-outline-secondary');
+}
+
+function toggleTipoJornada() {
+    const partida = document.getElementById('jornadaPartida').checked;
+    document.getElementById('jornadaUnicaFields').style.display = partida ? 'none' : '';
+    document.getElementById('jornadaPartidaFields').style.display = partida ? '' : 'none';
+}
+
 function setTemplate({ nav, text, pri, sec, cPri, cSec, mLibre = '#22c55e', mOcupada = '#f59e0b' }) {
     document.getElementById('colorNavbar').value = nav;
     document.getElementById('colorNavbarText').value = text;
@@ -36,6 +47,27 @@ document.getElementById('perfilForm').addEventListener('submit', async function 
     fd.append('direccion', document.getElementById('direccion').value);
     fd.append('telefono', document.getElementById('telefono').value);
     fd.append('email', document.getElementById('email').value);
+    const diasAbiertos = Array.from(document.querySelectorAll('#diasAbiertosGroup .dia-toggle.btn-primary')).map(b =>
+        Number(b.dataset.dia)
+    );
+    const tipoJornada = document.getElementById('jornadaPartida').checked ? 'partida' : 'unica';
+    const horario =
+        tipoJornada === 'partida'
+            ? {
+                  dias_abiertos: diasAbiertos,
+                  tipo_jornada: 'partida',
+                  manana_apertura: document.getElementById('mananaApertura').value,
+                  manana_cierre: document.getElementById('mananaCierre').value,
+                  tarde_apertura: document.getElementById('tardeApertura').value,
+                  tarde_cierre: document.getElementById('tardeCierre').value
+              }
+            : {
+                  dias_abiertos: diasAbiertos,
+                  tipo_jornada: 'unica',
+                  hora_apertura: document.getElementById('horaApertura').value,
+                  hora_cierre: document.getElementById('horaCierre').value
+              };
+    fd.append('horario', JSON.stringify(horario));
     fd.append('colores', JSON.stringify({
         navbar: document.getElementById('colorNavbar').value,
         navbarText: document.getElementById('colorNavbarText').value,

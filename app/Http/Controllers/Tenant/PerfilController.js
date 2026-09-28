@@ -22,7 +22,7 @@ class PerfilController {
     static async update(req, res) {
         try {
             const tenantId = req.tenant.id;
-            const { nombre, direccion, telefono, email, colores } = req.body;
+            const { nombre, direccion, telefono, email, colores, horario } = req.body;
 
             let newConfig = req.tenant.config || {};
             if (typeof newConfig === 'string') {
@@ -35,6 +35,10 @@ class PerfilController {
 
             if (colores) {
                 newConfig.colores = JSON.parse(colores);
+            }
+
+            if (horario) {
+                newConfig.horario = JSON.parse(horario);
             }
 
             const updateData = {

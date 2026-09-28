@@ -60,6 +60,97 @@
 
                 <hr class="my-4">
 
+                <h6 class="mb-3 text-muted">Horario de Atención</h6>
+                <p class="small text-muted mb-3">Los días que marques como cerrados se excluyen de la alerta
+                    automática de "caída de ventas" por correo, para que no te llegue un aviso de -100% un día
+                    que simplemente no abres.</p>
+
+                <% const horario = tcfg.horario || {}; const diasAbiertos = Array.isArray(horario.dias_abiertos) ? horario.dias_abiertos : [0, 1, 2, 3, 4, 5, 6]; %>
+                <div class="mb-4">
+                    <label class="form-label d-block text-muted small fw-bold">Días que abre</label>
+                    <div class="d-flex gap-2 flex-wrap" id="diasAbiertosGroup">
+                        <% const nombresDias = [
+                            { valor: 0, corto: 'Dom' },
+                            { valor: 1, corto: 'Lun' },
+                            { valor: 2, corto: 'Mar' },
+                            { valor: 3, corto: 'Mié' },
+                            { valor: 4, corto: 'Jue' },
+                            { valor: 5, corto: 'Vie' },
+                            { valor: 6, corto: 'Sáb' }
+                        ]; %>
+                        <% nombresDias.forEach(d => { %>
+                            <button type="button"
+                                class="btn btn-sm dia-toggle <%= diasAbiertos.includes(d.valor) ? 'btn-primary' : 'btn-outline-secondary' %>"
+                                data-dia="<%= d.valor %>" onclick="toggleDia(this)"><%= d.corto %></button>
+                        <% }) %>
+                    </div>
+                </div>
+
+                <% const tipoJornada = horario.tipo_jornada === 'partida' ? 'partida' : 'unica'; %>
+                <div class="mb-3">
+                    <label class="form-label d-block text-muted small fw-bold">Tipo de jornada</label>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="tipoJornada" id="jornadaUnica" value="unica"
+                            <%= tipoJornada==='unica' ? 'checked' : '' %> onchange="toggleTipoJornada()">
+                        <label class="btn btn-outline-primary btn-sm" for="jornadaUnica">Jornada única</label>
+
+                        <input type="radio" class="btn-check" name="tipoJornada" id="jornadaPartida" value="partida"
+                            <%= tipoJornada==='partida' ? 'checked' : '' %> onchange="toggleTipoJornada()">
+                        <label class="btn btn-outline-primary btn-sm" for="jornadaPartida">Partida (mañana y
+                            tarde)</label>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">Elige "Partida" si el negocio cierra al mediodía y vuelve
+                        a abrir más tarde (ej. 8am-2pm y 5pm-10pm).</p>
+                </div>
+
+                <div class="row mb-4" id="jornadaUnicaFields" style="<%= tipoJornada==='partida' ? 'display:none' : '' %>">
+                    <div class="col-md-4">
+                        <label for="horaApertura" class="form-label">Hora de apertura</label>
+                        <input type="time" class="form-control" id="horaApertura" name="hora_apertura"
+                            value="<%= horario.hora_apertura || '08:00' %>">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="horaCierre" class="form-label">Hora de cierre</label>
+                        <input type="time" class="form-control" id="horaCierre" name="hora_cierre"
+                            value="<%= horario.hora_cierre || '22:00' %>">
+                    </div>
+                </div>
+
+                <div class="mb-4" id="jornadaPartidaFields" style="<%= tipoJornada==='unica' ? 'display:none' : '' %>">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis mb-1">Mañana</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mananaApertura" class="form-label small">Apertura</label>
+                            <input type="time" class="form-control" id="mananaApertura" name="manana_apertura"
+                                value="<%= horario.manana_apertura || '08:00' %>">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mananaCierre" class="form-label small">Cierre</label>
+                            <input type="time" class="form-control" id="mananaCierre" name="manana_cierre"
+                                value="<%= horario.manana_cierre || '14:00' %>">
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis mb-1">Tarde</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tardeApertura" class="form-label small">Apertura</label>
+                            <input type="time" class="form-control" id="tardeApertura" name="tarde_apertura"
+                                value="<%= horario.tarde_apertura || '17:00' %>">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tardeCierre" class="form-label small">Cierre</label>
+                            <input type="time" class="form-control" id="tardeCierre" name="tarde_cierre"
+                                value="<%= horario.tarde_cierre || '22:00' %>">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
                 <h6 class="mb-3 text-muted">Paleta de Colores (Apariencia)</h6>
                 <p class="small text-muted mb-4">Selecciona los colores para personalizar la barra de
                     navegación y los botones principales del sistema de tu negocio.</p>

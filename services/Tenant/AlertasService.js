@@ -10,6 +10,7 @@ const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const MesaRepository = require('../../repositories/Tenant/MesaRepository');
 const ConfiguracionAlertasRepository = require('../../repositories/Tenant/ConfiguracionAlertasRepository');
 const { formatMoney } = require('../../utils/money');
+const { hoyColombia } = require('../../utils/dateHelpers');
 
 // No reenviar la misma alerta antes de este tiempo, aunque la condición siga activa.
 const COOLDOWN_HORAS = 4;
@@ -28,6 +29,29 @@ function cooldownVencido(fecha, horas) {
         return true;
     }
     return Date.now() - new Date(fecha).getTime() >= horas * 60 * 60 * 1000;
+}
+
+/**
+ * ¿El negocio abre hoy? Lee tenant.config.horario.dias_abiertos (0=domingo..6=sábado,
+ * igual que Date#getDay()), configurado desde /perfil. Sin configurar = abre todos los
+ * días (comportamiento anterior, no rompe nada para quien no lo haya tocado).
+ * Evita el falso positivo de "ventas cayeron 100%" en el día que el negocio no abre.
+ */
+function abreHoy(tenantConfig) {
+    let cfg = tenantConfig;
+    if (typeof cfg === 'string') {
+        try {
+            cfg = JSON.parse(cfg);
+        } catch {
+            cfg = {};
+        }
+    }
+    const diasAbiertos = cfg?.horario?.dias_abiertos;
+    if (!Array.isArray(diasAbiertos) || diasAbiertos.length === 0) {
+        return true;
+    }
+    const diaHoy = new Date(`${hoyColombia()}T12:00:00Z`).getUTCDay();
+    return diasAbiertos.includes(diaHoy);
 }
 
 class AlertasService {
@@ -75,7 +99,8 @@ class AlertasService {
 
         if (
             horaBogotaAhora() >= HORA_MINIMA_CHEQUEO_VENTAS &&
-            cooldownVencido(config.ultima_alerta_ventas_at, COOLDOWN_HORAS)
+            cooldownVencido(config.ultima_alerta_ventas_at, COOLDOWN_HORAS) &&
+            abreHoy(config.tenant_config)
         ) {
             const caida = await this._detectarCaidaVentas(tenantId, config.umbral_caida_ventas_pct);
             if (caida) {
