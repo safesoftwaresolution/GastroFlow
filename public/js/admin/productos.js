@@ -28,18 +28,29 @@
         return GF.escapeHtml(String(valor));
     }
 
+    // Siempre con timeZone explícito: si no, toLocaleString() usa la zona del
+    // navegador/servidor, no la de Colombia (bug reportado: horas mal en el panel).
+    function formatFecha(isoString) {
+        return new Date(isoString).toLocaleString('es-CO', {
+            timeZone: 'America/Bogota',
+            dateStyle: 'short',
+            timeStyle: 'medium'
+        });
+    }
+
     function renderDetalle(data) {
         const p = data.producto;
         const grid = `
             <div class="detalle-producto-grid">
+                <div><div class="campo-label">ID</div><div class="campo-valor">#${p.id}</div></div>
                 <div><div class="campo-label">Nombre</div><div class="campo-valor">${GF.escapeHtml(p.nombre)}</div></div>
                 <div><div class="campo-label">Código</div><div class="campo-valor">${GF.escapeHtml(p.codigo || '—')}</div></div>
                 <div><div class="campo-label">Restaurante</div><div class="campo-valor">${GF.escapeHtml(p.tenant_nombre)}</div></div>
                 <div><div class="campo-label">Categoría</div><div class="campo-valor">${GF.escapeHtml(p.categoria_nombre || '—')}</div></div>
                 <div><div class="campo-label">Precio</div><div class="campo-valor">${GF.dinero(p.precio_unidad)}</div></div>
                 <div><div class="campo-label">Estado</div><div class="campo-valor">${p.activo ? '<span class="badge-estado activo">Activo</span>' : '<span class="badge-estado inactivo">Eliminado</span>'}</div></div>
-                <div><div class="campo-label">Creado</div><div class="campo-valor">${new Date(p.created_at).toLocaleString('es-CO')}</div></div>
-                <div><div class="campo-label">Última modificación</div><div class="campo-valor">${new Date(p.updated_at).toLocaleString('es-CO')}</div></div>
+                <div><div class="campo-label">Creado</div><div class="campo-valor">${formatFecha(p.created_at_iso)}</div></div>
+                <div><div class="campo-label">Última modificación</div><div class="campo-valor">${formatFecha(p.updated_at_iso)}</div></div>
             </div>
         `;
 
@@ -48,7 +59,7 @@
             timeline = '<div class="auditoria-timeline">' + data.auditoria.map(ev => {
                 const info = ACCION_LABELS[ev.accion] || { texto: ev.accion, icono: 'bi-circle', color: 'secondary' };
                 const usuario = ev.usuario_nombre ? GF.escapeHtml(ev.usuario_nombre) : 'Usuario eliminado / desconocido';
-                const fecha = new Date(ev.created_at).toLocaleString('es-CO');
+                const fecha = formatFecha(ev.created_at_iso);
                 let cambiosHtml = '';
                 if (ev.cambios && Object.keys(ev.cambios).length > 0) {
                     cambiosHtml = Object.entries(ev.cambios).map(([campo, { antes, despues }]) => `

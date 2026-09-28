@@ -68,6 +68,31 @@
     color: var(--sa-danger);
 }
 
+/* Paginación (Bootstrap trae colores claros por defecto, no combinan con el panel oscuro) */
+.pagination .page-link {
+    background: var(--sa-surface);
+    border-color: var(--sa-border);
+    color: var(--sa-text-primary);
+}
+
+.pagination .page-link:hover {
+    background: var(--sa-surface-2);
+    border-color: var(--sa-border);
+    color: var(--sa-text-primary);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--sa-accent);
+    border-color: var(--sa-accent);
+    color: #fff;
+}
+
+.pagination .page-item.disabled .page-link {
+    background: var(--sa-surface);
+    border-color: var(--sa-border);
+    color: var(--sa-text-muted);
+}
+
 /* Modal de detalle / auditoría */
 .detalle-producto-grid {
     display: grid;
