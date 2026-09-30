@@ -162,6 +162,22 @@
             </div>
             <div class="modal-body px-4 py-3">
                 <div class="pos-pago-items mb-3" id="posPagoItems"></div>
+                <!-- Bono redimible: se aplica ANTES de elegir método; lo que reste se cobra normal. -->
+                <div class="mb-3">
+                    <label for="posCodigoBono" class="form-label fw-semibold small text-muted text-uppercase ls-wider">
+                        <i class="bi bi-gift-fill me-1"></i>¿Tiene un bono?
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="posCodigoBono" class="form-control text-uppercase" placeholder="Ej. BONO-XK7F2Q" maxlength="20" autocomplete="off">
+                        <button type="button" class="btn btn-primary" id="posValidarBonoBtn">Aplicar</button>
+                        <button type="button" class="btn btn-outline-secondary d-none" id="posQuitarBonoBtn">Quitar</button>
+                    </div>
+                    <div id="posBonoInfo" class="form-text"></div>
+                </div>
+                <div id="posAvisoBonoCubre" class="alert alert-success text-center py-2 d-none">
+                    <i class="bi bi-check-circle-fill me-1"></i>El bono cubre el total, no se necesita otro pago.
+                </div>
+                <div id="posMetodosWrap">
                 <div class="mb-3">
                     <div class="form-label fw-semibold small text-muted text-uppercase ls-wider">Forma de pago</div>
                     <div class="pos-pago-methods">
@@ -188,6 +204,11 @@
                         <span class="pos-vuelto-label">Vuelto</span>
                         <span class="pos-vuelto-val" id="posVueltoAmount">$ 0</span>
                     </div>
+                </div>
+                </div>
+                <div id="posBonoAplicadoLinea" class="d-flex justify-content-between small text-success mb-1 d-none">
+                    <span><i class="bi bi-gift me-1"></i>Bono aplicado</span>
+                    <span id="posBonoAplicadoMonto">-$ 0</span>
                 </div>
                 <div class="pos-pago-total-box">
                     <span>Total a cobrar</span>

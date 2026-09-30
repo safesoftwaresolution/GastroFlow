@@ -2,6 +2,8 @@
 
 window.POS_PAGO = {
     _descIdx: null,
+    // Bono aplicado a la venta en curso: { codigo, monto } o null.
+    _bono: null,
 
     // ─── Modal de cobro ───────────────────────────────────────────
     abrirModal() {
@@ -23,7 +25,13 @@ window.POS_PAGO = {
             </div>`;
         }).join('');
 
-        document.getElementById('posPagoTotal').textContent = '$ ' + total.toLocaleString('es-CO');
+        // Reset del bono (cada cobro arranca sin bono aplicado)
+        this._bono = null;
+        const inputBono = document.getElementById('posCodigoBono');
+        if (inputBono) { inputBono.value = ''; inputBono.disabled = false; }
+        document.getElementById('posValidarBonoBtn')?.classList.remove('d-none');
+        document.getElementById('posQuitarBonoBtn')?.classList.add('d-none');
+        this._setBonoInfo('', null);
 
         // Reset
         document.getElementById('posEfectivoRecibido').value = '';
@@ -35,10 +43,76 @@ window.POS_PAGO = {
         document.querySelectorAll('.pos-method-btn').forEach(b => b.classList.remove('active'));
         document.querySelector('.pos-method-btn[data-method="efectivo"]')?.classList.add('active');
 
-        this._renderQuickAmounts(total);
+        this._refrescarTotales();
 
         new bootstrap.Modal(document.getElementById('posPagoModal')).show();
         setTimeout(() => document.getElementById('posEfectivoRecibido')?.focus(), 300);
+    },
+
+    /** Lo que de verdad se cobra en efectivo/transferencia: total menos el bono aplicado. */
+    getTotalACobrar() {
+        return Math.max(0, Math.round((POS.getTotal() - (this._bono?.monto || 0)) * 100) / 100);
+    },
+
+    _setBonoInfo(texto, ok) {
+        const el = document.getElementById('posBonoInfo');
+        if (!el) return;
+        el.textContent = texto;
+        el.classList.toggle('text-success', ok === true);
+        el.classList.toggle('text-danger', ok === false);
+    },
+
+    // Repinta total, líneas de bono y métodos según lo que falte por cobrar.
+    _refrescarTotales() {
+        const aCobrar = this.getTotalACobrar();
+        const cubreTodo = !!this._bono && aCobrar <= 0;
+
+        document.getElementById('posPagoTotal').textContent = '$ ' + aCobrar.toLocaleString('es-CO');
+        document.getElementById('posBonoAplicadoLinea')?.classList.toggle('d-none', !this._bono);
+        const montoBono = document.getElementById('posBonoAplicadoMonto');
+        if (montoBono) montoBono.textContent = '-$ ' + (this._bono?.monto || 0).toLocaleString('es-CO');
+        document.getElementById('posAvisoBonoCubre')?.classList.toggle('d-none', !cubreTodo);
+        document.getElementById('posMetodosWrap')?.classList.toggle('d-none', cubreTodo);
+
+        document.getElementById('posEfectivoRecibido').value = '';
+        document.getElementById('posVueltoAmount').textContent = '$ 0';
+        this._renderQuickAmounts(aCobrar);
+        // Con el bono cubriendo todo no hay nada que recibir; si no, se vuelve a validar el efectivo.
+        if (cubreTodo) {
+            document.getElementById('posConfirmarPagoBtn').disabled = false;
+        } else {
+            this.setMetodo(document.getElementById('posPagoMetodo').value || 'efectivo');
+        }
+    },
+
+    async validarBono() {
+        const input = document.getElementById('posCodigoBono');
+        const codigo = (input?.value || '').trim().toUpperCase();
+        if (input) input.value = codigo;
+        if (!codigo) { this._setBonoInfo('', null); return; }
+
+        this._setBonoInfo('Consultando...', null);
+        try {
+            const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
+            this._bono = { codigo, monto: Math.min(Number(d.saldo_actual), POS.getTotal()) };
+            this._setBonoInfo(`Bono aplicado · saldo disponible: ${GF.dinero(d.saldo_actual)}`, true);
+            input.disabled = true;
+            document.getElementById('posValidarBonoBtn').classList.add('d-none');
+            document.getElementById('posQuitarBonoBtn').classList.remove('d-none');
+            this._refrescarTotales();
+        } catch (err) {
+            this._setBonoInfo(err.message, false);
+        }
+    },
+
+    quitarBono() {
+        this._bono = null;
+        const input = document.getElementById('posCodigoBono');
+        if (input) { input.value = ''; input.disabled = false; }
+        document.getElementById('posValidarBonoBtn').classList.remove('d-none');
+        document.getElementById('posQuitarBonoBtn').classList.add('d-none');
+        this._setBonoInfo('', null);
+        this._refrescarTotales();
     },
 
     _renderQuickAmounts(total) {
@@ -64,7 +138,7 @@ window.POS_PAGO = {
     },
 
     calcularVuelto() {
-        const total = POS.getTotal();
+        const total = this.getTotalACobrar();
         const recibido = MoneyInput.parse(document.getElementById('posEfectivoRecibido')?.value);
         const vuelto = Math.max(0, recibido - total);
         document.getElementById('posVueltoAmount').textContent = '$ ' + vuelto.toLocaleString('es-CO');
@@ -87,9 +161,12 @@ window.POS_PAGO = {
         const nombreCliente = document.getElementById('posClienteInput')?.value?.trim() || 'Consumidor final';
         const formaPago = document.getElementById('posPagoMetodo')?.value || 'efectivo';
         const total = POS.getTotal();
+        const bono = this._bono;
+        // Si el bono cubre todo no se eligió método: el servidor solo cobra por ahí lo que sobre.
+        const cubreTodo = !!bono && this.getTotalACobrar() <= 0;
         // Efectivo recibido (informativo, para "Recibido/Cambio" en el ticket).
         const efectivoRecibido =
-            formaPago === 'efectivo' ? MoneyInput.parse(document.getElementById('posEfectivoRecibido')?.value) : 0;
+            formaPago === 'efectivo' && !cubreTodo ? MoneyInput.parse(document.getElementById('posEfectivoRecibido')?.value) : 0;
 
         const btn = document.getElementById('posConfirmarPagoBtn');
         btn.disabled = true;
@@ -108,6 +185,7 @@ window.POS_PAGO = {
                 total,
                 forma_pago: formaPago,
                 efectivo_recibido: efectivoRecibido > 0 ? efectivoRecibido : null,
+                codigo_bono: bono ? bono.codigo : null,
                 productos: POS.state.cart.map(item => {
                     const bruto = item.cantidad * item.precio;
                     const neto = item.descuento_valor > 0
@@ -216,6 +294,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('posEfectivoRecibido')?.addEventListener('input', () => POS_PAGO.calcularVuelto());
+
+    document.getElementById('posValidarBonoBtn')?.addEventListener('click', () => POS_PAGO.validarBono());
+    document.getElementById('posQuitarBonoBtn')?.addEventListener('click', () => POS_PAGO.quitarBono());
+    document.getElementById('posCodigoBono')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); POS_PAGO.validarBono(); }
+    });
 
     document.getElementById('posConfirmarPagoBtn')?.addEventListener('click', () => POS_PAGO.confirmarPago());
 

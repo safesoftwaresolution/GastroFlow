@@ -39,6 +39,33 @@ window.FacturasModule = {
     } catch (e) { console.error("Error cargando sesión provisional", e); }
   },
 
+  // Bono aplicado a la factura en curso: { codigo, saldo } o null. El monto que
+  // realmente cubre se calcula al vuelo porque el total puede cambiar si se editan productos.
+  bono: null,
+
+  bonoMonto() {
+    return this.bono ? Math.min(this.bono.saldo, this.totalFactura) : 0;
+  },
+
+  // Repinta el "total a pagar" del paso 3 descontando el bono.
+  refrescarBono() {
+    const aPagar = Math.max(0, this.totalFactura - this.bonoMonto());
+    $('#totalFactura').text(aPagar.toLocaleString('es-CO'));
+    $('#totalBonoLinea').toggleClass('d-none', !this.bono);
+    $('#totalBonoMonto').text('-$' + this.bonoMonto().toLocaleString('es-CO'));
+    $('#avisoBonoCubre').toggleClass('d-none', !(this.bono && aPagar <= 0));
+    $('#wrapFormaPago').toggleClass('d-none', !!this.bono && aPagar <= 0);
+  },
+
+  quitarBono() {
+    this.bono = null;
+    $('#codigoBonoInput').val('').prop('disabled', false);
+    $('#btnValidarBono').removeClass('d-none');
+    $('#btnQuitarBono').addClass('d-none');
+    $('#bonoValidacionInfo').text('').removeClass('text-success text-danger');
+    this.refrescarBono();
+  },
+
   limpiarSesionProvisional() {
     localStorage.removeItem('pos_sesion_provisional');
   },

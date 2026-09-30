@@ -146,7 +146,20 @@
 
                         <div class="row g-4">
                             <div class="col-md-7">
-                                <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                <!-- Bono redimible: se descuenta del total; lo que reste se cobra con la forma de pago elegida. -->
+                                <div class="border rounded-3 p-3 mb-3 bg-light">
+                                    <label for="codigoBonoInput" class="form-label fw-semibold small mb-2"><i class="bi bi-gift-fill text-primary me-1"></i>¿El cliente tiene un bono?</label>
+                                    <div class="input-group">
+                                        <input type="text" id="codigoBonoInput" class="form-control text-uppercase" placeholder="Ej. BONO-XK7F2Q" maxlength="20" autocomplete="off">
+                                        <button type="button" class="btn btn-primary" id="btnValidarBono">Aplicar</button>
+                                        <button type="button" class="btn btn-outline-secondary d-none" id="btnQuitarBono">Quitar</button>
+                                    </div>
+                                    <div id="bonoValidacionInfo" class="form-text"></div>
+                                </div>
+                                <div id="avisoBonoCubre" class="alert alert-success small d-none">
+                                    <i class="bi bi-check-circle-fill me-1"></i>El bono cubre el total, no se necesita otro pago.
+                                </div>
+                                <div id="wrapFormaPago" class="list-group list-group-flush border rounded-3 overflow-hidden">
                                     <label for="pagoEfectivoRadio" class="list-group-item d-flex align-items-center p-3 cursor-pointer">
                                         <input class="form-check-input me-3" type="radio" id="pagoEfectivoRadio" name="forma_pago_radio" value="efectivo" checked>
                                         <div class="flex-grow-1">
@@ -169,6 +182,7 @@
                                 <div class="info-box py-4 text-center">
                                     <p class="text-uppercase fw-bold text-muted mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em;">TOTAL A PAGAR</p>
                                     <h3 class="display-6 fw-bold text-dark mb-0">$<span id="totalFactura">0.00</span></h3>
+                                    <div id="totalBonoLinea" class="small text-success mt-2 d-none">Bono aplicado: <span id="totalBonoMonto"></span></div>
                                 </div>
                             </div>
                         </div>
@@ -194,6 +208,10 @@
                             <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
                                 <span class="text-muted">Descuentos</span>
                                 <span class="text-success fw-bold" id="resumenDescuento">$0.00</span>
+                            </div>
+                            <div id="resumenBonoWrap" class="d-flex justify-content-between py-2 border-bottom border-slate-200 d-none">
+                                <span class="text-muted"><i class="bi bi-gift me-1"></i>Bono aplicado</span>
+                                <span class="text-success fw-bold" id="resumenBono">$0.00</span>
                             </div>
                             <div class="d-flex justify-content-between py-3">
                                 <span class="h5 fw-bold mb-0">Total Final</span>

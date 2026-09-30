@@ -141,9 +141,13 @@ body {
     max-width: 140px;
 }
 
+.table-pedido-mesas .td-subtotal,
+.table-pedido-mesas .td-precio {
+    white-space: nowrap;
+}
+
 .table-pedido-mesas .td-subtotal {
     font-weight: 600;
-    white-space: nowrap;
 }
 
 .table-pedido-mesas .btn-group-item {

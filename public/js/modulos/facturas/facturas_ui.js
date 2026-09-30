@@ -42,7 +42,7 @@ $(function () {
       </tr>`);
     });
     actualizarMobile();
-    $('#totalFactura').text(mod.totalFactura.toLocaleString('es-CO'));
+    mod.refrescarBono();
     mod.guardarSesionProvisional();
   };
 
@@ -258,6 +258,7 @@ $(function () {
         cliente_id: cid,
         total: mod.totalFactura,
         forma_pago: $('#formaPago').val(),
+        codigo_bono: mod.bono ? mod.bono.codigo : null,
         evento_id: $('#eventoId').val() || null,
         productos: mod.productosFactura.map(p => {
           const bruto = p.cantidad * p.precio;
@@ -290,6 +291,7 @@ $(function () {
 
   function limpiarTodo() {
     mod.productosFactura = [];
+    mod.quitarBono();
     mod.totalFactura = 0;
     mod.actualizarTablaProductos();
     $('#infoCliente').hide();
@@ -352,16 +354,47 @@ $(function () {
 
   function actualizarResumenFinal() {
     const subtotal = mod.totalFactura;
-    const total = subtotal;
+    const total = subtotal - mod.bonoMonto();
 
     $('#resumenSubtotal').text(`$${subtotal.toLocaleString('es-CO')}`);
     $('#resumenTotal').text(total.toLocaleString('es-CO'));
     const descTotal = mod.productosFactura.reduce((s, p) => s + (p.precio_original * p.cantidad - mod.subtotalLinea(p)), 0);
     $('#resumenDescuento').text(`-$${descTotal.toLocaleString('es-CO')}`);
+    $('#resumenBonoWrap').toggleClass('d-none', !mod.bono);
+    $('#resumenBono').text(`-$${mod.bonoMonto().toLocaleString('es-CO')}`);
   }
 
   $('#btnStepNext').click(() => goToStep(mod.currentStep + 1));
   $('#btnStepBack').click(() => goToStep(mod.currentStep - 1));
+
+  // --- Bono redimible ---
+  function bonoInfo(texto, ok) {
+    $('#bonoValidacionInfo').text(texto).toggleClass('text-success', ok === true).toggleClass('text-danger', ok === false);
+  }
+
+  async function validarBono() {
+    const codigo = $('#codigoBonoInput').val().trim().toUpperCase();
+    $('#codigoBonoInput').val(codigo);
+    if (!codigo) return bonoInfo('', null);
+    bonoInfo('Consultando...', null);
+    try {
+      const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
+      mod.bono = { codigo, saldo: Number(d.saldo_actual) };
+      bonoInfo(`Bono aplicado · saldo disponible: ${GF.dinero(d.saldo_actual)}`, true);
+      $('#codigoBonoInput').prop('disabled', true);
+      $('#btnValidarBono').addClass('d-none');
+      $('#btnQuitarBono').removeClass('d-none');
+      mod.refrescarBono();
+    } catch (err) {
+      bonoInfo(err.message, false);
+    }
+  }
+
+  $('#btnValidarBono').on('click', validarBono);
+  $('#btnQuitarBono').on('click', () => mod.quitarBono());
+  $('#codigoBonoInput').on('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); validarBono(); }
+  });
 
   $('input[name="forma_pago_radio"]').change(function() {
     $('#formaPago').val($(this).val());

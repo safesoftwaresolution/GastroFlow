@@ -77,7 +77,8 @@ class FacturaService {
             productos,
             evento_id: evento_id || null,
             usuario_id: facturaData.usuario_id || null,
-            efectivo_recibido: facturaData.efectivo_recibido || null
+            efectivo_recibido: facturaData.efectivo_recibido || null,
+            codigo_bono: facturaData.codigo_bono || null
         });
 
         const facturaId = result.insertId;

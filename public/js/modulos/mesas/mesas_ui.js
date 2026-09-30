@@ -39,7 +39,7 @@ window.MesasModule.renderItems = function() {
       <tr>
         <td class="td-producto align-middle">${GF.escapeHtml(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto + notaTxt}</td>
         <td class="text-center align-middle">${inputHtml}</td>
-        <td class="text-end d-none d-sm-table-cell align-middle">${this.formatear(precio)}</td>
+        <td class="text-end td-precio d-none d-sm-table-cell align-middle">${this.formatear(precio)}</td>
         <td class="text-end td-subtotal align-middle">${it.pagado ? '<span class="text-muted text-decoration-line-through small">' + this.formatear(subtotal) + '</span>' : this.formatear(subtotal)}</td>
         <td class="text-center align-middle">${buttonsHtml}</td>
       </tr>

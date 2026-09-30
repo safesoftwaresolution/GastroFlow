@@ -11,6 +11,7 @@ const TaxService = require('../../services/Shared/TaxService');
 const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
 const BonoRepository = require('./BonoRepository');
+const BonoService = require('../../services/Tenant/BonoService');
 const RealtimeEvents = require('../../services/Shared/RealtimeEvents');
 const PedidoItemPagoRepository = require('./PedidoItemPagoRepository');
 
@@ -94,37 +95,64 @@ class FacturaRepository {
             const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
             const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
 
-            // Desglose efectivo/transferencia para el arqueo de caja. El POS/eventos
-            // envían un solo forma_pago (sin split), así que el total va íntegro al
-            // método usado; 'mixto' u otros quedan en 0/0 (no rompe: la caja usa 0).
+            // Bono redimible (opcional): se valida y bloquea (FOR UPDATE) dentro de esta
+            // misma transacción, así un rollback no deja el saldo descontado. Se aplica
+            // primero; lo que reste se cobra con la forma de pago elegida.
+            const bono = await BonoService.validarParaRedimir(tenantId, facturaData.codigo_bono, connection);
+
+            // Desglose efectivo/transferencia/bono para el arqueo de caja. El POS/eventos
+            // envían un solo forma_pago (sin split), así que lo que no cubre el bono va
+            // íntegro al método usado; 'mixto' u otros quedan en 0/0 (la caja usa 0).
             const totalNum = Number.parseFloat(facturaData.total) || 0;
-            const montoEfectivo = facturaData.forma_pago === 'efectivo' ? totalNum : 0;
-            const montoTransferencia = facturaData.forma_pago === 'transferencia' ? totalNum : 0;
+            const montoBono = bono ? Math.round(Math.min(Number(bono.saldo_actual), totalNum) * 100) / 100 : 0;
+            const pendiente = Math.round((totalNum - montoBono) * 100) / 100;
+            const montoEfectivo = facturaData.forma_pago === 'efectivo' ? pendiente : 0;
+            const montoTransferencia = facturaData.forma_pago === 'transferencia' ? pendiente : 0;
+
+            let formaPagoFinal = facturaData.forma_pago;
+            if (montoBono > 0) {
+                formaPagoFinal = pendiente > 0 ? 'mixto' : 'bono';
+            }
 
             // Efectivo recibido: solo informativo (Recibido/Cambio en ticket y caja).
-            // Se guarda únicamente si es un pago en efectivo y cubre el total.
+            // Se guarda únicamente si hubo cobro en efectivo y cubre lo que faltó tras el bono.
             const efectivoRecibidoNum = Number.parseFloat(facturaData.efectivo_recibido) || 0;
             const efectivoRecibido =
-                facturaData.forma_pago === 'efectivo' && efectivoRecibidoNum >= totalNum ? efectivoRecibidoNum : null;
+                montoEfectivo > 0 && efectivoRecibidoNum >= montoEfectivo ? efectivoRecibidoNum : null;
 
             const [result] = await connection.query(
-                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido, monto_bono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     tenantId,
                     numero,
                     facturaData.cliente_id,
                     facturaData.total,
-                    facturaData.forma_pago,
+                    formaPagoFinal,
                     evento_id,
                     fechaEmisionUtc,
                     cajaSesionId,
                     montoEfectivo,
                     montoTransferencia,
-                    efectivoRecibido
+                    efectivoRecibido,
+                    montoBono
                 ]
             );
 
             const factura_id = result.insertId;
+
+            if (bono && montoBono > 0) {
+                await BonoRepository.redimir(
+                    {
+                        bonoId: bono.id,
+                        tenantId,
+                        saldoAnterior: bono.saldo_actual,
+                        monto: montoBono,
+                        facturaId: factura_id,
+                        usuarioId: facturaData.usuario_id || null
+                    },
+                    connection
+                );
+            }
 
             // Desglose de impuestos por línea (Fase 1 - Factus): precios de catálogo
             // se tratan como "impuesto incluido", el desglose se calcula hacia atrás.
@@ -292,7 +320,7 @@ class FacturaRepository {
         const [facturas] = await db.query(
             `
             SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.total, f.forma_pago, f.propina, f.evento_id,
-                   f.subtotal, f.descuento, f.total_impuestos, f.monto_efectivo, f.monto_transferencia, f.efectivo_recibido,
+                   f.subtotal, f.descuento, f.total_impuestos, f.monto_efectivo, f.monto_transferencia, f.efectivo_recibido, f.monto_bono,
                    DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha,
                    c.nombre AS cliente_nombre, c.direccion, c.telefono,
                    e.nombre AS evento_nombre
