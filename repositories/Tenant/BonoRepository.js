@@ -12,6 +12,7 @@ class BonoRepository {
     static async create({
         tenantId,
         codigo,
+        tokenPublico,
         origen,
         valorInicial,
         saldoActual,
@@ -26,12 +27,13 @@ class BonoRepository {
     }) {
         const [result] = await db.query(
             `INSERT INTO bonos
-                (tenant_id, codigo, origen, valor_inicial, saldo_actual, cliente_id, fecha_vencimiento, nota,
+                (tenant_id, codigo, token_publico, origen, valor_inicial, saldo_actual, cliente_id, fecha_vencimiento, nota,
                  usuario_creador_id, plantilla, destinatario, remitente, mensaje)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 tenantId,
                 codigo,
+                tokenPublico || null,
                 origen,
                 valorInicial,
                 saldoActual,
@@ -51,6 +53,33 @@ class BonoRepository {
     static async findByCodigo(codigo, tenantId) {
         const [rows] = await db.query('SELECT * FROM bonos WHERE codigo = ? AND tenant_id = ?', [codigo, tenantId]);
         return normalizar(rows[0]);
+    }
+
+    /** Busca por el token del QR (la URL /bono/<token>), siempre acotado al tenant que canjea. */
+    static async findByToken(token, tenantId) {
+        const [rows] = await db.query('SELECT * FROM bonos WHERE token_publico = ? AND tenant_id = ?', [
+            token,
+            tenantId
+        ]);
+        return normalizar(rows[0]);
+    }
+
+    static async findByTokenForUpdate(token, tenantId, connection) {
+        const [rows] = await connection.query(
+            'SELECT * FROM bonos WHERE token_publico = ? AND tenant_id = ? FOR UPDATE',
+            [token, tenantId]
+        );
+        return normalizar(rows[0]);
+    }
+
+    /** Página pública /bono/<token>: sin tenant (la URL no lo trae); el token es único global. */
+    static async findByTokenPublico(token) {
+        const [rows] = await db.query('SELECT * FROM bonos WHERE token_publico = ?', [token]);
+        return normalizar(rows[0]);
+    }
+
+    static async actualizarToken(id, tenantId, token) {
+        await db.query('UPDATE bonos SET token_publico = ? WHERE id = ? AND tenant_id = ?', [token, id, tenantId]);
     }
 
     /** Igual que findByCodigo pero con FOR UPDATE: usar dentro de la transacción de facturación, justo antes de redimir. */

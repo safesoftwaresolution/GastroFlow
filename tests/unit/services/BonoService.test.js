@@ -193,6 +193,62 @@ describe('BonoService', () => {
         });
     });
 
+    describe('token público (QR del comprobante)', () => {
+        const TOKEN = 'AbCdEfGhIjKlMnOp';
+
+        it('crear() genera un token público distinto del código y lo manda al comprobante', async () => {
+            BonoRepository.findByCodigo.mockResolvedValue(null);
+            BonoRepository.create.mockResolvedValue(7);
+
+            await BonoService.crear(1, { valor: 5000, origen: 'regalo', usuarioId: 1 });
+
+            const { tokenPublico, codigo } = BonoRepository.create.mock.calls[0][0];
+            expect(tokenPublico).toMatch(/^[A-Za-z0-9_-]{16}$/);
+            expect(tokenPublico).not.toBe(codigo);
+            expect(BonoComprobanteService.generar).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({ token_publico: tokenPublico })
+            );
+        });
+
+        it('_extraerToken reconoce la URL del QR (con o sin slash/query) y descarta códigos cortos', () => {
+            expect(BonoService._extraerToken(`https://app.gastroflow.co/bono/${TOKEN}`)).toBe(TOKEN);
+            expect(BonoService._extraerToken(`https://x.co/bono/${TOKEN}/`)).toBe(TOKEN);
+            expect(BonoService._extraerToken(`  http://localhost:3000/bono/${TOKEN}?a=1 `)).toBe(TOKEN);
+            expect(BonoService._extraerToken('BONO-ABC123')).toBeNull();
+            expect(BonoService._extraerToken('https://x.co/bono/corto')).toBeNull();
+            expect(BonoService._extraerToken(null)).toBeNull();
+        });
+
+        it('consultarPorCodigo con la URL del QR busca por token (sin tocar mayúsculas) y acotado al tenant', async () => {
+            const bono = { codigo: 'BONO-X', saldo_actual: 100 };
+            BonoRepository.findByToken.mockResolvedValue(bono);
+
+            await expect(BonoService.consultarPorCodigo(`https://x.co/bono/${TOKEN}`, 5)).resolves.toBe(bono);
+            expect(BonoRepository.findByToken).toHaveBeenCalledWith(TOKEN, 5);
+            expect(BonoRepository.findByCodigo).not.toHaveBeenCalled();
+        });
+
+        it('validarParaRedimir con la URL del QR bloquea la fila por token (FOR UPDATE)', async () => {
+            const connection = {};
+            const bono = { id: 3, estado: 'activo', saldo_actual: 100, fecha_vencimiento: null };
+            BonoRepository.findByTokenForUpdate.mockResolvedValue(bono);
+
+            const result = await BonoService.validarParaRedimir(1, `https://x.co/bono/${TOKEN}`, connection);
+
+            expect(result).toBe(bono);
+            expect(BonoRepository.findByTokenForUpdate).toHaveBeenCalledWith(TOKEN, 1, connection);
+            expect(BonoRepository.findByCodigoForUpdate).not.toHaveBeenCalled();
+        });
+
+        it('un token de otro tenant no canjea (la consulta va acotada por tenant y no devuelve nada)', async () => {
+            BonoRepository.findByTokenForUpdate.mockResolvedValue(null);
+            await expect(BonoService.validarParaRedimir(1, `https://x.co/bono/${TOKEN}`, {})).rejects.toThrow(
+                'El código de bono no existe'
+            );
+        });
+    });
+
     describe('consultarPorCodigo', () => {
         it('lanza si no encuentra el bono', async () => {
             BonoRepository.findByCodigo.mockResolvedValue(null);

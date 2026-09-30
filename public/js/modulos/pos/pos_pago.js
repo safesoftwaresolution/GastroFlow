@@ -87,13 +87,16 @@ window.POS_PAGO = {
 
     async validarBono() {
         const input = document.getElementById('posCodigoBono');
-        const codigo = (input?.value || '').trim().toUpperCase();
-        if (input) input.value = codigo;
-        if (!codigo) { this._setBonoInfo('', null); return; }
+        // Puede ser el código corto o la URL que trae el QR (el lector la escribe aquí).
+        const entrada = (input?.value || '').trim();
+        if (!entrada) { this._setBonoInfo('', null); return; }
 
         this._setBonoInfo('Consultando...', null);
         try {
-            const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
+            const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(entrada)}`, {}, 'Código de bono inválido');
+            // El código canónico lo da el servidor (la entrada pudo ser una URL).
+            const codigo = d.codigo;
+            input.value = codigo;
             this._bono = { codigo, monto: Math.min(Number(d.saldo_actual), POS.getTotal()) };
             this._setBonoInfo(`Bono aplicado · saldo disponible: ${GF.dinero(d.saldo_actual)}`, true);
             input.disabled = true;

@@ -86,6 +86,8 @@ router.get('/desktop/link', DesktopController.showLink);
 router.post('/desktop/link', DesktopController.link);
 router.use('/qr', require('./qr'));
 router.use('/api/qr', require('./qr_api'));
+// Página pública del bono (la abre el QR del comprobante): sin login, acotada por token.
+router.use('/bono', require('./bono_publico'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 

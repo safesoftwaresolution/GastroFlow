@@ -1,0 +1,228 @@
+/* Página pública del bono (/bono/:token). Mobile-first: la abre un celular al escanear el QR. */
+:root {
+    --bono-color: #6366f1;
+    --bono-bg: #f1f5f9;
+    --bono-surface: #ffffff;
+    --bono-text: #0f172a;
+    --bono-muted: #64748b;
+    --bono-border: #e2e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bono-bg: #0b1220;
+        --bono-surface: #151e31;
+        --bono-text: #f1f5f9;
+        --bono-muted: #94a3b8;
+        --bono-border: #263249;
+    }
+}
+
+body {
+    background: var(--bono-bg);
+    color: var(--bono-text);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+}
+
+.bono-wrap {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+}
+
+.bono-negocio {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.bono-logo {
+    max-height: 64px;
+    max-width: 70%;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.bono-negocio-nombre {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.bono-card {
+    position: relative;
+    background: var(--bono-surface);
+    border: 1px solid var(--bono-border);
+    border-top: 6px solid var(--bono-color);
+    border-radius: 18px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.bono-card--inactivo {
+    border-top-color: var(--bono-muted);
+}
+
+.bono-card--inactivo .bono-saldo {
+    color: var(--bono-muted);
+    text-decoration: line-through;
+}
+
+.bono-estado {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+}
+
+.bono-estado--ok {
+    background: rgba(22, 163, 74, 0.14);
+    color: #15803d;
+}
+
+.bono-estado--off {
+    background: rgba(100, 116, 139, 0.18);
+    color: var(--bono-muted);
+}
+
+.bono-para {
+    margin: 0 0 6px;
+    color: var(--bono-muted);
+}
+
+.bono-etiqueta {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bono-muted);
+}
+
+.bono-saldo {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 4px 0;
+    color: var(--bono-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.bono-inicial {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--bono-muted);
+}
+
+.bono-mensaje {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    background: var(--bono-bg);
+    border-radius: 12px;
+    font-style: italic;
+    overflow-wrap: anywhere;
+}
+
+.bono-mensaje footer {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    font-style: normal;
+    color: var(--bono-muted);
+}
+
+.bono-datos {
+    margin: 18px 0 0;
+    padding-top: 16px;
+    border-top: 1px dashed var(--bono-border);
+    display: grid;
+    gap: 10px;
+}
+
+.bono-datos div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+}
+
+.bono-datos dt {
+    font-weight: 500;
+    color: var(--bono-muted);
+}
+
+.bono-datos dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+}
+
+.bono-codigo {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    letter-spacing: 0.06em;
+}
+
+.bono-reclamar {
+    margin-top: 18px;
+    background: var(--bono-surface);
+    border: 1px solid var(--bono-border);
+    border-radius: 16px;
+    padding: 18px 20px;
+}
+
+.bono-reclamar h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 10px;
+}
+
+.bono-reclamar ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: var(--bono-muted);
+    font-size: 0.92rem;
+}
+
+.bono-reclamar li + li {
+    margin-top: 4px;
+}
+
+.bono-contacto {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.bono-contacto li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.bono-contacto i {
+    color: var(--bono-color);
+    margin-top: 2px;
+}
+
+.bono-contacto a {
+    color: var(--bono-text);
+    text-decoration: none;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.bono-contacto a:hover {
+    text-decoration: underline;
+}
+
+.bono-pie {
+    text-align: center;
+    margin: 22px 0 0;
+    font-size: 0.78rem;
+    color: var(--bono-muted);
+}

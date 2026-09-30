@@ -703,15 +703,18 @@ $(function () {
     actualizarSegunRestante();
 
     async function validarBono() {
-      const codigo = $('#codigoBonoInput').val().trim().toUpperCase();
-      $('#codigoBonoInput').val(codigo);
-      if (!codigo) {
+      // Puede ser el código corto o la URL que trae el QR (el lector la escribe aquí).
+      const entrada = $('#codigoBonoInput').val().trim();
+      if (!entrada) {
         $('#bonoValidacionInfo').text('').removeClass('text-success text-danger');
         return;
       }
       $('#bonoValidacionInfo').text('Consultando...').removeClass('text-success text-danger');
       try {
-        const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(codigo)}`, {}, 'Código de bono inválido');
+        const d = await GF.api(`/api/bonos/validar/${encodeURIComponent(entrada)}`, {}, 'Código de bono inválido');
+        // El código canónico lo da el servidor (la entrada pudo ser una URL).
+        const codigo = d.codigo;
+        $('#codigoBonoInput').val(codigo);
 
         const montoBono = Math.min(Number(d.saldo_actual), totalOriginal);
         bonoAplicado = { codigo, monto: montoBono };

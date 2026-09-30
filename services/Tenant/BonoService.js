@@ -14,6 +14,16 @@ const CODIGO_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODIGO_LARGO = 6;
 const CODIGO_INTENTOS_MAX = 10;
 
+// El QR del comprobante contiene una URL (.../bono/<token>). Un lector de códigos
+// "teclea" esa URL en el campo del bono, así que el canje acepta tanto el código
+// corto como la URL completa.
+const URL_BONO_REGEX = /\/bono\/([A-Za-z0-9_-]{16,64})\/?(?:[?#].*)?$/;
+
+/** Token aleatorio de 16 caracteres (96 bits) para la página pública del bono. */
+function generarTokenPublico() {
+    return crypto.randomBytes(12).toString('base64url');
+}
+
 /** Plantilla válida y dedicatoria recortada al largo de las columnas. */
 function normalizarDiseno({ plantilla, destinatario, remitente, mensaje }) {
     const limpio = (v, max) => {
@@ -45,12 +55,14 @@ class BonoService {
         }
 
         const codigo = await BonoService._generarCodigoUnico(tenantId);
+        const tokenPublico = generarTokenPublico();
         const valorRedondeado = Math.round(valorNum * 100) / 100;
         const diseno = normalizarDiseno({ plantilla, destinatario, remitente, mensaje });
 
         const bonoId = await BonoRepository.create({
             tenantId,
             codigo,
+            tokenPublico,
             origen,
             valorInicial: valorRedondeado,
             saldoActual: valorRedondeado,
@@ -77,6 +89,7 @@ class BonoService {
             const BonoComprobanteService = require('./BonoComprobanteService');
             imagenUrl = await BonoComprobanteService.generar(tenantId, {
                 codigo,
+                token_publico: tokenPublico,
                 origen,
                 valor_inicial: valorRedondeado,
                 fecha_vencimiento: fecha_vencimiento || null,
@@ -171,9 +184,16 @@ class BonoService {
             remitente: cambios.remitente ?? bono.remitente,
             mensaje: cambios.mensaje ?? bono.mensaje
         });
+        // Bonos anteriores al token público: se les asigna uno para que el QR nuevo funcione.
+        let tokenPublico = bono.token_publico;
+        if (!tokenPublico) {
+            tokenPublico = generarTokenPublico();
+            await BonoRepository.actualizarToken(id, tenantId, tokenPublico);
+        }
         const BonoComprobanteService = require('./BonoComprobanteService');
         const imagenUrl = await BonoComprobanteService.generar(tenantId, {
             codigo: bono.codigo,
+            token_publico: tokenPublico,
             origen: bono.origen,
             valor_inicial: bono.valor_inicial,
             fecha_vencimiento: bono.fecha_vencimiento,
@@ -194,6 +214,7 @@ class BonoService {
         const BonoComprobanteService = require('./BonoComprobanteService');
         return BonoComprobanteService.renderBuffer(tenantId, {
             codigo: 'BONO-XXXXXX',
+            token_publico: 'vista-previa-0000',
             origen: origen === 'comprado' ? 'comprado' : 'regalo',
             valor_inicial: Math.max(0, Number.parseFloat(valor) || 0),
             fecha_vencimiento: fecha_vencimiento || null,
@@ -220,7 +241,10 @@ class BonoService {
 
     /** Consulta liviana por código, para el preview al facturar (no bloquea ni redime). */
     static async consultarPorCodigo(codigo, tenantId) {
-        const bono = await BonoRepository.findByCodigo(BonoService._normalizarCodigo(codigo), tenantId);
+        const token = BonoService._extraerToken(codigo);
+        const bono = token
+            ? await BonoRepository.findByToken(token, tenantId)
+            : await BonoRepository.findByCodigo(BonoService._normalizarCodigo(codigo), tenantId);
         if (!bono) {
             throw new Error('Código de bono no encontrado');
         }
@@ -237,11 +261,10 @@ class BonoService {
         if (!codigo) {
             return null;
         }
-        const bono = await BonoRepository.findByCodigoForUpdate(
-            BonoService._normalizarCodigo(codigo),
-            tenantId,
-            connection
-        );
+        const token = BonoService._extraerToken(codigo);
+        const bono = token
+            ? await BonoRepository.findByTokenForUpdate(token, tenantId, connection)
+            : await BonoRepository.findByCodigoForUpdate(BonoService._normalizarCodigo(codigo), tenantId, connection);
         if (!bono) {
             throw new Error('El código de bono no existe');
         }
@@ -255,6 +278,12 @@ class BonoService {
             throw new Error('Este bono ya no tiene saldo disponible');
         }
         return bono;
+    }
+
+    /** Token de la URL /bono/<token> si lo escaneado es una URL de bono; null si es un código corto. */
+    static _extraerToken(entrada) {
+        const m = URL_BONO_REGEX.exec(String(entrada || '').trim());
+        return m ? m[1] : null;
     }
 
     static _normalizarCodigo(codigo) {

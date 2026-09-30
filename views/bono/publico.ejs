@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tu bono · <%= negocio.nombre %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="/css/modulos/bono-publico.css?v=<%= assetV %>" rel="stylesheet">
+    <style>
+        :root { --bono-color: <%= negocio.color %>; }
+    </style>
+</head>
+<body>
+    <%
+        const fmt = n => '$ ' + Number(n).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+        const fechaVence = bono.fecha_vencimiento
+            ? new Date(bono.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
+            : null;
+        const direccionCompleta = [negocio.direccion, negocio.ciudad].filter(Boolean).join(', ');
+        const telefonoLimpio = (negocio.telefono || '').replace(/[^0-9+]/g, '');
+    %>
+    <main class="bono-wrap">
+        <header class="bono-negocio">
+            <% if (negocio.logo_src) { %>
+                <img src="<%= negocio.logo_src %>" alt="" class="bono-logo">
+            <% } %>
+            <h1 class="bono-negocio-nombre"><%= negocio.nombre %></h1>
+        </header>
+
+        <section class="bono-card <%= bono.usable ? '' : 'bono-card--inactivo' %>">
+            <div class="bono-estado bono-estado--<%= bono.estado_clase %>"><%= bono.estado_etiqueta %></div>
+
+            <% if (bono.destinatario) { %>
+                <p class="bono-para">Para <strong><%= bono.destinatario %></strong></p>
+            <% } %>
+
+            <p class="bono-etiqueta">Saldo disponible</p>
+            <p class="bono-saldo"><%= fmt(bono.saldo_actual) %></p>
+            <% if (bono.saldo_actual !== bono.valor_inicial) { %>
+                <p class="bono-inicial">de un valor inicial de <%= fmt(bono.valor_inicial) %></p>
+            <% } %>
+
+            <% if (bono.mensaje) { %>
+                <blockquote class="bono-mensaje">
+                    “<%= bono.mensaje %>”
+                    <% if (bono.remitente) { %><footer>— <%= bono.remitente %></footer><% } %>
+                </blockquote>
+            <% } %>
+
+            <dl class="bono-datos">
+                <div><dt>Código</dt><dd class="bono-codigo"><%= bono.codigo %></dd></div>
+                <div><dt>Vigencia</dt><dd><%= fechaVence ? 'Hasta el ' + fechaVence : 'Sin fecha de vencimiento' %></dd></div>
+            </dl>
+        </section>
+
+        <% if (bono.usable) { %>
+            <section class="bono-reclamar">
+                <h2><i class="bi bi-gift me-2"></i>¿Cómo canjearlo?</h2>
+                <ol>
+                    <li>Visítanos y pide tu cuenta.</li>
+                    <li>Muestra esta pantalla o dile el código al cajero.</li>
+                    <li>El valor del bono se descuenta de tu cuenta; si es mayor a lo que consumes, el resto queda como saldo.</li>
+                </ol>
+
+                <% if (direccionCompleta || negocio.telefono) { %>
+                    <ul class="bono-contacto">
+                        <% if (direccionCompleta) { %>
+                            <li>
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <a href="https://www.google.com/maps/search/?api=1&query=<%= encodeURIComponent(negocio.nombre + ' ' + direccionCompleta) %>"
+                                   target="_blank" rel="noopener"><%= direccionCompleta %></a>
+                            </li>
+                        <% } %>
+                        <% if (negocio.telefono) { %>
+                            <li>
+                                <i class="bi bi-telephone-fill"></i>
+                                <a href="tel:<%= telefonoLimpio %>"><%= negocio.telefono %></a>
+                            </li>
+                        <% } %>
+                    </ul>
+                <% } %>
+            </section>
+        <% } else { %>
+            <section class="bono-reclamar">
+                <p class="mb-0 text-muted">Este bono ya no se puede usar. Si crees que es un error, comunícate con <%= negocio.nombre %>.</p>
+                <% if (negocio.telefono) { %>
+                    <ul class="bono-contacto mt-2">
+                        <li><i class="bi bi-telephone-fill"></i> <a href="tel:<%= telefonoLimpio %>"><%= negocio.telefono %></a></li>
+                    </ul>
+                <% } %>
+            </section>
+        <% } %>
+
+        <p class="bono-pie">Bono digital · <%= negocio.nombre %></p>
+    </main>
+</body>
+</html>

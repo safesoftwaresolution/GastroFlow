@@ -127,12 +127,22 @@ class BonoComprobanteService {
         }
     }
 
+    /** URL absoluta de la página pública del bono (APP_URL: la del ambiente donde corre la app). */
+    static urlPublica(token) {
+        const base = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+        return `${base}/bono/${token}`;
+    }
+
     /** Solo genera el PDF (sin subirlo): lo usa también la vista previa del formulario. */
     static async renderBuffer(tenantId, bono) {
         const tenant = await TenantRepository.findById(tenantId);
         const colorNegocio = tenant?.config?.colores?.primary || COLOR_PRIMARIO_DEFECTO;
         const [qrDataUrl, logoDataUri] = await Promise.all([
-            QRCode.toDataURL(bono.codigo, { margin: 1, width: 300 }),
+            // El QR abre la página pública del bono; sin token (bono viejo) cae al código corto.
+            QRCode.toDataURL(bono.token_publico ? BonoComprobanteService.urlPublica(bono.token_publico) : bono.codigo, {
+                margin: 1,
+                width: 300
+            }),
             obtenerLogoDataUri(tenant?.logo_src)
         ]);
         const docDefinition = BonoComprobanteService._docDefinition(tenant, bono, colorNegocio, qrDataUrl, logoDataUri);
@@ -248,7 +258,7 @@ class BonoComprobanteService {
             enCaja({ text: vigencia, fontSize: 8.5, color: paleta.suave }, 24, ALTO - 60, ANCHO_TEXTO),
             enCaja(
                 {
-                    text: `Presenta este bono (código o QR) al pagar en ${nombreNegocio}.`,
+                    text: `Escanea el QR para ver tu saldo y cómo canjearlo en ${nombreNegocio}.`,
                     fontSize: 7.5,
                     color: paleta.suave
                 },
