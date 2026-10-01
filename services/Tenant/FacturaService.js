@@ -7,6 +7,7 @@
 const FacturaRepository = require('../../repositories/Tenant/FacturaRepository');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
+const TenantOwnership = require('./TenantOwnership');
 
 class FacturaService {
     /**
@@ -31,6 +32,19 @@ class FacturaService {
                 p.producto_id = await AgregarItemService._getOrCreateMirrorProduct(tenantId, insumoId, p.precio);
             }
         }
+
+        // Los ids relacionados vienen del cliente: todos deben ser de este tenant (si no, la factura
+        // referenciaría clientes/productos de otro restaurante y los leería al imprimirse).
+        await TenantOwnership.clientes(tenantId, cliente_id);
+        await TenantOwnership.eventos(tenantId, evento_id);
+        await TenantOwnership.productos(
+            tenantId,
+            productos.filter(p => !p.es_servicio).map(p => p.producto_id)
+        );
+        await TenantOwnership.servicios(
+            tenantId,
+            productos.filter(p => p.es_servicio).map(p => p.servicio_id)
+        );
 
         // Precio de toppings/modificadores: el catálogo en BD es la fuente de verdad,
         // nunca el precio que calculó el frontend. Se suma al precio base (que ya puede

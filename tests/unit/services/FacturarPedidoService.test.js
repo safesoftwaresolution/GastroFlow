@@ -3,6 +3,13 @@ const db = require('../../../config/database');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
 const RealtimeEvents = require('../../../services/Shared/RealtimeEvents');
 
+jest.mock('../../../services/Tenant/TenantOwnership', () => ({
+    clientes: jest.fn().mockResolvedValue(),
+    productos: jest.fn().mockResolvedValue(),
+    servicios: jest.fn().mockResolvedValue(),
+    eventos: jest.fn().mockResolvedValue(),
+    insumos: jest.fn().mockResolvedValue()
+}));
 jest.mock('../../../config/database', () => {
     const mockConnection = {
         beginTransaction: jest.fn(),

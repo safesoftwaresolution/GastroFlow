@@ -5,6 +5,7 @@
 
 const RecetaRepository = require('../../repositories/Tenant/RecetaRepository');
 const ProductRepository = require('../../repositories/Tenant/ProductRepository');
+const TenantOwnership = require('./TenantOwnership');
 
 class RecetaService {
     static async list(tenantId, filters = {}) {
@@ -48,6 +49,10 @@ class RecetaService {
             costos_adicionales: data.costos_adicionales
         });
         if (data.ingredientes && data.ingredientes.length > 0) {
+            await TenantOwnership.insumos(
+                tenantId,
+                data.ingredientes.map(i => i.insumo_id)
+            );
             await RecetaRepository.setIngredientes(recetaId, data.ingredientes);
         }
         return recetaId;
@@ -57,6 +62,12 @@ class RecetaService {
         const receta = await RecetaRepository.findById(id, tenantId);
         if (!receta) {
             throw new Error('Receta no encontrada');
+        }
+        if (data.ingredientes !== undefined) {
+            await TenantOwnership.insumos(
+                tenantId,
+                (data.ingredientes || []).map(i => i.insumo_id)
+            );
         }
         await RecetaRepository.update(id, tenantId, {
             nombre_receta: data.nombre_receta !== undefined ? data.nombre_receta.trim() : receta.nombre_receta,

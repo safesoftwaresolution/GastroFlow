@@ -3,6 +3,7 @@ const InventarioService = require('../InventarioService');
 const ModificadorService = require('../ModificadorService');
 const SincronizarPrecioPromoService = require('./SincronizarPrecioPromoService');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
+const TenantOwnership = require('../TenantOwnership');
 
 class AgregarItemService {
     static async execute({
@@ -27,6 +28,8 @@ class AgregarItemService {
         if (producto_id >= 1000000) {
             const insumoId = producto_id - 1000000;
             realProductId = await this._getOrCreateMirrorProduct(tenantId, insumoId, precio);
+        } else {
+            await TenantOwnership.productos(tenantId, realProductId);
         }
 
         const [pedidos] = await db.query('SELECT id, mesa_id FROM pedidos WHERE id = ? AND tenant_id = ?', [

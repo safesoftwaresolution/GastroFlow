@@ -97,6 +97,29 @@ function requirePermission(...requiredPermissions) {
 }
 
 /**
+ * Exige permisos distintos según el método HTTP, para proteger un módulo entero desde su montaje:
+ *   - lectura (GET/HEAD): basta con CUALQUIERA de `ver`.
+ *   - escritura (resto): basta con CUALQUIERA de `editar`; si `editar` no se pasa, no se exige nada
+ *     (las rutas de escritura ya llevan su propio requirePermission).
+ * El superadmin pasa siempre: solo llega a los módulos que `restrictSuperadminToAdmin` le permite
+ * (hoy /costeo) y su JWT no depende de las filas rol_permisos de ningún tenant.
+ * Debe ir después de requireAuth.
+ */
+function requirePermissionByMethod({ ver = [], editar = [] }) {
+    return (req, res, next) => {
+        if (req.user && String(req.user.rol || '').toLowerCase() === 'superadmin') {
+            return next();
+        }
+        const esLectura = req.method === 'GET' || req.method === 'HEAD';
+        const requeridos = esLectura ? ver : editar;
+        if (requeridos.length === 0) {
+            return next();
+        }
+        return requirePermission(...requeridos)(req, res, next);
+    };
+}
+
+/**
  * Restrict superadmin to only /admin/tenants, /admin/sistema and /costeo (and auth). Use after requireAuth on app routes.
  * Superadmin must not see dashboard, mesas, etc.
  */
@@ -175,6 +198,7 @@ module.exports = {
     requireAuth,
     requireRole,
     requirePermission,
+    requirePermissionByMethod,
     restrictSuperadminToAdmin,
     requireOnboarding,
     optionalAuth

@@ -95,7 +95,7 @@ class BonoRepository {
         const [rows] = await db.query(
             `SELECT b.*, c.nombre AS cliente_nombre
              FROM bonos b
-             LEFT JOIN clientes c ON c.id = b.cliente_id
+             LEFT JOIN clientes c ON c.id = b.cliente_id AND c.tenant_id = b.tenant_id
              WHERE b.id = ? AND b.tenant_id = ?`,
             [id, tenantId]
         );
@@ -106,7 +106,7 @@ class BonoRepository {
         let query = `
             SELECT b.*, c.nombre AS cliente_nombre
             FROM bonos b
-            LEFT JOIN clientes c ON c.id = b.cliente_id
+            LEFT JOIN clientes c ON c.id = b.cliente_id AND c.tenant_id = b.tenant_id
             WHERE b.tenant_id = ?
         `;
         const params = [tenantId];

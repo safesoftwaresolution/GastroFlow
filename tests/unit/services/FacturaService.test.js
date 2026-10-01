@@ -2,6 +2,13 @@
  * Tests unitarios para FacturaService (repository mockeado)
  */
 
+jest.mock('../../../services/Tenant/TenantOwnership', () => ({
+    clientes: jest.fn().mockResolvedValue(),
+    productos: jest.fn().mockResolvedValue(),
+    servicios: jest.fn().mockResolvedValue(),
+    eventos: jest.fn().mockResolvedValue(),
+    insumos: jest.fn().mockResolvedValue()
+}));
 jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
     createWithDetails: jest.fn(),
     findByIdWithClient: jest.fn(),
@@ -53,6 +60,30 @@ describe('FacturaService', () => {
             forma_pago: 'efectivo',
             productos: [{ producto_id: 1, cantidad: 2, precio: 10000, unidad: 'UND', subtotal: 20000 }]
         };
+
+        it('valida que cliente, evento, productos y servicios sean del tenant', async () => {
+            const TenantOwnership = require('../../../services/Tenant/TenantOwnership');
+            FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 1 });
+            await FacturaService.create(tenantId, {
+                ...facturaValida,
+                evento_id: 7,
+                productos: [
+                    ...facturaValida.productos,
+                    { es_servicio: true, servicio_id: 4, cantidad: 1, precio: 5, subtotal: 5 }
+                ]
+            });
+            expect(TenantOwnership.clientes).toHaveBeenCalledWith(tenantId, 10);
+            expect(TenantOwnership.eventos).toHaveBeenCalledWith(tenantId, 7);
+            expect(TenantOwnership.productos).toHaveBeenCalledWith(tenantId, [1]);
+            expect(TenantOwnership.servicios).toHaveBeenCalledWith(tenantId, [4]);
+        });
+
+        it('rechaza un cliente de otro tenant y no crea la factura', async () => {
+            const TenantOwnership = require('../../../services/Tenant/TenantOwnership');
+            TenantOwnership.clientes.mockRejectedValueOnce(new Error('Cliente no encontrado'));
+            await expect(FacturaService.create(tenantId, facturaValida)).rejects.toThrow('Cliente no encontrado');
+            expect(FacturaRepository.createWithDetails).not.toHaveBeenCalled();
+        });
 
         it('lanza "Datos incompletos" si falta cliente_id', async () => {
             await expect(FacturaService.create(tenantId, { ...facturaValida, cliente_id: null })).rejects.toThrow(

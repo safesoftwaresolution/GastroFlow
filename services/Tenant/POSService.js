@@ -1,6 +1,7 @@
 const POSRepository = require('../../repositories/Tenant/POSRepository');
 const PromocionService = require('./PromocionService');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
+const TenantOwnership = require('./TenantOwnership');
 
 class POSService {
     static async getProductosForPOS(tenantId) {
@@ -36,6 +37,8 @@ class POSService {
         if (!data.items || !data.items.length) {
             throw new Error('La orden no tiene productos');
         }
+
+        await TenantOwnership.clientes(tenantId, data.cliente_id);
 
         let pedidoCocinaId = data.pedido_cocina_id || null;
         let mesaCocinaId = data.mesa_cocina_id || null;
@@ -122,6 +125,12 @@ class POSService {
      */
     static async _resolverItems(tenantId, productos, puedeUsarModificadores) {
         const ModificadorService = require('./ModificadorService');
+        // Los ids >= 1.000.000 son insumos virtuales (cerámica): se resuelven por tenant en
+        // AgregarItemService._getOrCreateMirrorProduct, no son filas de productos.
+        await TenantOwnership.productos(
+            tenantId,
+            (productos || []).filter(p => !p.es_servicio && p.producto_id < 1000000).map(p => p.producto_id)
+        );
         return Promise.all(
             (productos || [])
                 .filter(p => !p.es_servicio && p.producto_id)

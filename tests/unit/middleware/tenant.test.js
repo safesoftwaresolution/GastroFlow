@@ -68,6 +68,62 @@ describe('middleware/tenant', () => {
             expect(next).toHaveBeenCalled();
         });
 
+        it('propietario_pendiente nunca cae en el tenant por defecto (403 JSON / redirect a onboarding)', async () => {
+            const defaultTenant = { id: 99, nombre: 'Principal', activo: true, plan: null };
+            TenantRepository.getDefault.mockResolvedValue(defaultTenant);
+            TenantRepository.findById.mockResolvedValue(defaultTenant);
+
+            const resJson = createRes();
+            const nextJson = jest.fn();
+            await attachTenantContext(
+                createReq({ user: { id: 5, rol: 'propietario_pendiente', tenant_id: null }, xhr: true }),
+                resJson,
+                nextJson
+            );
+            expect(resJson.status).toHaveBeenCalledWith(403);
+            expect(nextJson).not.toHaveBeenCalled();
+
+            const resHtml = createRes();
+            const nextHtml = jest.fn();
+            await attachTenantContext(
+                createReq({ user: { id: 5, rol: 'propietario_pendiente', tenant_id: null } }),
+                resHtml,
+                nextHtml
+            );
+            expect(resHtml.redirect).toHaveBeenCalledWith('/onboarding/crear-local');
+            expect(nextHtml).not.toHaveBeenCalled();
+            expect(TenantRepository.getDefault).not.toHaveBeenCalled();
+        });
+
+        it('rechaza (401 + limpia cookie) a un usuario desactivado aunque su JWT siga vigente', async () => {
+            const AuthService = require('../../../services/Shared/AuthService');
+            const spy = jest.spyOn(AuthService, 'getUserById').mockResolvedValue(null);
+            const req = createReq({ user: { id: 7, rol: 'cajero', tenant_id: 1 }, xhr: true });
+            const res = createRes();
+            const next = jest.fn();
+            await attachTenantContext(req, res, next);
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.clearCookie).toHaveBeenCalledWith('auth_token');
+            expect(next).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('toma el rol de la BD, no el del JWT', async () => {
+            const AuthService = require('../../../services/Shared/AuthService');
+            const spy = jest
+                .spyOn(AuthService, 'getUserById')
+                .mockResolvedValue({ id: 8, rol: 'mesero', roles: ['mesero'], permisos: ['mesas.ver'], tenant_id: 1 });
+            const tenant = { id: 1, nombre: 'Tenant A', activo: true, plan: { caracteristicas: [] } };
+            TenantRepository.findById.mockResolvedValue(tenant);
+            const req = createReq({ user: { id: 8, rol: 'admin', tenant_id: 1, permisos: ['x'] } });
+            const next = jest.fn();
+            await attachTenantContext(req, createRes(), next);
+            expect(req.user.rol).toBe('mesero');
+            expect(req.user.permisos).toEqual(['mesas.ver']);
+            expect(next).toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
         it('usa getDefault si user no tiene tenant_id', async () => {
             const defaultTenant = { id: 99, nombre: 'Principal', activo: true, plan: null };
             TenantRepository.getDefault.mockResolvedValue(defaultTenant);

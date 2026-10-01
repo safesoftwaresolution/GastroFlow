@@ -325,8 +325,8 @@ class FacturaRepository {
                    c.nombre AS cliente_nombre, c.direccion, c.telefono,
                    e.nombre AS evento_nombre
             FROM facturas f
-            JOIN clientes c ON f.cliente_id = c.id
-            LEFT JOIN eventos e ON f.evento_id = e.id
+            JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+            LEFT JOIN eventos e ON f.evento_id = e.id AND e.tenant_id = f.tenant_id
             WHERE f.id = ? AND f.tenant_id = ?
         `,
             [id, tenantId]
@@ -345,8 +345,9 @@ class FacturaRepository {
             SELECT d.*,
                    COALESCE(p.nombre, s.nombre) as producto_nombre
             FROM detalle_factura d
-            LEFT JOIN productos p ON d.producto_id = p.id
-            LEFT JOIN servicios s ON d.servicio_id = s.id
+            JOIN facturas fx ON fx.id = d.factura_id
+            LEFT JOIN productos p ON d.producto_id = p.id AND p.tenant_id = fx.tenant_id
+            LEFT JOIN servicios s ON d.servicio_id = s.id AND s.tenant_id = fx.tenant_id
             WHERE d.factura_id = ?
         `,
             [facturaId]
@@ -379,7 +380,7 @@ class FacturaRepository {
                    DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha,
                    c.nombre AS cliente_nombre, c.direccion, c.telefono
             FROM facturas f
-            JOIN clientes c ON f.cliente_id = c.id
+            JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
             WHERE f.id = ? AND f.tenant_id = ?
         `,
             [id, tenantId]
@@ -397,8 +398,9 @@ class FacturaRepository {
                    COALESCE(p.nombre, s.nombre) as nombre,
                    d.es_servicio
             FROM detalle_factura d
-            LEFT JOIN productos p ON d.producto_id = p.id
-            LEFT JOIN servicios s ON d.servicio_id = s.id
+            JOIN facturas fx ON fx.id = d.factura_id
+            LEFT JOIN productos p ON d.producto_id = p.id AND p.tenant_id = fx.tenant_id
+            LEFT JOIN servicios s ON d.servicio_id = s.id AND s.tenant_id = fx.tenant_id
             WHERE d.factura_id = ?
         `,
             [id]
@@ -500,7 +502,7 @@ class FacturaRepository {
                     c.nombre AS cliente_nombre, t.nombre AS tenant_nombre
              FROM facturas f
              JOIN tenants t ON f.tenant_id = t.id
-             LEFT JOIN clientes c ON f.cliente_id = c.id
+             LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
              WHERE f.id = ?`,
             [facturaId]
         );

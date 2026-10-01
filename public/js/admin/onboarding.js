@@ -6,7 +6,7 @@ function removeRow(id) {
 async function aprobarLocal(id, nombre) {
     const confirm = await Swal.fire({
         icon: 'question',
-        title: `¿Aprobar "${nombre}"?`,
+        title: `¿Aprobar "${GF.escapeHtml(nombre)}"?`,
         text: 'El dueño podrá iniciar sesión de inmediato.',
         showCancelButton: true,
         confirmButtonText: 'Aprobar',
@@ -26,7 +26,7 @@ async function aprobarLocal(id, nombre) {
 async function rechazarLocal(id, nombre) {
     const { value: motivo, isConfirmed } = await Swal.fire({
         icon: 'warning',
-        title: `¿Rechazar "${nombre}"?`,
+        title: `¿Rechazar "${GF.escapeHtml(nombre)}"?`,
         input: 'text',
         inputLabel: 'Motivo (opcional, se lo enviamos al dueño)',
         inputPlaceholder: 'Ej: datos incompletos',
@@ -48,6 +48,15 @@ async function rechazarLocal(id, nombre) {
         Swal.fire({ icon: 'error', title: 'Error', text: error.message });
     }
 }
+
+// El nombre del local lo elige quien se registra: va en data-* (escapado por EJS) y se lee con
+// dataset, nunca dentro de un onclick="...('nombre')".
+document.addEventListener('click', e => {
+    const aprobar = e.target.closest('.js-aprobar-local');
+    if (aprobar) return aprobarLocal(aprobar.dataset.id, aprobar.dataset.nombre);
+    const rechazar = e.target.closest('.js-rechazar-local');
+    if (rechazar) return rechazarLocal(rechazar.dataset.id, rechazar.dataset.nombre);
+});
 
 async function reenviarVerificacion(id) {
     try {

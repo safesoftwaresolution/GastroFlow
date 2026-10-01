@@ -1,12 +1,15 @@
 const db = require('../../../config/database');
 const NumeracionRepository = require('../../../repositories/Tenant/NumeracionRepository');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
+const TenantOwnership = require('../TenantOwnership');
 
 class AbrirPedidoService {
     /**
      * @description Inicia un nuevo pedido de facturación en una mesa de forma transaccional.
      */
     static async execute({ tenantId, mesa_id, cliente_id, notas }) {
+        await TenantOwnership.clientes(tenantId, cliente_id);
+
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
@@ -20,8 +23,8 @@ class AbrirPedidoService {
             }
 
             const [existentes] = await connection.query(
-                `SELECT * FROM pedidos WHERE mesa_id = ? AND estado NOT IN ('cerrado','cancelado') LIMIT 1`,
-                [mesa_id]
+                `SELECT * FROM pedidos WHERE mesa_id = ? AND tenant_id = ? AND estado NOT IN ('cerrado','cancelado') LIMIT 1`,
+                [mesa_id, tenantId]
             );
 
             if (existentes.length > 0) {

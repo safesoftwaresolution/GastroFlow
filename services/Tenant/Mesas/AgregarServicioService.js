@@ -1,11 +1,13 @@
 const db = require('../../../config/database');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
+const TenantOwnership = require('../TenantOwnership');
 
 class AgregarServicioService {
     static async execute({ tenantId, pedidoId, servicio_id, cantidad, precio, nota }) {
         if (!servicio_id || !cantidad || !precio) {
             throw new Error('servicio_id, cantidad y precio son requeridos');
         }
+        await TenantOwnership.servicios(tenantId, servicio_id);
 
         const [pedidoRow] = await db.query('SELECT mesa_id FROM pedidos WHERE id = ? AND tenant_id = ?', [
             pedidoId,

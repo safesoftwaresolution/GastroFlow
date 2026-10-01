@@ -1,4 +1,11 @@
 jest.mock('../../../config/database', () => ({ query: jest.fn() }));
+jest.mock('../../../services/Tenant/TenantOwnership', () => ({
+    clientes: jest.fn().mockResolvedValue(),
+    productos: jest.fn().mockResolvedValue(),
+    servicios: jest.fn().mockResolvedValue(),
+    eventos: jest.fn().mockResolvedValue(),
+    insumos: jest.fn().mockResolvedValue()
+}));
 jest.mock('../../../services/Tenant/InventarioService', () => ({
     checkStockParaProducto: jest.fn().mockResolvedValue({ ok: true })
 }));

@@ -117,7 +117,8 @@ class RecetaRepository {
             SELECT ri.*, i.nombre AS insumo_nombre, i.codigo AS insumo_codigo, i.unidad_compra, i.unidad_base,
                    i.cantidad_compra, i.precio_compra, i.costo_promedio, i.rendimiento_pct, i.stock_actual
             FROM receta_ingredientes ri
-            INNER JOIN insumos i ON i.id = ri.insumo_id
+            INNER JOIN recetas r ON r.id = ri.receta_id
+            INNER JOIN insumos i ON i.id = ri.insumo_id AND i.tenant_id = r.tenant_id
             WHERE ri.receta_id = ?
             ORDER BY ri.id
         `,

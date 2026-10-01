@@ -68,6 +68,17 @@ async function attachTenantContext(req, res, next) {
         }
 
         const rol = String(req.user.rol || '').toLowerCase();
+
+        // Un dueño que aún no tiene local (registro público) no pertenece a ningún tenant: nunca
+        // debe caer en el tenant por defecto de abajo, o leería datos del tenant "principal".
+        // Su único destino es /onboarding (que no pasa por este middleware).
+        if (rol === 'propietario_pendiente') {
+            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                return res.status(403).json({ error: 'Debes crear tu local antes de usar esta función' });
+            }
+            return res.redirect('/onboarding/crear-local');
+        }
+
         if (rol !== 'superadmin' && req.user.id) {
             const userCacheKey = `user:ctx:${req.user.id}`;
             let freshUser = CacheService.get(userCacheKey);
@@ -77,8 +88,23 @@ async function attachTenantContext(req, res, next) {
                     CacheService.set(userCacheKey, freshUser, CONTEXT_TTL_SECONDS);
                 }
             }
-            if (freshUser && Array.isArray(freshUser.permisos)) {
+            // getUserById solo devuelve usuarios activos: null = desactivado o eliminado. El JWT
+            // sigue siendo válido hasta 24h, así que sin este rechazo un empleado dado de baja
+            // conservaría acceso.
+            if (!freshUser) {
+                res.clearCookie('auth_token');
+                if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                    return res.status(401).json({ error: 'Sesión no válida', redirect: '/auth/login' });
+                }
+                return res.redirect('/auth/login?mensaje=' + encodeURIComponent('Tu sesión ya no es válida.'));
+            }
+            if (Array.isArray(freshUser.permisos)) {
                 req.user.permisos = freshUser.permisos;
+            }
+            // El rol sale de la BD, no del JWT: un cambio de rol aplica de inmediato.
+            if (freshUser.rol) {
+                req.user.rol = freshUser.rol;
+                req.user.roles = freshUser.roles;
             }
         }
 

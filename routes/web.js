@@ -5,6 +5,7 @@ const {
     optionalAuth,
     restrictSuperadminToAdmin,
     requirePermission,
+    requirePermissionByMethod,
     requireRole
 } = require('../middleware/auth');
 const { attachTenantContext, costeoTenantContext } = require('../middleware/tenant');
@@ -145,12 +146,35 @@ router.use(
 );
 router.use('/facturas', requireAuthWithTenant, requirePlanFeature('ventas'), facturasRoutes);
 router.use('/mesas', requireAuthWithTenant, requirePlanFeature('mesas'), requirePermission('mesas.ver'), mesasRoutes);
-router.use('/cocina', requireAuthWithTenant, requirePlanFeature('cocina'), cocinaRoutes);
+router.use(
+    '/cocina',
+    requireAuthWithTenant,
+    requirePlanFeature('cocina'),
+    requirePermission('cocina.ver'),
+    cocinaRoutes
+);
 router.use('/estaciones', requireAuthWithTenant, requirePlanFeature('cocina'), estacionesRoutes);
 router.use('/configuracion', requireAuthWithTenant, requirePlanFeature('configuracion'), configuracionRoutes);
 router.use('/ventas', requireAuthWithTenant, requirePlanFeature('ventas'), ventasRoutes);
 router.use('/eventos', requireAuthWithTenant, requirePlanFeature('eventos'), eventosRoutes);
-router.use('/inventario', requireAuthWithTenant, requirePlanFeature('inventario'), inventarioRoutes);
+// Lecturas: inventario.ver (o los módulos que consumen /inventario/api/insumos: recetas y compras).
+// Las escrituras ya llevan inventario.editar en el propio router.
+router.use(
+    '/inventario',
+    requireAuthWithTenant,
+    requirePlanFeature('inventario'),
+    requirePermissionByMethod({
+        ver: [
+            'inventario.ver',
+            'inventario.editar',
+            'recetas.ver',
+            'recetas.editar',
+            'proveedores.ver',
+            'proveedores.ordenes'
+        ]
+    }),
+    inventarioRoutes
+);
 router.use('/finanzas', requireAuthWithTenant, requirePermission('finanzas.ver'), finanzasRoutes);
 router.use(
     '/proveedores',
@@ -166,7 +190,14 @@ router.use(
     requirePermission('proveedores.ordenes'),
     ordenesCompraRoutes
 );
-router.use('/recetas', requireAuthWithTenant, requirePlanFeature('recetas'), recetasRoutes);
+// Lecturas: recetas.ver; las escrituras ya llevan recetas.editar en el propio router.
+router.use(
+    '/recetas',
+    requireAuthWithTenant,
+    requirePlanFeature('recetas'),
+    requirePermissionByMethod({ ver: ['recetas.ver', 'recetas.editar'] }),
+    recetasRoutes
+);
 router.use(
     '/modificadores',
     requireAuthWithTenant,
@@ -183,6 +214,9 @@ router.use(
     restrictSuperadminToAdmin,
     costeoTenantContext,
     requirePlanFeature('costeo'),
+    // costeo.ver para leer, costeo.editar para crear/modificar/borrar (el superadmin pasa siempre).
+    // La pantalla de productos ya tolera el 403 de costeo y oculta esa sección.
+    requirePermissionByMethod({ ver: ['costeo.ver', 'costeo.editar'], editar: ['costeo.editar'] }),
     costeoRoutes
 );
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
@@ -200,7 +234,9 @@ router.use('/pos', requireAuthWithTenant, requirePlanFeature('ventas'), requireP
 // usuario autenticado del tenant (sin requirePermission en esas rutas). Si se
 // agregan acciones que sí requieren un permiso específico, ese chequeo debe
 // añadirse en SyncService antes de despachar, no asumirse aquí.
-router.use('/sync', requireAuthWithTenant, syncRoutes);
+// Solo admin: el pull incluye password_hash de los usuarios del tenant (login local del desktop)
+// y el push muta pedidos; el terminal se vincula con la cuenta del dueño/admin.
+router.use('/sync', requireAuthWithTenant, requireRole('admin'), syncRoutes);
 
 // --- RUTAS API ---
 router.use(

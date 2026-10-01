@@ -33,11 +33,12 @@ function manejarErrorUpload(err, req, res, next) {
 }
 
 // GET /configuracion - Vista principal
-router.get('/', ConfiguracionController.index);
+router.get('/', requirePermission('configuracion.ver', 'configuracion.editar'), ConfiguracionController.index);
 
-// POST /configuracion - Guardar config
+// POST /configuracion - Guardar config (el permiso va antes del upload: no se procesan archivos sin autorización)
 router.post(
     '/',
+    requirePermission('configuracion.editar'),
     upload.fields([
         { name: 'logo', maxCount: 1 },
         { name: 'qr', maxCount: 1 }
@@ -48,8 +49,21 @@ router.post(
 );
 
 // Helpers
-router.get('/impresoras', ConfiguracionController.getPrinters);
-router.get('/preview', ConfiguracionController.preview);
+// /impresoras la consume el POS/Mesas al imprimir el comprobante (pos_qz.js): quien factura la necesita.
+router.get(
+    '/impresoras',
+    requirePermission(
+        'configuracion.ver',
+        'configuracion.editar',
+        'pos.ver',
+        'pos.vender',
+        'mesas.facturar',
+        'facturas.crear',
+        'facturas.ver'
+    ),
+    ConfiguracionController.getPrinters
+);
+router.get('/preview', requirePermission('configuracion.ver', 'configuracion.editar'), ConfiguracionController.preview);
 
 // Alertas proactivas (tarjeta aparte dentro de la misma vista de configuración)
 router.put('/alertas', requirePermission('alertas.configurar'), ConfiguracionController.saveAlertas);

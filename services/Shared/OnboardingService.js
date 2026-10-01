@@ -62,6 +62,11 @@ class OnboardingService {
         if (!nombre || !nombre.trim()) {
             throw new Error('El nombre del local es obligatorio');
         }
+        if (nombre.trim().length > 100 || /[<>\\]/.test(nombre) || Array.from(nombre).some(c => c.charCodeAt(0) < 32)) {
+            throw new Error(
+                'El nombre del local no puede superar 100 caracteres ni contener < > \\ o caracteres de control'
+            );
+        }
 
         const slug = await generarSlugUnico(nombre);
         const tenant = await TenantCRUDService.createTenant({

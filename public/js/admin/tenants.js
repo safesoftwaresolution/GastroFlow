@@ -96,6 +96,11 @@ async function toggleTenantStatus(id, activo) {
     }
 }
 
+document.addEventListener('click', e => {
+    const btn = e.target.closest('.js-eliminar-tenant');
+    if (btn) confirmDeleteTenant(btn.dataset.id, btn.dataset.nombre);
+});
+
 async function confirmDeleteTenant(id, name) {
     if (id == 1) {
         return Swal.fire('Acción denegada', 'No se permite eliminar el restaurante principal.', 'error');

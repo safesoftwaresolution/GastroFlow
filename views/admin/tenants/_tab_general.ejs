@@ -96,8 +96,8 @@
                     permanentemente (Atención: esto borrará TODO: pedidos, usuarios,
                     usuarios, y configuraciones).</p>
             </div>
-            <button class="btn btn-danger btn-sm px-3"
-                onclick="confirmDeleteTenant(<%= selectedTenant.id %>, '<%= selectedTenant.nombre %>')">
+            <button class="btn btn-danger btn-sm px-3 js-eliminar-tenant"
+                data-id="<%= selectedTenant.id %>" data-nombre="<%= selectedTenant.nombre %>">
                 <i class="bi bi-trash3-fill me-2"></i>Eliminar Restaurante
             </button>
         </div>

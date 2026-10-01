@@ -106,7 +106,7 @@ class FacturaElectronicaRepository {
                     c.direccion AS cliente_direccion, c.telefono AS cliente_telefono,
                     t.nombre AS tenant_nombre, t.nit, t.direccion AS tenant_direccion, t.ciudad, t.regimen_fiscal
              FROM facturas f
-             JOIN clientes c ON f.cliente_id = c.id
+             JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
              JOIN tenants t ON f.tenant_id = t.id
              WHERE f.id = ? AND f.tenant_id = ?`,
             [facturaId, tenantId]
@@ -120,8 +120,9 @@ class FacturaElectronicaRepository {
                     d.base_gravable, d.tasa_impuesto, d.valor_impuesto,
                     COALESCE(p.nombre, s.nombre) AS nombre
              FROM detalle_factura d
-             LEFT JOIN productos p ON d.producto_id = p.id
-             LEFT JOIN servicios s ON d.servicio_id = s.id
+             JOIN facturas fx ON fx.id = d.factura_id
+             LEFT JOIN productos p ON d.producto_id = p.id AND p.tenant_id = fx.tenant_id
+             LEFT JOIN servicios s ON d.servicio_id = s.id AND s.tenant_id = fx.tenant_id
              WHERE d.factura_id = ?`,
             [facturaId]
         );

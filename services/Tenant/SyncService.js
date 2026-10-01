@@ -52,6 +52,9 @@ const TENANT_INCREMENTAL_TABLES = [
     'parametros'
 ];
 
+// Columnas de la fila tenants que nunca salen por /sync/pull (facturación Wompi).
+const TENANT_COLUMNAS_SENSIBLES = ['wompi_payment_source_id'];
+
 // Tablas del tenant sin updated_at: completas cada vez, filtradas por tenant_id (chicas).
 const TENANT_FULL_TABLES = ['tenant_addons'];
 
@@ -73,7 +76,14 @@ class SyncService {
         // La fila del propio tenant siempre va completa: mesas/productos/etc.
         // tienen FOREIGN KEY (tenant_id) REFERENCES tenants(id), así que sin
         // esto el INSERT local fallaría por integridad referencial.
-        data.tenants = await SyncRepository.findTenantRow(tenantId);
+        // Sin datos de cobro ni tokens de verificación: el desktop no los necesita.
+        data.tenants = (await SyncRepository.findTenantRow(tenantId)).map(row => {
+            const copy = { ...row };
+            for (const col of TENANT_COLUMNAS_SENSIBLES) {
+                delete copy[col];
+            }
+            return copy;
+        });
 
         for (const table of GLOBAL_FULL_TABLES) {
             data[table] = await SyncRepository.findAll(table);
@@ -84,6 +94,14 @@ class SyncService {
         for (const table of TENANT_INCREMENTAL_TABLES) {
             data[table] = await SyncRepository.findChangedByTenant(table, tenantId, since);
         }
+        // password_hash sí viaja (el login local del desktop lo necesita), pero los tokens de
+        // verificación de email no.
+        data.usuarios = data.usuarios.map(row => {
+            const copy = { ...row };
+            delete copy.verificacion_token_hash;
+            delete copy.verificacion_token_expira;
+            return copy;
+        });
         for (const table of TENANT_FULL_TABLES) {
             data[table] = await SyncRepository.findAllByTenant(table, tenantId);
         }
@@ -117,7 +135,9 @@ class SyncService {
         }
 
         try {
-            const result = await handler({ tenantId, ...(params || {}) });
+            // tenantId va al final: params viene del cliente y nunca debe poder sustituir al tenant
+            // autenticado (si no, un usuario del tenant A operaría sobre pedidos del tenant B).
+            const result = await handler({ ...(params || {}), tenantId });
             const serverId = result?.id ?? result?.pedido?.id ?? null;
             await SyncRepository.logOperation(tenantId, clientUuid, action, 'applied', serverId);
             return { clientUuid, status: 'applied', serverId, result };

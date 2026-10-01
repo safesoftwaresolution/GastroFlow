@@ -26,8 +26,8 @@ class VentaRepository {
                    (SELECT COALESCE(SUM(df.subtotal), 0) FROM detalle_factura df WHERE df.factura_id = f.id AND (df.es_servicio = 0 OR df.es_servicio IS NULL)) AS total_productos
             FROM facturas f
             JOIN tenants t ON f.tenant_id = t.id
-            LEFT JOIN clientes c ON f.cliente_id = c.id
-            LEFT JOIN eventos e ON f.evento_id = e.id
+            LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+            LEFT JOIN eventos e ON f.evento_id = e.id AND e.tenant_id = f.tenant_id
             LEFT JOIN facturas_electronicas fe ON fe.factura_id = f.id
             WHERE 1=1
         `;
@@ -90,8 +90,8 @@ class VentaRepository {
                 CASE WHEN f.evento_id IS NOT NULL THEN CONCAT('Evento: ', e.nombre) ELSE 'Venta diaria' END AS tipo_venta
             FROM facturas f
             JOIN tenants t ON f.tenant_id = t.id
-            LEFT JOIN clientes c ON f.cliente_id = c.id
-            LEFT JOIN eventos e ON f.evento_id = e.id
+            LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+            LEFT JOIN eventos e ON f.evento_id = e.id AND e.tenant_id = f.tenant_id
             WHERE 1=1
         `;
         const params = [];

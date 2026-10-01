@@ -185,6 +185,63 @@ describe('middleware/auth', () => {
         });
     });
 
+    describe('requirePermissionByMethod', () => {
+        const { requirePermissionByMethod } = require('../../../middleware/auth');
+        const jsonReq = overrides => createReq({ headers: { accept: 'application/json' }, ...overrides });
+
+        it('en GET exige alguno de `ver`; en escritura exige alguno de `editar`', () => {
+            authService.hasPermission.mockImplementation((perms, p) => perms.includes(p));
+            const guard = requirePermissionByMethod({
+                ver: ['costeo.ver', 'costeo.editar'],
+                editar: ['costeo.editar']
+            });
+
+            const soloVer = { id: 1, rol: 'cajero', permisos: ['costeo.ver'] };
+
+            const nextGet = jest.fn();
+            guard(jsonReq({ method: 'GET', user: soloVer }), createRes(), nextGet);
+            expect(nextGet).toHaveBeenCalled();
+
+            const resPost = createRes();
+            const nextPost = jest.fn();
+            guard(jsonReq({ method: 'POST', user: soloVer }), resPost, nextPost);
+            expect(resPost.status).toHaveBeenCalledWith(403);
+            expect(nextPost).not.toHaveBeenCalled();
+
+            const nextEditor = jest.fn();
+            guard(
+                jsonReq({ method: 'DELETE', user: { id: 2, rol: 'admin', permisos: ['costeo.editar'] } }),
+                createRes(),
+                nextEditor
+            );
+            expect(nextEditor).toHaveBeenCalled();
+        });
+
+        it('rechaza lecturas de quien no tiene ningún permiso del módulo', () => {
+            authService.hasPermission.mockImplementation((perms, p) => perms.includes(p));
+            const guard = requirePermissionByMethod({ ver: ['inventario.ver'] });
+            const res = createRes();
+            const next = jest.fn();
+            guard(jsonReq({ method: 'GET', user: { id: 3, rol: 'mesero', permisos: ['mesas.ver'] } }), res, next);
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('si no se define `editar`, las escrituras pasan (las rutas llevan su propio permiso)', () => {
+            const guard = requirePermissionByMethod({ ver: ['inventario.ver'] });
+            const next = jest.fn();
+            guard(jsonReq({ method: 'POST', user: { id: 3, rol: 'mesero', permisos: [] } }), createRes(), next);
+            expect(next).toHaveBeenCalled();
+        });
+
+        it('el superadmin pasa siempre', () => {
+            const guard = requirePermissionByMethod({ ver: ['costeo.ver'], editar: ['costeo.editar'] });
+            const next = jest.fn();
+            guard(jsonReq({ method: 'DELETE', user: { id: 9, rol: 'superadmin', permisos: [] } }), createRes(), next);
+            expect(next).toHaveBeenCalled();
+        });
+    });
+
     describe('restrictSuperadminToAdmin', () => {
         it('llama next si el usuario no es superadmin', () => {
             const req = createReq({ user: { rol: 'admin' }, baseUrl: '/admin', path: '/ventas' });

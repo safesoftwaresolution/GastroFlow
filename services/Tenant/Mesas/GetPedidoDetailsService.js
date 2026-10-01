@@ -10,7 +10,7 @@ class GetPedidoDetailsService {
             `
             SELECT p.*, c.nombre AS cliente_nombre 
             FROM pedidos p 
-            LEFT JOIN clientes c ON c.id = p.cliente_id 
+            LEFT JOIN clientes c ON c.id = p.cliente_id AND c.tenant_id = p.tenant_id
             WHERE p.id = ? AND p.tenant_id = ?`,
             [pedidoId, tenantId]
         );
@@ -25,12 +25,12 @@ class GetPedidoDetailsService {
             SELECT i.*,
                    COALESCE(p.nombre, s.nombre) AS producto_nombre
             FROM pedido_items i
-            LEFT JOIN productos p ON p.id = i.producto_id
-            LEFT JOIN servicios s ON s.id = i.servicio_id
+            LEFT JOIN productos p ON p.id = i.producto_id AND p.tenant_id = ?
+            LEFT JOIN servicios s ON s.id = i.servicio_id AND s.tenant_id = ?
             WHERE i.pedido_id = ?
             ORDER BY i.created_at ASC
         `,
-            [pedidoId]
+            [tenantId, tenantId, pedidoId]
         );
 
         if (items.length > 0) {

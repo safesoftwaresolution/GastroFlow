@@ -9,6 +9,7 @@ const BonoService = require('../BonoService');
 const InventarioService = require('../InventarioService');
 const TaxService = require('../../Shared/TaxService');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
+const TenantOwnership = require('../TenantOwnership');
 
 class FacturarPedidoService {
     /**
@@ -25,6 +26,8 @@ class FacturarPedidoService {
         efectivoRecibido = null,
         codigoBono = null
     }) {
+        await TenantOwnership.clientes(tenantId, cliente_id);
+
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();

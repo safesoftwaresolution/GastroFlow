@@ -108,10 +108,10 @@
                                 <td><%= t.ciudad || '—' %></td>
                                 <td><%= new Date(t.created_at).toLocaleDateString('es-CO') %></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-success" onclick="aprobarLocal(<%= t.id %>, '<%= (t.nombre || '').replace(/'/g, "\\'") %>')">
+                                    <button class="btn btn-sm btn-success js-aprobar-local" data-id="<%= t.id %>" data-nombre="<%= t.nombre || '' %>">
                                         <i class="bi bi-check-lg"></i> Aprobar
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="rechazarLocal(<%= t.id %>, '<%= (t.nombre || '').replace(/'/g, "\\'") %>')">
+                                    <button class="btn btn-sm btn-outline-danger js-rechazar-local" data-id="<%= t.id %>" data-nombre="<%= t.nombre || '' %>">
                                         <i class="bi bi-x-lg"></i> Rechazar
                                     </button>
                                 </td>

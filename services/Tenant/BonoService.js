@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const BonoRepository = require('../../repositories/Tenant/BonoRepository');
 const { hoyColombia } = require('../../utils/dateHelpers');
 const BonoPlantillas = require('./BonoPlantillas');
+const TenantOwnership = require('./TenantOwnership');
 
 // Sin 0/O ni 1/I/L: se leen en voz alta o se escriben a mano en el recibo sin
 // ambigüedad (mismo criterio que los tokens de mesa/QR ya usan en el proyecto).
@@ -53,6 +54,8 @@ class BonoService {
         if (fecha_vencimiento && Number.isNaN(new Date(fecha_vencimiento).getTime())) {
             throw new Error('Fecha de vencimiento inválida');
         }
+
+        await TenantOwnership.clientes(tenantId, cliente_id);
 
         const codigo = await BonoService._generarCodigoUnico(tenantId);
         const tokenPublico = generarTokenPublico();
