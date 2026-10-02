@@ -76,6 +76,21 @@ describe('ReporteMensualService.generarPdfReporte', () => {
         });
         expectValidPdf(conDatos);
 
+        const conGraficas = await ReporteMensualService.generarPdfReporte(tenant, 'enero 2026', {
+            totalMes: 4500000,
+            facturasMes: 32,
+            topProductos: [],
+            porCategoria: [{ categoria_nombre: 'Comidas', facturas_count: 32, total_ventas: 4500000 }],
+            ventasDiarias: Array.from({ length: 31 }, (_, i) => ({
+                fecha: `2026-01-${String(i + 1).padStart(2, '0')}`,
+                cantidad_facturas: 1,
+                total_ventas: i % 3 === 0 ? 0 : 150000 * (i + 1)
+            })),
+            pagos: { efectivo: 3000000, transferencia: 1000000, serviciosExternos: 500000 }
+        });
+        expectValidPdf(conGraficas);
+        expect(conGraficas.length).toBeGreaterThan(conDatos.length);
+
         const sinDatos = await ReporteMensualService.generarPdfReporte(tenant, 'febrero 2026', {
             totalMes: 0,
             facturasMes: 0,

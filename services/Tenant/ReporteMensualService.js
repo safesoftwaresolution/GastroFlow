@@ -7,9 +7,12 @@ const {
     productosTable,
     categoriaTable
 } = require('../Shared/PdfDocHelpers');
+const PdfCharts = require('../Shared/PdfCharts');
 const MailerService = require('../Shared/MailerService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const TenantService = require('../Admin/TenantService');
+
+const COLOR_REPORTE = '#28a745';
 
 class ReporteMensualService {
     /**
@@ -51,20 +54,79 @@ class ReporteMensualService {
      */
     static async obtenerEstadisticas(tenantId, { firstDay, lastDayStr }) {
         const filtro = { desde: firstDay, hasta: lastDayStr };
-        const [totalMes, facturasMes, topProductos, porCategoria] = await Promise.all([
+        const [totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos] = await Promise.all([
             StatsRepository.getTotalSales(tenantId, filtro),
             StatsRepository.getTotalInvoices(tenantId, filtro),
             StatsRepository.getTopProducts(tenantId, 5, filtro),
-            StatsRepository.getSalesByCategory(tenantId, filtro)
+            StatsRepository.getSalesByCategory(tenantId, filtro),
+            StatsRepository.getDailySalesRange(tenantId, firstDay, lastDayStr),
+            StatsRepository.getTotalsByPaymentMethod(tenantId, filtro)
         ]);
-        return { totalMes, facturasMes, topProductos, porCategoria };
+        return { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos };
+    }
+
+    /** Gráfica de ventas por cada día del mes (misma serie que el dashboard). */
+    static ventasDiariasSection(ventasDiarias) {
+        if (!ventasDiarias || ventasDiarias.length === 0) {
+            return [];
+        }
+        return [
+            sectionTitle('Ventas por Día', COLOR_REPORTE),
+            { svg: PdfCharts.ventasDiariasSvg(ventasDiarias, { color: COLOR_REPORTE }), width: 515 }
+        ];
+    }
+
+    /** Dona + leyenda de métodos de pago (efectivo / transferencia / servicios externos). */
+    static metodosPagoSection(pagos) {
+        if (!pagos) {
+            return [];
+        }
+        const segmentos = [
+            { label: 'Efectivo', value: pagos.efectivo || 0, color: COLOR_REPORTE },
+            { label: 'Transferencia', value: pagos.transferencia || 0, color: '#9aa7bd' },
+            { label: 'Servicios Ext.', value: pagos.serviciosExternos || 0, color: '#3257b0' }
+        ];
+        const total = segmentos.reduce((s, seg) => s + seg.value, 0);
+        const porcentaje = v => (total ? `${((v / total) * 100).toFixed(1).replace('.', ',')}%` : '0%');
+
+        const leyenda = segmentos.map(seg => [
+            { canvas: [{ type: 'rect', x: 0, y: 1, w: 9, h: 9, color: seg.color }], width: 9 },
+            { text: seg.label, fontSize: 9, bold: true, width: 85 },
+            { text: formatMoney(seg.value), fontSize: 9, alignment: 'right', width: 80 },
+            { text: porcentaje(seg.value), fontSize: 9, color: '#64748b', alignment: 'right', width: 40 }
+        ]);
+
+        return [
+            sectionTitle('Métodos de Pago', COLOR_REPORTE),
+            {
+                columns: [
+                    { svg: PdfCharts.donaSvg(segmentos), width: 130 },
+                    {
+                        stack: leyenda.map(columns => ({ columns, columnGap: 8, margin: [0, 0, 0, 10] })),
+                        margin: [20, 35, 0, 0]
+                    }
+                ]
+            }
+        ];
+    }
+
+    /** Barras de ventas por categoría (mismo gráfico que el dashboard). */
+    static categoriasChartSection(porCategoria) {
+        if (!porCategoria || porCategoria.length === 0) {
+            return [];
+        }
+        const items = porCategoria.map(c => ({
+            etiqueta: c.categoria_nombre || 'Sin categoría',
+            valor: Number(c.total_ventas) || 0
+        }));
+        return [{ svg: PdfCharts.barrasSvg(items, { color: COLOR_REPORTE }), width: 515, margin: [0, 0, 0, 10] }];
     }
 
     /**
      * Arma el docDefinition de pdfmake con las estadísticas del mes.
      */
     static buildDocDefinition(tenant, mesNombre, stats) {
-        const { totalMes, facturasMes, topProductos, porCategoria } = stats;
+        const { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos } = stats;
         const mes = mesNombre.toUpperCase();
 
         return {
@@ -85,9 +147,12 @@ class ReporteMensualService {
                     columnGap: 16,
                     margin: [0, 0, 0, 10]
                 },
-                sectionTitle('Top 5 Productos más Vendidos', '#28a745'),
+                ...this.ventasDiariasSection(ventasDiarias),
+                ...this.metodosPagoSection(pagos),
+                sectionTitle('Top 5 Productos más Vendidos', COLOR_REPORTE),
                 productosTable(topProductos),
-                sectionTitle('Ventas por Categoría', '#28a745'),
+                sectionTitle('Ventas por Categoría', COLOR_REPORTE),
+                ...this.categoriasChartSection(porCategoria),
                 categoriaTable(porCategoria),
                 footerText('Este reporte fue generado de forma automática.')
             ]

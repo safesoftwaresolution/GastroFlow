@@ -57,6 +57,10 @@ class StatsRepository {
         return SalesStatsRepository.getDailySales(tenantId, days);
     }
 
+    static async getDailySalesRange(tenantId, desde, hasta) {
+        return SalesStatsRepository.getDailySalesRange(tenantId, desde, hasta);
+    }
+
     static async getMonthlySales(tenantId, months = 3, options = {}) {
         return SalesStatsRepository.getMonthlySales(tenantId, months, options);
     }

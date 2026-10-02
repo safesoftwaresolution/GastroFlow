@@ -215,6 +215,35 @@ class SalesStatsRepository {
         return list;
     }
 
+    /**
+     * Ventas por día Colombia entre dos fechas (YYYY-MM-DD, inclusivas), con los
+     * días sin ventas en cero para que la serie cubra todo el rango.
+     */
+    static async getDailySalesRange(tenantId, desde, hasta) {
+        const { utcDesde, utcHasta } = rangoUtcColombia(desde, hasta);
+        const [result] = await db.query(
+            `SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha,
+                    COUNT(*) AS cantidad_facturas,
+                    SUM(total) AS total_ventas
+             FROM facturas
+             WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+             GROUP BY ${SQL_COLOMBIA.dia('fecha')}`,
+            [tenantId, utcDesde, utcHasta]
+        );
+
+        const salesMap = new Map(result.map(row => [toFechaDia(row.fecha), row]));
+        const list = [];
+        for (let dia = desde; dia <= hasta; dia = sumarDias(dia, 1)) {
+            const row = salesMap.get(dia);
+            list.push({
+                fecha: dia,
+                cantidad_facturas: parseInt(row?.cantidad_facturas || 0),
+                total_ventas: parseFloat(row?.total_ventas || 0)
+            });
+        }
+        return list;
+    }
+
     static async getMonthlySales(tenantId, months = 3, options = {}) {
         let query = `
             SELECT 

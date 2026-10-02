@@ -2,9 +2,10 @@
  * PdfMaker - Genera PDFs a partir de un docDefinition de pdfmake.
  *
  * Reemplaza a PdfBrowser.js (Chromium headless vía Puppeteer). Los 3 reportes
- * que consumían PdfBrowser son texto/tablas puros (sin imágenes, logos ni
- * charts), así que no hace falta un motor de renderizado HTML completo -- eso
- * es lo que costaba la RAM (un Chromium por PDF).
+ * que consumían PdfBrowser son texto/tablas (sin imágenes ni logos), así que no
+ * hace falta un motor de renderizado HTML completo -- eso es lo que costaba la
+ * RAM (un Chromium por PDF). Las gráficas van como SVG inline (`{ svg }`, ver
+ * PdfCharts.js), que pdfmake dibuja de forma nativa.
  *
  * pdfmake usa las fuentes standard Roboto que trae el propio paquete (no hace
  * falta descargar ni embeber fuentes propias); se registran una sola vez de
