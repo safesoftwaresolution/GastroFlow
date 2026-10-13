@@ -30,19 +30,24 @@ class ReportesController {
                 anioDesde,
                 mesHasta,
                 anioHasta,
+                historico,
                 incluirResumenMensual,
                 incluirTopProductos,
                 incluirDesglosePorMes
             } = req.query;
+            const esHistorico = historico === '1' || historico === 'true';
 
-            if (!mesDesde || !anioDesde) {
+            if (!esHistorico && (!mesDesde || !anioDesde)) {
                 return res.status(400).json({ error: 'Mes y año iniciales son requeridos.' });
             }
 
-            const mesDesdeInt = parseInt(mesDesde, 10);
-            const anioDesdeInt = parseInt(anioDesde, 10);
-            const mesHastaInt = mesHasta ? parseInt(mesHasta, 10) : mesDesdeInt;
-            const anioHastaInt = anioHasta ? parseInt(anioHasta, 10) : anioDesdeInt;
+            // En modo histórico el rango real lo calcula el servicio (primera venta -> hoy);
+            // estos valores solo pasan la validación.
+            const hoy = new Date();
+            const mesDesdeInt = esHistorico ? hoy.getMonth() + 1 : parseInt(mesDesde, 10);
+            const anioDesdeInt = esHistorico ? hoy.getFullYear() : parseInt(anioDesde, 10);
+            const mesHastaInt = mesHasta && !esHistorico ? parseInt(mesHasta, 10) : mesDesdeInt;
+            const anioHastaInt = anioHasta && !esHistorico ? parseInt(anioHasta, 10) : anioDesdeInt;
 
             if (isNaN(mesDesdeInt) || mesDesdeInt < 1 || mesDesdeInt > 12) {
                 return res.status(400).json({ error: 'Mes inicial inválido.' });
@@ -72,6 +77,7 @@ class ReportesController {
                 anioDesde: anioDesdeInt,
                 mesHasta: mesHastaInt,
                 anioHasta: anioHastaInt,
+                historico: esHistorico,
                 incluirResumenMensual,
                 incluirTopProductos,
                 incluirDesglosePorMes

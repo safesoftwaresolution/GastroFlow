@@ -101,24 +101,32 @@ class PerfilController {
         try {
             const tenant = req.tenant;
             const { mes, anio } = req.body;
+            // mes = 'historico' -> todo el periodo desde la primera venta hasta hoy
+            const historico = String(mes) === 'historico';
 
-            console.log(`Solicitud de reporte ${mes || 'actual'}/${anio || ''} para ${tenant.nombre}...`);
+            console.log(
+                `Solicitud de reporte ${historico ? 'histórico' : `${mes || 'actual'}/${anio || ''}`} para ${tenant.nombre}...`
+            );
 
             // Enviamos el reporte especificado (o el actual como fallback de prueba)
             const result = await ReporteMensualService.generarYEnviar(tenant, {
-                mes: mes,
-                anio: anio,
-                testMesActual: !mes && !anio
+                historico,
+                mes: historico ? null : mes,
+                anio: historico ? null : anio,
+                testMesActual: !historico && !mes && !anio
             });
 
-            const msg = `Reporte de ${mes ? 'mes solicitado' : 'mes actual'} enviado con éxito vía Email.`;
+            let msg = `Reporte de ${mes ? 'mes solicitado' : 'mes actual'} enviado con éxito vía Email.`;
+            if (historico) {
+                msg = 'Reporte histórico (desde el inicio) enviado con éxito vía Email.';
+            }
 
             res.json({
                 success: true,
                 message: msg,
                 // Forzamos conversión a Buffer de Node para asegurar un Base64 limpio
                 pdfBase64: result.pdfBuffer ? Buffer.from(result.pdfBuffer).toString('base64') : null,
-                fileName: `Reporte_${mes || 'Actual'}_${anio || ''}.pdf`
+                fileName: historico ? 'Reporte_Historico.pdf' : `Reporte_${mes || 'Actual'}_${anio || ''}.pdf`
             });
         } catch (error) {
             console.error('Error enviando reporte de prueba:', error);

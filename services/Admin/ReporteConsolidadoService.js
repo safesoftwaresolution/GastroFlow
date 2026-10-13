@@ -10,10 +10,39 @@ const {
     zebraTableLayout,
     tableHeaderCell,
     tableCell,
-    emptyRow
+    emptyRow,
+    medioPagoTable
 } = require('../Shared/PdfDocHelpers');
 const TenantService = require('./TenantService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
+// Mismas secciones gráficas (dona de pagos, ventas diarias, barras por categoría) que el
+// reporte descargable de cada tenant, para que ambos PDF no se desfasen.
+const ReporteMensualService = require('../Tenant/ReporteMensualService');
+const { hoyColombia } = require('../../utils/dateHelpers');
+
+// Por encima de este rango la línea diaria ya no se lee bien: se omite.
+const MAX_DIAS_GRAFICA_DIARIA = 62;
+
+function diasEntre(desde, hasta) {
+    const [y1, m1, d1] = desde.split('-').map(Number);
+    const [y2, m2, d2] = hasta.split('-').map(Number);
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000) + 1;
+}
+
+/** Suma las filas de getSalesByPaymentMethod de varios tenants por forma_pago. */
+function sumarMedios(listas) {
+    const mapa = new Map();
+    for (const lista of listas) {
+        for (const r of lista || []) {
+            const clave = r.forma_pago || '';
+            const actual = mapa.get(clave) || { forma_pago: clave, cantidad: 0, total: 0 };
+            actual.cantidad += Number(r.cantidad) || 0;
+            actual.total += Number(r.total) || 0;
+            mapa.set(clave, actual);
+        }
+    }
+    return [...mapa.values()];
+}
 
 /**
  * Interpreta flags que llegan como string desde query params ('1'/'0', 'true'/'false')
@@ -31,7 +60,7 @@ function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
     const content = [
         { text: 'Reporte Consolidado de Ventas', alignment: 'center', fontSize: 20, bold: true, color: '#4f46e5' },
         {
-            text: `Resumen Mensual de Operaciones · ${mes}`,
+            text: `Resumen de Operaciones · ${mes}`,
             alignment: 'center',
             fontSize: 12,
             color: '#64748b',
@@ -103,6 +132,11 @@ function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
         table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto'], body: rBody },
         layout: zebraTableLayout()
     });
+
+    // Medios de pago de todo el periodo (suma de todos los restaurantes incluidos)
+    const porMedioGlobal = sumarMedios(activeTenantsData.map(d => d.porMedio));
+    content.push(sectionTitle('Facturas por Medio de Pago (global)', '#4f46e5'));
+    content.push(medioPagoTable(porMedioGlobal));
     content.push(
         footerText('Este reporte consolidado fue generado de forma automática por el panel de administración.')
     );
@@ -118,7 +152,7 @@ function buildTenantSectionContent(d, mes, mostrarTopProductos) {
                 {
                     text: [
                         { text: `${d.tenant.nombre}\n`, fontSize: 16, bold: true, color: '#10b981' },
-                        { text: `Reporte Detallado Mensual · ${mes}`, fontSize: 9, color: '#64748b' }
+                        { text: `Reporte Detallado · ${mes}`, fontSize: 9, color: '#64748b' }
                     ]
                 },
                 {
@@ -154,12 +188,18 @@ function buildTenantSectionContent(d, mes, mostrarTopProductos) {
         margin: [0, 0, 0, 12]
     });
 
+    content.push(...ReporteMensualService.ventasDiariasSection(d.ventasDiarias));
+    content.push(...ReporteMensualService.metodosPagoSection(d.pagos));
+    content.push(sectionTitle('Facturas por Medio de Pago', '#10b981'));
+    content.push(medioPagoTable(d.porMedio));
+
     if (mostrarTopProductos) {
         content.push(sectionTitle('Top 5 Productos más Vendidos', '#10b981'));
         content.push(productosTable(d.topProductos));
     }
 
     content.push(sectionTitle('Ventas por Categoría', '#10b981'));
+    content.push(...ReporteMensualService.categoriasChartSection(d.porCategoria));
     content.push(categoriaTable(d.porCategoria));
 
     if (d.desglosePorMes && d.desglosePorMes.length > 0) {
@@ -191,6 +231,7 @@ class ReporteConsolidadoService {
      * @param {number} options.anioDesde - Año inicial
      * @param {number} [options.mesHasta] - Mes final (1-12), por defecto igual a mesDesde
      * @param {number} [options.anioHasta] - Año final, por defecto igual a anioDesde
+     * @param {boolean} [options.historico] - Ignora el rango de meses y usa desde la primera venta hasta hoy (default false).
      * @param {boolean} [options.incluirResumenMensual] - Tabla "Total por Mes" en la portada. Solo aplica a un tenant específico (default true).
      * @param {boolean} [options.incluirTopProductos] - Tabla de productos más vendidos por restaurante (default true).
      * @param {boolean} [options.incluirDesglosePorMes] - Desglosa el top de productos mes a mes en vez de solo el total del rango. Solo aplica a un tenant específico (default false).
@@ -198,10 +239,41 @@ class ReporteConsolidadoService {
      */
     static async generarReporteConsolidado(options = {}) {
         const date = new Date();
-        const targetMesDesde = options.mesDesde ? parseInt(options.mesDesde, 10) : date.getMonth() + 1;
-        const targetAnioDesde = options.anioDesde ? parseInt(options.anioDesde, 10) : date.getFullYear();
-        const targetMesHasta = options.mesHasta ? parseInt(options.mesHasta, 10) : targetMesDesde;
-        const targetAnioHasta = options.anioHasta ? parseInt(options.anioHasta, 10) : targetAnioDesde;
+        const historico = toBool(options.historico, false);
+
+        // Obtener los tenants a incluir: uno específico, o todos los activos
+        const allTenants = await TenantService.getAllTenants();
+        const esEspecifico = !!(options.tenantId && options.tenantId !== 'all');
+        let activeTenants;
+        if (esEspecifico) {
+            const tenant = (allTenants || []).find(t => Number(t.id) === Number(options.tenantId));
+            if (!tenant) {
+                throw new Error('Restaurante no encontrado.');
+            }
+            activeTenants = [tenant];
+        } else {
+            activeTenants = (allTenants || []).filter(t => t.activo);
+        }
+
+        let targetMesDesde = options.mesDesde ? parseInt(options.mesDesde, 10) : date.getMonth() + 1;
+        let targetAnioDesde = options.anioDesde ? parseInt(options.anioDesde, 10) : date.getFullYear();
+        let targetMesHasta = options.mesHasta ? parseInt(options.mesHasta, 10) : targetMesDesde;
+        let targetAnioHasta = options.anioHasta ? parseInt(options.anioHasta, 10) : targetAnioDesde;
+
+        if (historico) {
+            // Desde la primera venta (la más antigua entre los restaurantes incluidos) hasta hoy.
+            const primeras = await Promise.all(
+                activeTenants.map(t => StatsRepository.getPrimeraFechaVenta(t.id).catch(() => null))
+            );
+            const hoy = hoyColombia();
+            const primera = primeras.filter(Boolean).sort()[0] || hoy;
+            const [yDesde, mDesde] = primera.split('-').map(Number);
+            const [yHasta, mHasta] = hoy.split('-').map(Number);
+            targetAnioDesde = yDesde;
+            targetMesDesde = mDesde;
+            targetAnioHasta = yHasta;
+            targetMesHasta = mHasta;
+        }
 
         // Validar que no sea una fecha en el futuro
         const requestDate = new Date(targetAnioHasta, targetMesHasta - 1, 1);
@@ -221,27 +293,17 @@ class ReporteConsolidadoService {
             year: 'numeric'
         });
         const mismoMes = targetMesDesde === targetMesHasta && targetAnioDesde === targetAnioHasta;
-        const mesNombre = mismoMes
+        let mesNombre = mismoMes
             ? desdeNombre
             : `${desdeNombre} - ${new Date(targetAnioHasta, targetMesHasta - 1, 1).toLocaleString('es-CO', { month: 'long', year: 'numeric' })}`;
+        if (historico) {
+            mesNombre = `Desde el inicio (${mesNombre})`;
+        }
 
         console.log(
             `[CONSOLIDADO]: Generando reporte consolidado para ${mesNombre.toUpperCase()} (Rango: ${firstDay} a ${lastDayStr}, tenant: ${options.tenantId || 'all'})`
         );
-
-        // Obtener los tenants a incluir: uno específico, o todos los activos
-        const allTenants = await TenantService.getAllTenants();
-        const esEspecifico = !!(options.tenantId && options.tenantId !== 'all');
-        let activeTenants;
-        if (esEspecifico) {
-            const tenant = (allTenants || []).find(t => Number(t.id) === Number(options.tenantId));
-            if (!tenant) {
-                throw new Error('Restaurante no encontrado.');
-            }
-            activeTenants = [tenant];
-        } else {
-            activeTenants = (allTenants || []).filter(t => t.activo);
-        }
+        const conGraficaDiaria = diasEntre(firstDay, lastDayStr) <= MAX_DIAS_GRAFICA_DIARIA;
 
         // El desglose (resumen mensual, top de productos, desglose mes a mes) solo tiene
         // sentido cuando se exporta un restaurante específico -- el consolidado de "todos"
@@ -256,16 +318,28 @@ class ReporteConsolidadoService {
         const activeTenantsData = await Promise.all(
             activeTenants.map(async tenant => {
                 try {
-                    const [totalMes, facturasMes, topProductos, porCategoria] = await Promise.all([
-                        StatsRepository.getTotalSales(tenant.id, { desde: firstDay, hasta: lastDayStr }),
-                        StatsRepository.getTotalInvoices(tenant.id, { desde: firstDay, hasta: lastDayStr }),
-                        incluirTopProductos
-                            ? StatsRepository.getTopProducts(tenant.id, 5, { desde: firstDay, hasta: lastDayStr })
-                            : [],
-                        StatsRepository.getSalesByCategory(tenant.id, { desde: firstDay, hasta: lastDayStr })
-                    ]);
+                    const filtro = { desde: firstDay, hasta: lastDayStr };
+                    const [totalMes, facturasMes, topProductos, porCategoria, pagos, porMedio, ventasDiarias] =
+                        await Promise.all([
+                            StatsRepository.getTotalSales(tenant.id, filtro),
+                            StatsRepository.getTotalInvoices(tenant.id, filtro),
+                            incluirTopProductos ? StatsRepository.getTopProducts(tenant.id, 5, filtro) : [],
+                            StatsRepository.getSalesByCategory(tenant.id, filtro),
+                            StatsRepository.getTotalsByPaymentMethod(tenant.id, filtro),
+                            StatsRepository.getSalesByPaymentMethod(tenant.id, filtro),
+                            conGraficaDiaria ? StatsRepository.getDailySalesRange(tenant.id, firstDay, lastDayStr) : []
+                        ]);
 
-                    return { tenant, totalMes, facturasMes, topProductos, porCategoria };
+                    return {
+                        tenant,
+                        totalMes,
+                        facturasMes,
+                        topProductos,
+                        porCategoria,
+                        pagos,
+                        porMedio,
+                        ventasDiarias
+                    };
                 } catch (err) {
                     console.error(
                         `[CONSOLIDADO_ERROR] Error obteniendo estadísticas para tenant ${tenant.nombre}:`,
@@ -278,6 +352,9 @@ class ReporteConsolidadoService {
                         facturasMes: 0,
                         topProductos: [],
                         porCategoria: [],
+                        pagos: null,
+                        porMedio: [],
+                        ventasDiarias: [],
                         error: err.message
                     };
                 }

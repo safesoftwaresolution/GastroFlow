@@ -69,6 +69,7 @@
                 <div class="row g-2 mb-3">
                     <div class="col-8">
                         <select id="reportMonth" class="form-select form-select-sm" aria-label="Mes para reporte">
+                            <option value="historico">Todo el histórico (desde el inicio)</option>
                             <% const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']; %>
                             <% const currentMonth = new Date().getMonth() + 1; %>
                             <% meses.forEach((m, i) => { %>

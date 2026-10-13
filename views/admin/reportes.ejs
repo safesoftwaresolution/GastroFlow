@@ -48,7 +48,13 @@
 
                         <div class="mb-3">
                             <div class="form-label fw-bold text-secondary">Periodo a incluir</div>
-                            <div class="row g-2">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="historico">
+                                <label class="form-check-label" for="historico">
+                                    Todo el histórico (desde la primera venta hasta hoy)
+                                </label>
+                            </div>
+                            <div class="row g-2" id="periodoSelects">
                                 <div class="col-6">
                                     <label for="mesDesde" class="form-label small text-muted mb-1">Mes desde</label>
                                     <select class="form-select shadow-sm" id="mesDesde" name="mesDesde" required>

@@ -15,7 +15,11 @@ jest.mock('../../../repositories/Tenant/StatsRepository', () => ({
     getTotalSales: jest.fn(),
     getTotalInvoices: jest.fn(),
     getTopProducts: jest.fn(),
-    getSalesByCategory: jest.fn()
+    getSalesByCategory: jest.fn(),
+    getTotalsByPaymentMethod: jest.fn(),
+    getSalesByPaymentMethod: jest.fn(),
+    getDailySalesRange: jest.fn(),
+    getPrimeraFechaVenta: jest.fn()
 }));
 jest.mock('../../../services/Admin/TenantService', () => ({
     getAllTenants: jest.fn()
@@ -115,8 +119,18 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
             { nombre: 'Producto X', categoria_nombre: 'Bebidas', total_cantidad: 5, total_ventas: 50000 }
         ]);
         StatsRepository.getSalesByCategory.mockResolvedValue([
-            { categoria_nombre: 'Bebidas', facturas_count: 10, total_ventas: 1000000 }
+            { categoria_nombre: 'Bebidas', total_cantidad: 40, facturas_count: 10, total_ventas: 1000000 }
         ]);
+        StatsRepository.getTotalsByPaymentMethod.mockResolvedValue({
+            efectivo: 600000,
+            transferencia: 400000,
+            serviciosExternos: 0
+        });
+        StatsRepository.getSalesByPaymentMethod.mockResolvedValue([
+            { forma_pago: 'efectivo', cantidad: 6, total: 600000 },
+            { forma_pago: 'transferencia', cantidad: 4, total: 400000 }
+        ]);
+        StatsRepository.getDailySalesRange.mockResolvedValue([]);
 
         const buffer = await ReporteConsolidadoService.generarReporteConsolidado({
             mesDesde: 1,
@@ -125,6 +139,29 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
             anioHasta: 2026
         });
         expectValidPdf(buffer);
+        expect(StatsRepository.getSalesByPaymentMethod).toHaveBeenCalled();
+    });
+
+    it('genera el reporte histórico desde la primera venta', async () => {
+        TenantService.getAllTenants.mockResolvedValue([
+            { id: 1, nombre: 'Restaurante A', slug: 'restaurante-a', plan_nombre: 'Pro', activo: true }
+        ]);
+        StatsRepository.getPrimeraFechaVenta.mockResolvedValue('2026-01-15');
+        StatsRepository.getTotalSales.mockResolvedValue(1000000);
+        StatsRepository.getTotalInvoices.mockResolvedValue(10);
+        StatsRepository.getTopProducts.mockResolvedValue([]);
+        StatsRepository.getSalesByCategory.mockResolvedValue([]);
+        StatsRepository.getTotalsByPaymentMethod.mockResolvedValue({
+            efectivo: 0,
+            transferencia: 0,
+            serviciosExternos: 0
+        });
+        StatsRepository.getSalesByPaymentMethod.mockResolvedValue([]);
+        StatsRepository.getDailySalesRange.mockResolvedValue([]);
+
+        const buffer = await ReporteConsolidadoService.generarReporteConsolidado({ historico: true, tenantId: 1 });
+        expectValidPdf(buffer);
+        expect(StatsRepository.getTotalSales).toHaveBeenCalledWith(1, expect.objectContaining({ desde: '2026-01-01' }));
     });
 
     it('no revienta cuando no hay tenants activos', async () => {

@@ -17,6 +17,10 @@ class StatsRepository {
         return SalesStatsRepository.getTotalSalesAllTime(tenantId);
     }
 
+    static async getPrimeraFechaVenta(tenantId) {
+        return SalesStatsRepository.getPrimeraFechaVenta(tenantId);
+    }
+
     static async getVentasHoy(tenantId) {
         return SalesStatsRepository.getVentasHoy(tenantId);
     }

@@ -119,23 +119,96 @@ function productosTable(topProductos) {
     return { table: { headerRows: 1, widths: ['*', '*', 'auto', 'auto'], body }, layout: zebraTableLayout() };
 }
 
+function porcentaje(valor, total) {
+    return total ? `${((valor / total) * 100).toFixed(1).replace('.', ',')}%` : '0%';
+}
+
 /** Tabla "Ventas por Categoría", reusada por reporte mensual y consolidado. */
 function categoriaTable(porCategoria) {
     const body = [
-        [tableHeaderCell('Categoría'), tableHeaderCell('Facturas', 'right'), tableHeaderCell('Total Ventas', 'right')]
+        [
+            tableHeaderCell('Categoría'),
+            tableHeaderCell('Unidades', 'right'),
+            tableHeaderCell('Facturas', 'right'),
+            tableHeaderCell('Total Ventas', 'right'),
+            tableHeaderCell('%', 'right')
+        ]
     ];
     if (porCategoria && porCategoria.length > 0) {
+        const total = porCategoria.reduce((s, c) => s + (Number(c.total_ventas) || 0), 0);
         for (const c of porCategoria) {
             body.push([
                 tableCell(c.categoria_nombre),
+                tableCell(c.total_cantidad ?? '', 'right'),
                 tableCell(c.facturas_count, 'right'),
-                tableCell(formatMoney(c.total_ventas), 'right')
+                tableCell(formatMoney(c.total_ventas), 'right'),
+                tableCell(porcentaje(Number(c.total_ventas) || 0, total), 'right', { color: '#64748b' })
             ]);
         }
     } else {
-        body.push(emptyRow('No hay datos de categorías para este periodo.', 3));
+        body.push(emptyRow('No hay datos de categorías para este periodo.', 5));
     }
-    return { table: { headerRows: 1, widths: ['*', 'auto', 'auto'], body }, layout: zebraTableLayout() };
+    return {
+        table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto'], body },
+        layout: zebraTableLayout()
+    };
+}
+
+const ETIQUETAS_MEDIO_PAGO = {
+    efectivo: 'Efectivo',
+    transferencia: 'Transferencia',
+    mixto: 'Mixto (efectivo + transferencia)',
+    tarjeta: 'Tarjeta'
+};
+
+/**
+ * Tabla "Facturas por Medio de Pago" a partir de getSalesByPaymentMethod
+ * ([{ forma_pago, cantidad, total }]). Une variantes de mayúsculas/espacios.
+ */
+function medioPagoTable(porMedio) {
+    const body = [
+        [
+            tableHeaderCell('Medio de pago'),
+            tableHeaderCell('Facturas', 'right'),
+            tableHeaderCell('Total Ventas', 'right'),
+            tableHeaderCell('%', 'right')
+        ]
+    ];
+    const agrupado = new Map();
+    for (const r of porMedio || []) {
+        const clave =
+            String(r.forma_pago || '')
+                .toLowerCase()
+                .trim() || 'sin_especificar';
+        const actual = agrupado.get(clave) || { cantidad: 0, total: 0 };
+        actual.cantidad += Number(r.cantidad) || 0;
+        actual.total += Number(r.total) || 0;
+        agrupado.set(clave, actual);
+    }
+    const filas = [...agrupado.entries()].sort((a, b) => b[1].total - a[1].total);
+    if (filas.length === 0) {
+        body.push(emptyRow('No hay facturas en este periodo.', 4));
+    } else {
+        const total = filas.reduce((s, [, v]) => s + v.total, 0);
+        const facturas = filas.reduce((s, [, v]) => s + v.cantidad, 0);
+        for (const [clave, v] of filas) {
+            body.push([
+                tableCell(
+                    ETIQUETAS_MEDIO_PAGO[clave] || (clave === 'sin_especificar' ? 'Sin especificar' : capitalize(clave))
+                ),
+                tableCell(v.cantidad, 'right'),
+                tableCell(formatMoney(v.total), 'right'),
+                tableCell(porcentaje(v.total, total), 'right', { color: '#64748b' })
+            ]);
+        }
+        body.push([
+            { text: 'Total', bold: true, fontSize: 9, fillColor: '#eef2ff' },
+            { text: String(facturas), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' },
+            { text: formatMoney(total), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' },
+            { text: '', fillColor: '#eef2ff' }
+        ]);
+    }
+    return { table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto'], body }, layout: zebraTableLayout() };
 }
 
 module.exports = {
@@ -149,5 +222,6 @@ module.exports = {
     sectionTitle,
     footerText,
     productosTable,
-    categoriaTable
+    categoriaTable,
+    medioPagoTable
 };

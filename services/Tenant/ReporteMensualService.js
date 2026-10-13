@@ -5,14 +5,29 @@ const {
     sectionTitle,
     footerText,
     productosTable,
-    categoriaTable
+    categoriaTable,
+    medioPagoTable
 } = require('../Shared/PdfDocHelpers');
 const PdfCharts = require('../Shared/PdfCharts');
 const MailerService = require('../Shared/MailerService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const TenantService = require('../Admin/TenantService');
+const { hoyColombia } = require('../../utils/dateHelpers');
 
 const COLOR_REPORTE = '#28a745';
+// Por encima de este rango la línea diaria ya no se lee bien: se omite.
+const MAX_DIAS_GRAFICA_DIARIA = 62;
+
+function diasEntre(desde, hasta) {
+    const [y1, m1, d1] = desde.split('-').map(Number);
+    const [y2, m2, d2] = hasta.split('-').map(Number);
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000) + 1;
+}
+
+function nombreMesAnio(fechaISO) {
+    const [y, m] = fechaISO.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleString('es-CO', { month: 'long', year: 'numeric' });
+}
 
 class ReporteMensualService {
     /**
@@ -50,19 +65,35 @@ class ReporteMensualService {
     }
 
     /**
+     * Rango "desde el inicio": del primer día con ventas del tenant hasta hoy (Colombia).
+     * Si nunca ha vendido, devuelve solo el día de hoy.
+     */
+    static async calcularRangoHistorico(tenantId) {
+        const hoy = hoyColombia();
+        const primera = (await StatsRepository.getPrimeraFechaVenta(tenantId)) || hoy;
+        return {
+            firstDay: primera,
+            lastDayStr: hoy,
+            mesNombre: `Desde el inicio (${nombreMesAnio(primera)} - ${nombreMesAnio(hoy)})`
+        };
+    }
+
+    /**
      * Obtiene en paralelo las estadísticas de ventas del tenant.
      */
     static async obtenerEstadisticas(tenantId, { firstDay, lastDayStr }) {
         const filtro = { desde: firstDay, hasta: lastDayStr };
-        const [totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos] = await Promise.all([
+        const conGraficaDiaria = diasEntre(firstDay, lastDayStr) <= MAX_DIAS_GRAFICA_DIARIA;
+        const [totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio] = await Promise.all([
             StatsRepository.getTotalSales(tenantId, filtro),
             StatsRepository.getTotalInvoices(tenantId, filtro),
             StatsRepository.getTopProducts(tenantId, 5, filtro),
             StatsRepository.getSalesByCategory(tenantId, filtro),
-            StatsRepository.getDailySalesRange(tenantId, firstDay, lastDayStr),
-            StatsRepository.getTotalsByPaymentMethod(tenantId, filtro)
+            conGraficaDiaria ? StatsRepository.getDailySalesRange(tenantId, firstDay, lastDayStr) : [],
+            StatsRepository.getTotalsByPaymentMethod(tenantId, filtro),
+            StatsRepository.getSalesByPaymentMethod(tenantId, filtro)
         ]);
-        return { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos };
+        return { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio };
     }
 
     /** Gráfica de ventas por cada día del mes (misma serie que el dashboard). */
@@ -126,14 +157,14 @@ class ReporteMensualService {
      * Arma el docDefinition de pdfmake con las estadísticas del mes.
      */
     static buildDocDefinition(tenant, mesNombre, stats) {
-        const { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos } = stats;
+        const { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio } = stats;
         const mes = mesNombre.toUpperCase();
 
         return {
             content: [
                 { text: tenant.nombre, alignment: 'center', fontSize: 20, bold: true, color: '#28a745' },
                 {
-                    text: `Reporte de Ventas Mensuales - ${mes}`,
+                    text: `Reporte de Ventas - ${mes}`,
                     alignment: 'center',
                     fontSize: 12,
                     color: '#666666',
@@ -149,6 +180,8 @@ class ReporteMensualService {
                 },
                 ...this.ventasDiariasSection(ventasDiarias),
                 ...this.metodosPagoSection(pagos),
+                sectionTitle('Facturas por Medio de Pago', COLOR_REPORTE),
+                medioPagoTable(porMedio),
                 sectionTitle('Top 5 Productos más Vendidos', COLOR_REPORTE),
                 productosTable(topProductos),
                 sectionTitle('Ventas por Categoría', COLOR_REPORTE),
@@ -178,7 +211,9 @@ class ReporteMensualService {
     }
 
     static async generarYEnviar(tenant, options = {}) {
-        const rango = this.calcularRangoFechas(options);
+        const rango = options.historico
+            ? await this.calcularRangoHistorico(tenant.id)
+            : this.calcularRangoFechas(options);
         console.log(`Generando reporte para ${tenant.nombre} - Rango: ${rango.firstDay} a ${rango.lastDayStr}...`);
 
         const stats = await this.obtenerEstadisticas(tenant.id, rango);
@@ -186,7 +221,7 @@ class ReporteMensualService {
         const to = this.obtenerEmailDestinatario(tenant, options);
 
         const mesUpper = rango.mesNombre.toUpperCase();
-        const subject = `Reporte Mensual - ${tenant.nombre} - ${mesUpper}`;
+        const subject = `${options.historico ? 'Reporte Histórico' : 'Reporte Mensual'} - ${tenant.nombre} - ${mesUpper}`;
         const bodyContent = `Hola,<br><br>Adjunto enviamos el reporte de resumen de ventas de <strong>${mesUpper}</strong> para <strong>${tenant.nombre}</strong>.<br><br>Saludos cordiales,<br>Tu Sistema GastroFlow`;
 
         try {
@@ -196,7 +231,7 @@ class ReporteMensualService {
                 html: bodyContent,
                 attachments: [
                     {
-                        filename: `Reporte_${mesUpper.replaceAll(' ', '_')}_${tenant.nombre.replaceAll(' ', '_')}.pdf`,
+                        filename: `Reporte_${(options.historico ? 'HISTORICO' : mesUpper).replaceAll(' ', '_')}_${tenant.nombre.replaceAll(' ', '_')}.pdf`,
                         content: pdfBuffer
                     }
                 ]

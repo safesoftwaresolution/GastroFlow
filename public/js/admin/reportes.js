@@ -55,21 +55,34 @@
         syncDesgloseState();
     }
 
+    // En modo histórico los selectores de mes/año no aplican (el rango lo calcula el servidor).
+    var historicoChk = document.getElementById('historico');
+    var periodoSelects = document.getElementById('periodoSelects');
+    function syncHistorico() {
+        if (!historicoChk || !periodoSelects) return;
+        periodoSelects.querySelectorAll('select').forEach(function (s) {
+            s.disabled = historicoChk.checked;
+        });
+    }
+    if (historicoChk) {
+        historicoChk.addEventListener('change', syncHistorico);
+        syncHistorico();
+    }
+
     form.addEventListener('submit', function (evt) {
         evt.preventDefault();
         var tenantId = tenantSelect.value;
-        var mesDesde = document.getElementById('mesDesde').value;
-        var anioDesde = document.getElementById('anioDesde').value;
-        var mesHasta = document.getElementById('mesHasta').value;
-        var anioHasta = document.getElementById('anioHasta').value;
+        var esHistorico = !!(historicoChk && historicoChk.checked);
 
-        var params = new URLSearchParams({
-            tenantId: tenantId,
-            mesDesde: mesDesde,
-            anioDesde: anioDesde,
-            mesHasta: mesHasta,
-            anioHasta: anioHasta
-        });
+        var params = new URLSearchParams({ tenantId: tenantId });
+        if (esHistorico) {
+            params.set('historico', '1');
+        } else {
+            params.set('mesDesde', document.getElementById('mesDesde').value);
+            params.set('anioDesde', document.getElementById('anioDesde').value);
+            params.set('mesHasta', document.getElementById('mesHasta').value);
+            params.set('anioHasta', document.getElementById('anioHasta').value);
+        }
 
         if (tenantId !== 'all') {
             params.set('incluirResumenMensual', document.getElementById('incluirResumenMensual').checked ? '1' : '0');

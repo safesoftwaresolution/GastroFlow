@@ -22,6 +22,16 @@ class SalesStatsRepository {
         return parseFloat(result[0]?.total || 0);
     }
 
+    /** Primer día (Colombia, 'YYYY-MM-DD') con ventas del tenant, o null si nunca ha vendido. */
+    static async getPrimeraFechaVenta(tenantId) {
+        const [rows] = await db.query(
+            `SELECT ${SQL_COLOMBIA.dia('MIN(fecha)')} AS primera
+             FROM facturas WHERE tenant_id = ? AND evento_id IS NULL`,
+            [tenantId]
+        );
+        return toFechaDia(rows[0]?.primera);
+    }
+
     static async getVentasHoy(tenantId) {
         const hoy = hoyColombia();
         const { utcDesde, utcHasta } = rangoUtcColombia(hoy);
