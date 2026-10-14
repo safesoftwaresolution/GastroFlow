@@ -9,7 +9,11 @@
     new Chart(ctxTendencia, {
         type: 'line',
         data: {
-            labels: historico.map(function (h) { return h.fecha; }),
+            labels: historico.map(function (h) {
+                // "2026-10-14T00:00:00.000Z" -> "14/10"
+                var m = String(h.fecha).match(/(\d{4})-(\d{2})-(\d{2})/);
+                return m ? m[3] + '/' + m[2] : h.fecha;
+            }),
             datasets: [
                 {
                     label: 'Ingresos',
@@ -36,8 +40,16 @@
             maintainAspectRatio: false,
             plugins: { legend: { position: 'top', align: 'end' } },
             scales: {
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                x: { grid: { display: false } }
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        callback: function (v) {
+                            return Math.abs(v) >= 1000 ? '$' + (v / 1000) + 'k' : '$' + v;
+                        }
+                    }
+                },
+                x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
             }
         }
     });

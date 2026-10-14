@@ -7,7 +7,7 @@
 
     <div class="container py-4">
         <!-- Header Corporativo -->
-        <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+        <div class="finanzas-header d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4 border-bottom pb-3">
             <div>
                 <h1 class="fw-bold h4 mb-1">Estado de Resultados</h1>
                 <nav aria-label="breadcrumb">
@@ -17,21 +17,21 @@
                     </ol>
                 </nav>
             </div>
-            <div class="d-flex gap-3 align-items-center">
-                <div class="text-end me-3 d-none d-md-block">
+            <div class="finanzas-acciones d-flex flex-wrap gap-2 gap-md-3 align-items-center">
+                <div class="text-end me-3 d-none d-lg-block">
                     <div class="small text-muted">Periodo de Análisis</div>
                     <div class="fw-bold small">Últimos <%= dias %> días</div>
                 </div>
-                <select class="form-select form-select-sm" style="width: auto;" onchange="location.href='?dias='+this.value">
+                <select class="form-select form-select-sm finanzas-periodo" onchange="location.href='?dias='+this.value">
                     <option value="7" <%= dias == 7 ? 'selected' : '' %>>Semana Actual</option>
                     <option value="30" <%= dias == 30 ? 'selected' : '' %>>Mes Contable</option>
                     <option value="90" <%= dias == 90 ? 'selected' : '' %>>Trimestre</option>
                 </select>
                 <a class="btn btn-outline-dark btn-finance" href="/finanzas/exportar-pdf?dias=<%= dias %>">
-                    <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
                 </a>
                 <button class="btn btn-dark btn-finance" data-bs-toggle="modal" data-bs-target="#modalNuevoGasto">
-                    <i class="bi bi-plus-lg me-2"></i>Registrar Operación
+                    <i class="bi bi-plus-lg me-1"></i>Registrar Operación
                 </button>
             </div>
         </div>
@@ -79,7 +79,7 @@
             <!-- Gráfico de Tendencia Lineal (Más Profesional) -->
             <div class="col-lg-8">
                 <div class="card card-finance p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-3">
                         <h6 class="fw-bold mb-0">Flujo de Caja Diario</h6>
                         <div class="small text-muted">Ingresos vs Egresos</div>
                     </div>

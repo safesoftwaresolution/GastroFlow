@@ -79,3 +79,54 @@ body {
     font-size: 0.65rem;
     padding: 0.3em 0.6em;
 }
+
+.finanzas-periodo {
+    width: auto;
+}
+
+/* Evita el scroll horizontal de la página (descuadraba el modal y las tarjetas) */
+body {
+    overflow-x: hidden;
+}
+
+@media (max-width: 767.98px) {
+    .finanzas-header h1 {
+        font-size: 1.25rem;
+    }
+
+    /* Selector + botones: el selector ocupa toda la fila, los botones se reparten el ancho */
+    .finanzas-acciones {
+        width: 100%;
+    }
+
+    .finanzas-acciones .finanzas-periodo {
+        width: 100%;
+        flex: 0 0 100%;
+    }
+
+    .finanzas-acciones .btn-finance {
+        flex: 1 1 0;
+        white-space: nowrap;
+        padding: 0.5rem 0.5rem;
+    }
+
+    .kpi-value {
+        font-size: 1.35rem;
+    }
+
+    .card-finance.p-4 {
+        padding: 1rem !important;
+    }
+
+    .chart-container {
+        height: 240px;
+    }
+
+    .table-finance .ps-4 {
+        padding-left: 0.75rem !important;
+    }
+
+    .table-finance .pe-4 {
+        padding-right: 0.75rem !important;
+    }
+}
