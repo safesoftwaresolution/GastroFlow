@@ -264,6 +264,24 @@ body.pos-terminal-body .navbar-collapse.collapsing {
     font-variant-numeric: tabular-nums; letter-spacing: -.01em;
 }
 
+/* Pin: esquina inferior derecha de la tarjeta */
+.ppc-pin {
+    position: absolute; right: 8px; bottom: 8px;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #94a3b8;
+    background: transparent; cursor: pointer;
+    opacity: 0; transition: opacity .12s, background .12s, color .12s, transform .12s;
+}
+.pos-product-card:hover .ppc-pin,
+.ppc-pin:focus-visible,
+.pos-product-card.ppc-pinned .ppc-pin { opacity: 1; }
+.ppc-pin:hover { background: #f1f5f9; color: var(--pos-accent, #6366f1); transform: rotate(-12deg); }
+.pos-product-card.ppc-pinned .ppc-pin { color: var(--pos-accent, #6366f1); background: rgba(99,102,241,.1); }
+.pos-product-card.ppc-pinned { border-color: rgba(99,102,241,.45); }
+/* En táctil no hay hover: el pin se ve siempre, discreto */
+@media (hover: none) { .ppc-pin { opacity: .7; } }
+
 @keyframes posFlash {
     0%,100%{transform:scale(1);background:#fff;}
     50%{transform:scale(.97);background:#f0f4ff;}

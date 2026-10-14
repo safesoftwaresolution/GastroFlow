@@ -89,7 +89,12 @@ window.POS_UI = {
                 <span class="ppc-price">desde ${GF.dinero(c.precio_base)}</span>
             </button>`).join('');
 
-        grid.innerHTML = combosHtml + filtrados.map(p => {
+        // Fijados primero (orden estable: el resto conserva su orden original)
+        const pins = POS_UI.getPins();
+        const ordenados = [...filtrados].sort((a, b) => Number(pins.has(b.id)) - Number(pins.has(a.id)));
+
+        grid.innerHTML = combosHtml + ordenados.map(p => {
+            const fijado = pins.has(p.id);
             const { color, soft } = paletteMap[p.categoria_id] || { color: '#6366f1', soft: '#ede9fe' };
             const qty = cartMap[p.id] || 0;
             const badge = qty ? `<span class="ppc-qty-badge">${qty}</span>` : '';
@@ -107,9 +112,12 @@ window.POS_UI = {
                 // (ver POS.recalcularPromocionesPorCantidad).
                 promoBadge = `<span class="ppc-promo-badge" style="background:#0dcaf0" title="${GF.escapeHtml(p.promocion_regla.nombre)}: desde ${p.promocion_regla.cantidad_minima} unidades"><i class="bi bi-percent"></i></span>`;
             }
-            return `<button class="pos-product-card${inCartClass}" data-pid="${p.id}">
+            return `<button class="pos-product-card${inCartClass}${fijado ? ' ppc-pinned' : ''}" data-pid="${p.id}">
                 ${badge}
                 ${promoBadge}
+                <span class="ppc-pin" role="button" tabindex="0" data-pin="${p.id}" title="${fijado ? 'Quitar de fijados' : 'Fijar al inicio'}">
+                    <i class="bi ${fijado ? 'bi-pin-angle-fill' : 'bi-pin-angle'}"></i>
+                </span>
                 <span class="ppc-icon" style="background:${soft};color:${color}">
                     <i class="bi ${catIcon(p.categoria_nombre)}"></i>
                 </span>
@@ -126,6 +134,32 @@ window.POS_UI = {
         grid.querySelectorAll('.pos-product-card[data-pid]').forEach(btn => {
             btn.addEventListener('click', () => POS.addToCart(Number.parseInt(btn.dataset.pid)));
         });
+        grid.querySelectorAll('.ppc-pin').forEach(pin => {
+            pin.addEventListener('click', e => {
+                e.stopPropagation(); // no agregar al carrito
+                POS_UI.togglePin(Number.parseInt(pin.dataset.pin));
+            });
+        });
+    },
+
+    // ─── Productos fijados (pin) — por navegador/terminal ─────────
+    getPins() {
+        try {
+            const raw = JSON.parse(localStorage.getItem('gf_pos_pins') || '[]');
+            return new Set(Array.isArray(raw) ? raw.map(Number) : []);
+        } catch (e) {
+            return new Set();
+        }
+    },
+
+    togglePin(productoId) {
+        const pins = POS_UI.getPins();
+        if (pins.has(productoId)) pins.delete(productoId);
+        else pins.add(productoId);
+        try {
+            localStorage.setItem('gf_pos_pins', JSON.stringify([...pins]));
+        } catch (e) { /* almacenamiento lleno/bloqueado: el pin dura solo la sesión */ }
+        POS_UI.renderCatalogo();
     },
 
     flashCard(productoId) {
