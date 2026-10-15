@@ -162,6 +162,30 @@
                 </div>
             </form>
 
+            <div class="card mb-4" id="cardBrochure">
+                <div class="card-header">
+                    <i class="bi bi-images me-2"></i>Carta / Brochure del Menú Digital
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Sube la carta de tu restaurante (imágenes JPG, PNG, WebP o PDF, máximo 10&nbsp;MB cada una y
+                        20 páginas). Tus clientes la verán como carrusel con el botón <strong>Ver carta</strong> en el
+                        menú QR, además del menú normal.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <input type="file" id="brochureInput" class="d-none" multiple
+                            accept="image/jpeg,image/png,image/webp,application/pdf">
+                        <button type="button" class="btn btn-primary" id="btnBrochureSubir">
+                            <i class="bi bi-upload me-1"></i>Subir páginas
+                        </button>
+                    </div>
+                    <div id="brochureLista" class="row g-3">
+                        <div class="col-12 text-muted small">Cargando…</div>
+                    </div>
+                    <div id="brochureFeedback" class="alert mt-3 mb-0" hidden></div>
+                </div>
+            </div>
+
             <% if (typeof nav !=='undefined' && nav.can.alertas) { %>
                 <div class="card mb-4" id="cardAlertas">
                     <div class="card-header">
@@ -231,6 +255,7 @@
         <script src="/js/modulos/configuracion.js?v=<%= assetV %>"></script>
         <script src="/js/modulos/configuracion_qz.js?v=<%= assetV %>"></script>
         <script src="/js/modulos/configuracion_alertas.js?v=<%= assetV %>"></script>
+        <script src="/js/modulos/configuracion_brochure.js?v=<%= assetV %>"></script>
 </body>
 
 </html>

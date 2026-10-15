@@ -68,4 +68,33 @@ router.get('/preview', requirePermission('configuracion.ver', 'configuracion.edi
 // Alertas proactivas (tarjeta aparte dentro de la misma vista de configuración)
 router.put('/alertas', requirePermission('alertas.configurar'), ConfiguracionController.saveAlertas);
 
+// Brochure / carta del menú digital (imágenes y PDF, hasta 20 páginas)
+const uploadBrochure = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024, files: 10 }
+});
+
+function manejarErrorBrochure(err, req, res, next) {
+    if (!err) {
+        return next();
+    }
+    const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Cada archivo puede pesar máximo 10MB' : err.message;
+    return res.status(400).json({ error: msg });
+}
+
+router.get(
+    '/brochure',
+    requirePermission('configuracion.ver', 'configuracion.editar'),
+    ConfiguracionController.brochureListar
+);
+router.post(
+    '/brochure',
+    requirePermission('configuracion.editar'),
+    uploadBrochure.array('archivos', 10),
+    manejarErrorBrochure,
+    ConfiguracionController.brochureSubir
+);
+router.put('/brochure/orden', requirePermission('configuracion.editar'), ConfiguracionController.brochureReordenar);
+router.delete('/brochure/:id', requirePermission('configuracion.editar'), ConfiguracionController.brochureEliminar);
+
 module.exports = router;

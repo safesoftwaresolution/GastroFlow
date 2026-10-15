@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('node:crypto');
 const path = require('node:path');
 
@@ -54,6 +54,20 @@ class R2StorageService {
             console.error('Error al subir archivo a R2:', error);
             throw new Error('No se pudo subir la imagen al servidor de almacenamiento', { cause: error });
         }
+    }
+
+    /**
+     * Borra un archivo a partir de su URL pública. Ignora URLs que no son de este bucket.
+     */
+    async deleteFile(url) {
+        if (!this.s3Client || !this.publicUrl || !url) {
+            return;
+        }
+        const base = this.publicUrl.endsWith('/') ? this.publicUrl : this.publicUrl + '/';
+        if (!url.startsWith(base)) {
+            return;
+        }
+        await this.s3Client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: url.slice(base.length) }));
     }
 }
 

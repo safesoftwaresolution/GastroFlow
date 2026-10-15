@@ -101,6 +101,12 @@ class ProductRepository {
                   INNER JOIN parametros pc2 ON i2.categoria_id = pc2.id
                   WHERE i2.tenant_id = p.tenant_id AND i2.codigo = p.codigo AND pc2.name = 'Cerámicas'
               )
+              -- Combo fijo viejo (producto es_combo) ya convertido a combo armable (111): ese aparece
+              -- por su propio resultado "Combo". Listarlo también duplicaba el combo en el buscador.
+              AND NOT EXISTS (
+                  SELECT 1 FROM combos cb
+                  WHERE cb.tenant_id = p.tenant_id AND cb.legacy_producto_id = p.id AND cb.activo = 1
+              )
             ORDER BY p.nombre
             LIMIT ?)
             UNION ALL

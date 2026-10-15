@@ -184,6 +184,8 @@ app.use((req, res, next) => {
         // dispositivo desde el navegador para el cobro automático de la
         // suscripción (ver public/js/modulos/facturacion.js)
         "connect-src 'self' https://cdn.jsdelivr.net https://sandbox.wompi.co https://production.wompi.co https://wompijs.wompi.com wss://localhost:8181 wss://localhost:8282 ws://localhost:8182 ws://localhost:8283",
+        // PDFs del brochure (menú QR) se muestran en iframe desde el dominio público de R2
+        `frame-src 'self'${process.env.R2_PUBLIC_URL ? ' ' + new URL(process.env.R2_PUBLIC_URL).origin : ''}`,
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'"

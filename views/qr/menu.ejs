@@ -30,6 +30,12 @@
             <% } %>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <% if (typeof brochure !== 'undefined' && brochure.length) { %>
+            <button type="button" class="header-icon-btn" style="color: var(--navbar-text);"
+                    data-bs-toggle="modal" data-bs-target="#brochureModal" aria-label="Ver carta">
+                <i class="bi bi-book"></i>
+            </button>
+            <% } %>
             <button type="button" id="btnEstadoMesa" class="header-icon-btn" style="color: var(--navbar-text);"
                     data-bs-toggle="offcanvas" data-bs-target="#estadoOffcanvas" aria-label="Estado de tu mesa">
                 <i class="bi bi-receipt"></i>
@@ -260,6 +266,59 @@
             </div>
         </div>
     </div>
+
+    <% if (typeof brochure !== 'undefined' && brochure.length) { %>
+    <!-- Carta / brochure del restaurante (carrusel de imágenes y PDF) -->
+    <div class="modal fade" id="brochureModal" tabindex="-1" aria-label="Carta">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-0 py-2">
+                    <h6 class="modal-title text-white"><i class="bi bi-book me-2"></i>Nuestra carta</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0 d-flex">
+                    <div id="brochureCarousel" class="carousel slide w-100" data-bs-interval="false" data-bs-touch="true">
+                        <% if (brochure.length > 1) { %>
+                        <div class="carousel-indicators">
+                            <% brochure.forEach((p, i) => { %>
+                                <button type="button" data-bs-target="#brochureCarousel" data-bs-slide-to="<%= i %>"
+                                    class="<%= i === 0 ? 'active' : '' %>" aria-label="Página <%= i + 1 %>"></button>
+                            <% }) %>
+                        </div>
+                        <% } %>
+                        <div class="carousel-inner h-100">
+                            <% brochure.forEach((p, i) => { %>
+                                <div class="carousel-item h-100 <%= i === 0 ? 'active' : '' %>">
+                                    <% if (p.tipo === 'pdf') { %>
+                                        <div class="h-100 d-flex flex-column">
+                                            <iframe src="<%= p.url %>" title="Carta <%= i + 1 %>" class="flex-grow-1 border-0 bg-white"></iframe>
+                                            <a href="<%= p.url %>" target="_blank" rel="noopener" class="btn btn-light m-2">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir PDF
+                                            </a>
+                                        </div>
+                                    <% } else { %>
+                                        <div class="h-100 d-flex align-items-center justify-content-center">
+                                            <img src="<%= p.url %>" alt="Carta, página <%= i + 1 %>" loading="lazy"
+                                                style="max-width:100%;max-height:100%;object-fit:contain">
+                                        </div>
+                                    <% } %>
+                                </div>
+                            <% }) %>
+                        </div>
+                        <% if (brochure.length > 1) { %>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#brochureCarousel" data-bs-slide="prev" aria-label="Anterior">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#brochureCarousel" data-bs-slide="next" aria-label="Siguiente">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
 
     <script type="application/json" id="qr-page-data"><%- jsonSeguro({ qrToken: qrToken }) %></script>
     <script type="application/json" id="qr-modificadores-data"><%- jsonSeguro(modificadores || {}) %></script>

@@ -1,5 +1,6 @@
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
 const AlertasService = require('../../../../services/Tenant/AlertasService');
+const BrochureService = require('../../../../services/Tenant/BrochureService');
 
 class ConfiguracionController {
     // GET /configuracion
@@ -89,6 +90,47 @@ class ConfiguracionController {
         } catch (error) {
             console.error('Error al obtener configuración de impresora:', error);
             res.status(500).json({ error: 'Error al obtener configuración de impresora' });
+        }
+    }
+
+    // ─── Brochure / carta del menú digital ───────────────────────
+    // GET /configuracion/brochure
+    static async brochureListar(req, res) {
+        try {
+            res.json(await BrochureService.listar(req.tenant.id));
+        } catch (error) {
+            console.error('Error al listar brochure:', error);
+            res.status(500).json({ error: 'No se pudo cargar el brochure' });
+        }
+    }
+
+    // POST /configuracion/brochure  (multipart, campo "archivos")
+    static async brochureSubir(req, res) {
+        try {
+            res.status(201).json(await BrochureService.subir(req.tenant.id, req.files));
+        } catch (error) {
+            console.error('Error al subir brochure:', error);
+            res.status(400).json({ error: error.message || 'No se pudo subir el brochure' });
+        }
+    }
+
+    // PUT /configuracion/brochure/orden  { ids: [...] }
+    static async brochureReordenar(req, res) {
+        try {
+            await BrochureService.reordenar(req.tenant.id, req.body.ids);
+            res.json({ ok: true });
+        } catch (error) {
+            res.status(400).json({ error: error.message || 'No se pudo reordenar' });
+        }
+    }
+
+    // DELETE /configuracion/brochure/:id
+    static async brochureEliminar(req, res) {
+        try {
+            await BrochureService.eliminar(req.tenant.id, Number.parseInt(req.params.id, 10));
+            res.json({ ok: true });
+        } catch (error) {
+            res.status(400).json({ error: error.message || 'No se pudo eliminar' });
         }
     }
 

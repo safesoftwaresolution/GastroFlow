@@ -1,6 +1,7 @@
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
 const PromocionService = require('../Tenant/PromocionService');
 const ComboArmableService = require('../Tenant/ComboArmableService');
+const BrochureRepository = require('../../repositories/Tenant/BrochureRepository');
 
 class MenuQRService {
     /**
@@ -44,7 +45,15 @@ class MenuQRService {
             console.error('Error al cargar combos del menú QR:', error);
         }
 
-        return { tenant, mesa, categorias, modificadores, combos };
+        // 6. Brochure/carta subido por el restaurante (opcional; no bloquea el menú si falla)
+        let brochure = [];
+        try {
+            brochure = await BrochureRepository.listar(tenant.id);
+        } catch (error) {
+            console.error('Error al cargar brochure del menú QR:', error);
+        }
+
+        return { tenant, mesa, categorias, modificadores, combos, brochure };
     }
 
     static _agruparProductosPorCategoria(rawProducts) {
