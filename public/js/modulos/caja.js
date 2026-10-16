@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const result = await Swal.fire({
                 title: '¿Estás seguro?',
-                text: "Una vez cerrada la caja, no podrás registrar más movimientos en este turno.",
+                text: 'Ya no podrás registrar más ventas ni movimientos en este turno. ¿Ya contaste los billetes?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -40,6 +40,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                     GF.error(error.message);
                 }
+            }
+        });
+    }
+
+    // Resultado del arqueo en vivo: muestra si sobra, falta o cuadra mientras se escribe
+    const inputReal = document.getElementById('monto_final_real');
+    const esperadoEl = document.getElementById('efectivoEsperado');
+    const resultadoEl = document.getElementById('arqueoResultado');
+    if (inputReal && esperadoEl && resultadoEl) {
+        inputReal.addEventListener('input', () => {
+            const texto = inputReal.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+            if (texto === '') {
+                resultadoEl.hidden = true;
+                return;
+            }
+            const diferencia = (Number.parseFloat(texto) || 0) - Number(esperadoEl.dataset.valor);
+            resultadoEl.hidden = false;
+            if (diferencia === 0) {
+                resultadoEl.className = 'arqueo-res arqueo-ok mt-2';
+                resultadoEl.textContent = '✔ Cuadra perfecto';
+            } else if (diferencia > 0) {
+                resultadoEl.className = 'arqueo-res arqueo-sobra mt-2';
+                resultadoEl.textContent = `Sobra ${GF.dinero(diferencia)} (hay más plata de la esperada)`;
+            } else {
+                resultadoEl.className = 'arqueo-res arqueo-falta mt-2';
+                resultadoEl.textContent = `Falta ${GF.dinero(-diferencia)} (hay menos plata de la esperada)`;
             }
         });
     }
@@ -65,7 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setTipoMov(tipo) {
     document.getElementById('tipoMov').value = tipo;
-    document.getElementById('titleMov').innerText = tipo === 'entrada' ? 'Registrar Ingreso de Efectivo' : 'Registrar Gasto / Salida';
+    document.getElementById('titleMov').innerText = tipo === 'entrada' ? 'Metí plata a la caja' : 'Pagué algo con la caja';
+    document.getElementById('ayudaMov').textContent =
+        tipo === 'entrada'
+            ? 'Úsalo cuando pones dinero tuyo en la caja (ej: para comprar pollo). No es una venta ni una ganancia.'
+            : 'Úsalo cuando sacas plata de la caja para pagar un gasto.';
     const btn = document.querySelector('#formMovimiento button[type="submit"]');
     btn.className = tipo === 'entrada' ? 'btn btn-success px-4' : 'btn btn-danger px-4';
 }

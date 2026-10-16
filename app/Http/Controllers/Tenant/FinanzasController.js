@@ -1,5 +1,6 @@
 const FinanzasService = require('../../../../services/Tenant/FinanzasService');
 const TemaRepository = require('../../../../repositories/Shared/TemaRepository');
+const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
 const ParametroService = require('../../../../services/Shared/ParametroService');
 
 class FinanzasController {
@@ -31,6 +32,7 @@ class FinanzasController {
                 resumen: data,
                 categorias,
                 dias,
+                toFechaISOUtc,
                 allowedByPlan: res.locals.allowedByPlan || {}
             });
         } catch (e) {

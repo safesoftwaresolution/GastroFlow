@@ -37,6 +37,11 @@
         </div>
 
         <%
+            // created_at viene en UTC: se muestra siempre en hora de Colombia, no en la del servidor.
+            const fechaHoraColombia = f => {
+                const iso = toFechaISOUtc(f);
+                return iso ? new Date(iso).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '';
+            };
             // Badge de variación vs. el periodo anterior (mismo largo, inmediatamente antes).
             const variacionBadge = (pct, bienSiSube = true) => {
                 if (pct === null || pct === undefined) return '';
@@ -55,6 +60,12 @@
                     <div class="kpi-title mb-1">Ingresos Operativos</div>
                     <div class="kpi-value text-success">$<%= Number(resumen.ingresos).toLocaleString('es-CO') %></div>
                     <div class="small text-muted mt-2"><%- variacionBadge(resumen.variacionIngresos, true) %></div>
+                    <div class="small text-muted mt-1" title="Solo ventas cobradas. Las entradas de dinero que se registran a mano en Caja no son ventas.">
+                        <i class="bi bi-info-circle me-1"></i>Solo ventas cobradas
+                        <% if (Number(resumen.aportes) > 0) { %>
+                            · no incluye <strong>$<%= Number(resumen.aportes).toLocaleString('es-CO') %></strong> de entradas de dinero manuales
+                        <% } %>
+                    </div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -226,7 +237,7 @@
                                 <% if (resumen.movimientos && resumen.movimientos.length > 0) { %>
                                     <% resumen.movimientos.forEach(m => { %>
                                         <tr>
-                                            <td class="ps-4 text-muted"><%= new Date(m.created_at).toLocaleString('es-CO') %></td>
+                                            <td class="ps-4 text-muted"><%= fechaHoraColombia(m.created_at) %></td>
                                             <td>
                                                 <span class="badge badge-type <%= m.tipo === 'entrada' ? 'bg-success' : 'bg-danger' %> me-2">
                                                     <%= m.tipo.toUpperCase() %>

@@ -1,4 +1,5 @@
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
+const FinanzasService = require('./FinanzasService');
 const { toFechaISOUtc } = require('../../utils/dateHelpers');
 
 // Las fechas de la BD llegan como string UTC (dateStrings + timezone 'Z'); hay
@@ -24,6 +25,25 @@ function fmtFechaBogota(fecha) {
 }
 
 class CajaService {
+    /** Resumen de ganancias de HOY (mismas cifras de Finanzas) para el banner de Caja. Nunca rompe la pantalla. */
+    static async getResumenGanancias(tenantId) {
+        try {
+            const d = await FinanzasService.getDashboardData(tenantId, 1);
+            return {
+                ingresos: d.ingresos,
+                egresos: d.egresos,
+                utilidad: d.utilidad,
+                aportes: d.aportes,
+                egresosCaja: d.egresosCaja,
+                costosFijos: d.costosFijosPeriodo,
+                proveedores: d.proveedoresPeriodo
+            };
+        } catch (error) {
+            console.error('No se pudo cargar el resumen de ganancias para Caja:', error);
+            return null;
+        }
+    }
+
     static async getEstadoCaja(tenantId) {
         const sesion = await CajaRepository.getSesionAbierta(tenantId);
         if (!sesion) {

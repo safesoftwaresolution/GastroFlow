@@ -3,13 +3,14 @@
 </head>
 
 <body class="bg-light">
+    <% const fmt = n => new Intl.NumberFormat('es-CO').format(Number(n) || 0); %>
     <%- include('../partials/navbar', { user: user, tenant: tenant }) %>
 
         <div class="container py-4">
             <div class="row mb-4 align-items-center">
                 <div class="col-md-6">
                     <h2 class="fw-bold"><i class="bi bi-wallet2 me-2 text-primary"></i>Control de Caja</h2>
-                    <p class="text-muted mb-0">Gestión de turnos, arqueos y base inicial.</p>
+                    <p class="text-muted mb-0">Aquí abres el turno, ves cuánta plata debe haber en la caja y la cuentas al cerrar.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <a href="/caja/historial" class="btn btn-outline-secondary rounded-pill">
@@ -24,21 +25,26 @@
                     <div class="col-md-6 text-center">
                         <div class="card border-0 shadow-lg rounded-4 p-4">
                             <div class="display-1 text-muted mb-4"><i class="bi bi-door-closed"></i></div>
-                            <h3 class="fw-bold">Turno Cerrado</h3>
-                            <p class="text-muted mb-4">Para comenzar a registrar ventas y movimientos, debes abrir el
-                                turno de caja con una base inicial.</p>
+                            <h3 class="fw-bold">La caja está cerrada</h3>
+                            <p class="text-muted mb-3">Para empezar a vender, abre el turno diciendo con cuánta plata
+                                empiezas.</p>
+                            <div class="caja-pasos mb-4 text-start">
+                                <div class="caja-paso"><span class="caja-paso-n">1</span><div><strong>Abre el turno</strong><br><small class="text-muted">Escribe cuánto efectivo hay en la caja ahora mismo (la "base").</small></div></div>
+                                <div class="caja-paso"><span class="caja-paso-n">2</span><div><strong>Vende normalmente</strong><br><small class="text-muted">Las ventas se suman solas, no tienes que anotarlas aquí.</small></div></div>
+                                <div class="caja-paso"><span class="caja-paso-n">3</span><div><strong>Al terminar, cuenta y cierra</strong><br><small class="text-muted">Cuenta los billetes y monedas y escribe el total para ver si cuadra.</small></div></div>
+                            </div>
 
                             <form id="formAbrirCaja">
                                 <div class="row gx-2">
                                     <div class="col-6 mb-3 text-start">
-                                        <label for="monto_inicial_efectivo" class="form-label fw-bold small text-muted"><i class="bi bi-cash me-1"></i>Base Efectivo (Físico)</label>
+                                        <label for="monto_inicial_efectivo" class="form-label fw-bold small text-muted"><i class="bi bi-cash me-1"></i>Efectivo con el que empiezas</label>
                                         <div class="input-group input-group-lg">
                                             <span class="input-group-text bg-white border-end-0 text-success fw-bold">$</span>
                                             <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" id="monto_inicial_efectivo" name="monto_inicial_efectivo" placeholder="0" required autofocus>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-3 text-start">
-                                        <label for="monto_inicial_transferencia" class="form-label fw-bold small text-muted"><i class="bi bi-bank me-1"></i>Base Transferencias</label>
+                                        <label for="monto_inicial_transferencia" class="form-label fw-bold small text-muted"><i class="bi bi-bank me-1"></i>Saldo en bancos / Nequi (opcional)</label>
                                         <div class="input-group input-group-lg">
                                             <span class="input-group-text bg-white border-end-0 text-primary fw-bold">$</span>
                                             <input type="text" inputmode="decimal" class="form-control border-start-0 ps-0 fw-bold money-input" id="monto_inicial_transferencia" name="monto_inicial_transferencia" placeholder="0" value="0">
@@ -58,6 +64,53 @@
                 </div>
                 <% } else { %>
                     <!-- Pantalla de Caja Abierta -->
+                    <% if (ganancias) { %>
+                    <!-- Ganancias de hoy (mismas cifras de Finanzas) -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 caja-ganancias">
+                        <div class="card-body p-3 p-md-4">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>¿Cómo vamos hoy?</h5>
+                                    <small class="text-muted">Ganancias de hoy, calculadas igual que en Finanzas.</small>
+                                </div>
+                                <a href="/finanzas" class="btn btn-sm btn-outline-primary rounded-pill">Ver Finanzas completo <i class="bi bi-arrow-right ms-1"></i></a>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="caja-kpi border-success">
+                                        <div class="caja-kpi-t">Lo que has vendido</div>
+                                        <div class="caja-kpi-v text-success">$<%= fmt(ganancias.ingresos) %></div>
+                                        <div class="caja-kpi-s">Solo ventas cobradas hoy</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="caja-kpi border-danger">
+                                        <div class="caja-kpi-t">Lo que has gastado</div>
+                                        <div class="caja-kpi-v text-danger">$<%= fmt(ganancias.egresos) %></div>
+                                        <div class="caja-kpi-s">Gastos de caja + costos fijos del día + facturas de proveedor</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="caja-kpi <%= ganancias.utilidad >= 0 ? 'border-primary' : 'border-danger' %>">
+                                        <div class="caja-kpi-t">Lo que has ganado</div>
+                                        <div class="caja-kpi-v <%= ganancias.utilidad >= 0 ? 'text-primary' : 'text-danger' %>"><%= ganancias.utilidad < 0 ? '-' : '' %>$<%= fmt(Math.abs(ganancias.utilidad)) %></div>
+                                        <div class="caja-kpi-s">Vendido menos gastado</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <% if (Number(ganancias.aportes) > 0) { %>
+                                <div class="small text-muted mt-3"><i class="bi bi-info-circle me-1"></i>Los <strong>$<%= fmt(ganancias.aportes) %></strong> que metiste a la caja como "Metí plata" no son ventas, por eso no cuentan como ganancia (pero sí suben el efectivo en caja).</div>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <div class="alert alert-light border rounded-4 small mb-4 caja-ayuda">
+                        <i class="bi bi-lightbulb text-warning me-1"></i>
+                        <strong>¿Cómo se usa?</strong> Vende normalmente (las ventas se suman solas). Si pagas algo con plata de la caja, usa <strong>"Pagué algo"</strong>.
+                        Si metes plata de tu bolsillo a la caja, usa <strong>"Metí plata"</strong>. Al terminar, cuenta los billetes y cierra el turno a la derecha.
+                    </div>
+
                     <div class="row g-4">
                         <!-- Estado Actual -->
                         <div class="col-lg-8">
@@ -76,34 +129,37 @@
                                             <!-- Tarjeta Efectivo -->
                                             <div class="card bg-white border-0 border-start border-4 border-success h-100 shadow-sm rounded-4">
                                                 <div class="card-body">
-                                                    <h6 class="text-success fw-bold mb-3 d-flex align-items-center"><i class="bi bi-cash-stack me-2 fs-5"></i>Dinero Físico (Efectivo)</h6>
+                                                    <h6 class="text-success fw-bold mb-3 d-flex align-items-center"><i class="bi bi-cash-stack me-2 fs-5"></i>Billetes y monedas (Efectivo)</h6>
                                                     <div class="d-flex justify-content-between mb-2">
-                                                        <span class="text-muted small">Caja Fuerte / Base:</span>
-                                                        <span class="fw-bold text-dark">$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.monto_inicial_efectivo) %></span>
+                                                        <span class="text-muted small">Con lo que abriste:</span>
+                                                        <span class="fw-bold text-dark">$<%= fmt(estado.sesion.monto_inicial_efectivo) %></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-2">
-                                                        <span class="text-muted small">Ventas (Efectivo):</span>
-                                                        <span class="fw-bold text-success">+$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.ventas_efectivo) %></span>
+                                                        <span class="text-muted small">Ventas cobradas en efectivo:</span>
+                                                        <span class="fw-bold text-success">+$<%= fmt(estado.sesion.ventas_efectivo) %></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-2">
-                                                        <span class="text-muted small">Mvs. Manuales:</span>
-                                                        <span class="fw-bold"><span class="text-success">+<%= estado.sesion.entradas %></span> | <span class="text-danger">-<%= estado.sesion.salidas %></span></span>
+                                                        <span class="text-muted small">Plata que metiste a la caja:</span>
+                                                        <span class="fw-bold text-success">+$<%= fmt(estado.sesion.entradas) %></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span class="text-muted small">Gastos pagados con la caja:</span>
+                                                        <span class="fw-bold text-danger">-$<%= fmt(estado.sesion.salidas) %></span>
                                                     </div>
                                                     <hr class="text-muted opacity-25">
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="fw-bold text-dark">Efectivo en Caja:</span>
-                                                        <span class="h4 fw-bold text-success mb-0">$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.monto_final_teorico_efectivo) %></span>
+                                                        <span class="fw-bold text-dark">Debe haber en la caja:</span>
+                                                        <span class="h4 fw-bold text-success mb-0" id="efectivoEsperado" data-valor="<%= Number(estado.sesion.monto_final_teorico_efectivo) %>">$<%= fmt(estado.sesion.monto_final_teorico_efectivo) %></span>
                                                     </div>
+                                                    <div class="small text-muted mt-1">Es la suma de lo de arriba. Al cerrar, cuenta los billetes y compara.</div>
                                                     <% if (Number(estado.sesion.cambio_entregado_total || 0) > 0) { %>
                                                     <div class="mt-2 pt-2 border-top small text-muted">
                                                         <div class="d-flex justify-content-between">
                                                             <span>Vuelto entregado en el turno:</span>
-                                                            <span>$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.cambio_entregado_total) %></span>
+                                                            <span>$<%= fmt(estado.sesion.cambio_entregado_total) %></span>
                                                         </div>
                                                         <div class="fst-italic opacity-75" style="font-size:.72rem;">
-                                                            Suma del cambio devuelto a clientes en ventas de efectivo. Es informativo:
-                                                            NO afecta el arqueo (la venta ya se guarda por su valor neto, no por lo recibido).
-                                                            Solo cuenta las ventas donde el cajero tecleó el efectivo recibido.
+                                                            Solo informativo: ya está descontado, no tienes que restarlo.
                                                         </div>
                                                     </div>
                                                     <% } %>
@@ -115,14 +171,14 @@
                                             <!-- Tarjeta Bancos/Transferencias -->
                                             <div class="card bg-white border-0 border-start border-4 border-primary h-100 shadow-sm rounded-4">
                                                 <div class="card-body">
-                                                    <h6 class="text-primary fw-bold mb-3 d-flex align-items-center"><i class="bi bi-bank me-2 fs-5"></i>Medios Digitales (Transferencias)</h6>
+                                                    <h6 class="text-primary fw-bold mb-3 d-flex align-items-center"><i class="bi bi-bank me-2 fs-5"></i>Bancos / Nequi (Transferencias)</h6>
                                                     <div class="d-flex justify-content-between mb-2">
-                                                        <span class="text-muted small">Saldo Inicial:</span>
-                                                        <span class="fw-bold text-dark">$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.monto_inicial_transferencia) %></span>
+                                                        <span class="text-muted small">Con lo que abriste:</span>
+                                                        <span class="fw-bold text-dark">$<%= fmt(estado.sesion.monto_inicial_transferencia) %></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-2">
-                                                        <span class="text-muted small">Ventas (Transferencias):</span>
-                                                        <span class="fw-bold text-primary">+$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.ventas_transferencia) %></span>
+                                                        <span class="text-muted small">Ventas cobradas por transferencia:</span>
+                                                        <span class="fw-bold text-primary">+$<%= fmt(estado.sesion.ventas_transferencia) %></span>
                                                     </div>
                                                     <!-- Se espacio para que quede parejo a nivel de altura sino pones algo aquí -->
                                                     <div class="d-flex justify-content-between mb-2 invisible">
@@ -131,9 +187,10 @@
                                                     </div>
                                                     <hr class="text-muted opacity-25">
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="fw-bold text-dark">Saldo en Bancos:</span>
-                                                        <span class="h4 fw-bold text-primary mb-0">$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.monto_final_teorico_transferencia) %></span>
+                                                        <span class="fw-bold text-dark">Debe haber en bancos:</span>
+                                                        <span class="h4 fw-bold text-primary mb-0">$<%= fmt(estado.sesion.monto_final_teorico_transferencia) %></span>
                                                     </div>
+                                                    <div class="small text-muted mt-1">Esto no se cuenta al cerrar; revísalo en tu app del banco.</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -144,32 +201,33 @@
                                             <button class="btn btn-success rounded-pill px-4 py-2"
                                                 data-bs-toggle="modal" data-bs-target="#modalMovimiento"
                                                 onclick="setTipoMov('entrada')">
-                                                <i class="bi bi-plus-circle me-1"></i> Entrada de Dinero
+                                                <i class="bi bi-plus-circle me-1"></i> Metí plata a la caja
                                             </button>
                                             <button class="btn btn-outline-danger rounded-pill px-4 py-2"
                                                 data-bs-toggle="modal" data-bs-target="#modalMovimiento"
                                                 onclick="setTipoMov('salida')">
-                                                <i class="bi bi-dash-circle me-1"></i> Gasto / Salida
+                                                <i class="bi bi-dash-circle me-1"></i> Pagué algo con la caja
                                             </button>
                                         </div>
+                                        <div class="small text-muted mt-2">"Metí plata" = pusiste dinero tuyo en la caja (no es una venta). "Pagué algo" = sacaste plata para pagar un gasto (hielo, domicilio, proveedor...).</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="card border-0 shadow-sm rounded-4">
                                 <div class="card-header bg-white border-0 py-3">
-                                    <h6 class="mb-0 fw-bold">Detalles del Turno</h6>
+                                    <h6 class="mb-0 fw-bold">Resumen del turno</h6>
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="bg-light">
                                                 <tr class="small text-muted">
-                                                    <th class="ps-4">Apertura</th>
-                                                    <th>Usuario</th>
-                                                    <th>Total Ventas</th>
-                                                    <th>Total Mvs.</th>
-                                                    <th class="text-end pe-4">Total General</th>
+                                                    <th class="ps-4">Abierto desde</th>
+                                                    <th>Atiende</th>
+                                                    <th>Ventas</th>
+                                                    <th>Entró / salió</th>
+                                                    <th class="text-end pe-4">Total (efectivo + bancos)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -181,24 +239,15 @@
                                                     <td>
                                                         <%= user.nombre %>
                                                     </td>
-                                                    <td class="text-success fw-bold">+$<%= new
-                                                            Intl.NumberFormat('es-CO').format(estado.sesion.ventas) %>
-                                                        <br><small class="text-muted">Ef: <%= estado.sesion.ventas_efectivo %> | Tr: <%= estado.sesion.ventas_transferencia %></small>
+                                                    <td class="text-success fw-bold">+$<%= fmt(estado.sesion.ventas) %>
+                                                        <br><small class="text-muted">Efectivo $<%= fmt(estado.sesion.ventas_efectivo) %> · Transferencia $<%= fmt(estado.sesion.ventas_transferencia) %></small>
                                                     </td>
                                                     <td>
-                                                        <div class="small text-success">+$<%= new
-                                                                Intl.NumberFormat('es-CO').format(estado.sesion.entradas)
-                                                                %>
-                                                        </div>
-                                                        <div class="small text-danger">-$<%= new
-                                                                Intl.NumberFormat('es-CO').format(estado.sesion.salidas)
-                                                                %>
-                                                        </div>
+                                                        <div class="small text-success">+$<%= fmt(estado.sesion.entradas) %> metiste</div>
+                                                        <div class="small text-danger">-$<%= fmt(estado.sesion.salidas) %> pagaste</div>
                                                     </td>
                                                     <td class="text-end pe-4 fw-bold h5">
-                                                        $<%= new
-                                                            Intl.NumberFormat('es-CO').format(estado.sesion.monto_final_teorico)
-                                                            %>
+                                                        $<%= fmt(estado.sesion.monto_final_teorico) %>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -212,22 +261,23 @@
                         <div class="col-lg-4">
                             <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 1rem;">
                                 <div class="card-body p-4 text-center">
-                                    <h5 class="fw-bold mb-3">Arqueo y Cierre</h5>
-                                    <p class="text-muted small">Al finalizar el día, cuenta el efectivo físico y
-                                        compáralo con el total del sistema.</p>
+                                    <h5 class="fw-bold mb-3">Cerrar el turno</h5>
+                                    <p class="text-muted small">Cuando termines: <strong>1)</strong> cuenta los billetes y monedas que hay en la caja,
+                                        <strong>2)</strong> escribe el total aquí, <strong>3)</strong> mira si coincide con lo que debe haber.</p>
 
                                     <form id="formCerrarCaja" data-id="<%= estado.sesion.id %>">
                                         <div class="mb-3 text-start">
-                                            <label for="monto_final_real" class="form-label small fw-bold"><i class="bi bi-cash me-1"></i>Efectivo Físico Contado</label>
+                                            <label for="monto_final_real" class="form-label small fw-bold"><i class="bi bi-cash me-1"></i>Efectivo que contaste</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-white">$</span>
                                                 <input type="text" inputmode="decimal" id="monto_final_real" name="monto_final_real"
                                                     class="form-control fw-bold fs-5 text-success money-input" required placeholder="0">
                                             </div>
-                                            <div class="form-text text-muted small">Cuenta todos los billetes/monedas reales.</div>
+                                            <div class="form-text text-muted small">Solo billetes y monedas; no incluyas transferencias.</div>
+                                            <div id="arqueoResultado" class="arqueo-res mt-2" hidden></div>
                                         </div>
                                         <div class="mb-4 text-start">
-                                            <label for="notas_cierre" class="form-label small fw-bold">Notas de cierre</label>
+                                            <label for="notas_cierre" class="form-label small fw-bold">Observaciones (opcional)</label>
                                             <textarea class="form-control" id="notas_cierre" name="notas" rows="3"
                                                 placeholder="Ej: Todo cuadra perfecto..."></textarea>
                                         </div>
@@ -239,6 +289,14 @@
                             </div>
                         </div>
                     </div>
+                    <details class="mt-4 small caja-ayuda">
+                        <summary class="fw-bold text-primary" style="cursor:pointer">¿Por qué Caja y Finanzas muestran números distintos?</summary>
+                        <ul class="mt-2 text-muted mb-0">
+                            <li><strong>Caja</strong> solo mira <em>este turno</em> y cuenta toda la plata que entra y sale físicamente (incluida la que metes tú).</li>
+                            <li><strong>Finanzas</strong> mira varios días y solo cuenta como ingreso las <em>ventas</em>; además resta costos fijos y facturas de proveedor, que no salen de la caja.</li>
+                            <li>La plata que metes con "Metí plata a la caja" sube el efectivo en caja, pero <strong>no es ganancia</strong>.</li>
+                        </ul>
+                    </details>
                     <% } %>
         </div>
 
@@ -263,7 +321,8 @@
                             <div class="mb-3">
                                 <label for="movMotivo" class="form-label small fw-bold">Motivo / Descripción</label>
                                 <input type="text" id="movMotivo" name="motivo" class="form-control"
-                                    placeholder="Ej: Compra de hielo, Pago propina..." required>
+                                    placeholder="Ej: Compra de hielo, domicilio, pago a proveedor..." required>
+                                <div class="form-text" id="ayudaMov"></div>
                             </div>
                         </div>
                         <div class="modal-footer border-0">

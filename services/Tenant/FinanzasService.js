@@ -27,6 +27,16 @@ function variacionPct(actual, anterior) {
     return ((actual - anterior) / Math.abs(anterior)) * 100;
 }
 
+/**
+ * Suma las filas de getResumenPeriodo de un tipo. `aporte` (true/false) filtra las entradas
+ * manuales de dinero (aportes del dueño, no ventas); undefined suma todas las del tipo.
+ */
+function sumarResumen(filas, tipo, aporte) {
+    return (filas || [])
+        .filter(r => r.tipo === tipo && (aporte === undefined || Boolean(Number(r.es_aporte)) === aporte))
+        .reduce((acc, r) => acc + (Number.parseFloat(r.total) || 0), 0);
+}
+
 class FinanzasService {
     /**
      * Registra un ingreso por venta (automático)
@@ -141,18 +151,20 @@ class FinanzasService {
 
         const costosFijosPeriodo = (costosFijosMensual / 30) * dias;
 
-        const ingresos = Number.parseFloat((resumen || []).find(r => r.tipo === 'entrada')?.total) || 0;
-        const egresosCaja = Number.parseFloat((resumen || []).find(r => r.tipo === 'salida')?.total) || 0;
+        const ingresos = sumarResumen(resumen, 'entrada', false);
+        const aportes = sumarResumen(resumen, 'entrada', true);
+        const egresosCaja = sumarResumen(resumen, 'salida');
         const egresos = egresosCaja + costosFijosPeriodo + proveedoresPeriodo;
         const utilidad = ingresos - egresos;
 
-        const ingresosAnt = Number.parseFloat((resumenAnterior || []).find(r => r.tipo === 'entrada')?.total) || 0;
-        const egresosCajaAnt = Number.parseFloat((resumenAnterior || []).find(r => r.tipo === 'salida')?.total) || 0;
+        const ingresosAnt = sumarResumen(resumenAnterior, 'entrada', false);
+        const egresosCajaAnt = sumarResumen(resumenAnterior, 'salida');
         const egresosAnt = egresosCajaAnt + costosFijosPeriodo + proveedoresPeriodoAnterior;
         const utilidadAnt = ingresosAnt - egresosAnt;
 
         return {
             ingresos,
+            aportes,
             egresosCaja,
             costosFijosPeriodo,
             proveedoresPeriodo,

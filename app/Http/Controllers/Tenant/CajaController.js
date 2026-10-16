@@ -5,9 +5,12 @@ class CajaController {
         try {
             const tenantId = req.tenant?.id;
             const estado = await CajaService.getEstadoCaja(tenantId);
+            const puedeVerFinanzas = Boolean(res.locals.nav?.can?.finanzas);
+            const ganancias = puedeVerFinanzas ? await CajaService.getResumenGanancias(tenantId) : null;
 
             res.render('caja/index', {
                 estado,
+                ganancias,
                 user: req.user,
                 tenant: req.tenant
             });
