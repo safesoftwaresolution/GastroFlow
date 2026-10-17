@@ -189,11 +189,19 @@
                                                         <span class="fw-bold text-danger">-$<%= fmt(estado.sesion.salidas_transferencia) %></span>
                                                     </div>
                                                     <hr class="text-muted opacity-25">
+                                                    <%
+                                                        const saldoBanco = Number(estado.sesion.monto_final_teorico_transferencia) || 0;
+                                                        const sinBaseBanco = Number(estado.sesion.monto_inicial_transferencia) === 0;
+                                                    %>
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="fw-bold text-dark">Debe haber en bancos:</span>
-                                                        <span class="h4 fw-bold text-primary mb-0">$<%= fmt(estado.sesion.monto_final_teorico_transferencia) %></span>
+                                                        <span class="fw-bold text-dark"><%= sinBaseBanco ? 'Movimiento en bancos del turno:' : 'Debe haber en bancos:' %></span>
+                                                        <span class="h4 fw-bold <%= saldoBanco < 0 ? 'text-secondary' : 'text-primary' %> mb-0"><%= saldoBanco < 0 ? '-' : '' %>$<%= fmt(Math.abs(saldoBanco)) %></span>
                                                     </div>
-                                                    <div class="small text-muted mt-1">Esto no se cuenta al cerrar; revísalo en tu app del banco.</div>
+                                                    <% if (saldoBanco < 0) { %>
+                                                        <div class="small text-muted mt-1">Salió más por transferencia de lo que entró en este turno. No afecta el efectivo ni el cierre.</div>
+                                                    <% } else { %>
+                                                        <div class="small text-muted mt-1">Esto no se cuenta al cerrar; revísalo en tu app del banco.</div>
+                                                    <% } %>
                                                 </div>
                                             </div>
                                         </div>
