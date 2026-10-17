@@ -24,6 +24,7 @@ class MenuQRController {
                 combos: data.combos || [],
                 brochure: data.brochure || [],
                 qrToken,
+                tenantSlug,
                 qrSessionId: data.mesa.qr_session_id
             });
 
