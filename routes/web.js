@@ -44,6 +44,8 @@ const adminReportesRoutes = require('./admin/reportes');
 const adminRendimientoRoutes = require('./admin/rendimiento');
 const adminJobsRoutes = require('./admin/jobs');
 const adminLandingRoutes = require('./admin/landing');
+const adminAnunciosRoutes = require('./admin/anuncios');
+const anunciosRoutes = require('./tenant/anuncios');
 const LandingSettingsService = require('../services/Admin/LandingSettingsService');
 const eventosRoutes = require('./tenant/eventos');
 const inventarioRoutes = require('./tenant/inventario');
@@ -284,6 +286,7 @@ router.use('/api/dashboard', requireAuthWithTenant, requirePlanFeature('dashboar
 
 // --- RUTA DE NOTIFICACIONES (SSE) ---
 router.get('/api/notifications/subscribe', requireAuthWithTenant, NotificationController.subscribe);
+router.use('/api/anuncios', requireAuthWithTenant, anunciosRoutes);
 
 // --- RUTAS DE SUPERADMIN ---
 const requireSuperadmin = [requireAuth, requireRole(ROLES.SUPERADMIN), adminLocals];
@@ -300,5 +303,6 @@ router.use('/admin/reportes', requireSuperadmin, adminReportesRoutes);
 router.use('/admin/rendimiento', requireSuperadmin, adminRendimientoRoutes);
 router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
+router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
 
 module.exports = router;

@@ -3,6 +3,9 @@
 <script src="/js/core/gf.js?v=<%= assetV %>"></script>
 <script src="/js/core/tablas-responsive.js?v=<%= assetV %>" defer></script>
 <%- include('_navbar_styles') %>
+<link rel="stylesheet" href="/css/core/anuncio-modal.css?v=<%= assetV %>">
+<script src="/js/core/anuncios.js?v=<%= assetV %>" defer></script>
+<script defer>document.addEventListener('DOMContentLoaded', function () { if (window.GFAnuncios) window.GFAnuncios.iniciar(); });</script>
 
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container-fluid gap-2">
