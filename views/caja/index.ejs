@@ -180,10 +180,13 @@
                                                         <span class="text-muted small">Ventas cobradas por transferencia:</span>
                                                         <span class="fw-bold text-primary">+$<%= fmt(estado.sesion.ventas_transferencia) %></span>
                                                     </div>
-                                                    <!-- Se espacio para que quede parejo a nivel de altura sino pones algo aquí -->
-                                                    <div class="d-flex justify-content-between mb-2 invisible">
-                                                        <span class="text-muted small">...</span>
-                                                        <span class="fw-bold">...</span>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span class="text-muted small">Entradas por transferencia:</span>
+                                                        <span class="fw-bold text-success">+$<%= fmt(estado.sesion.entradas_transferencia) %></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span class="text-muted small">Gastos pagados por transferencia:</span>
+                                                        <span class="fw-bold text-danger">-$<%= fmt(estado.sesion.salidas_transferencia) %></span>
                                                     </div>
                                                     <hr class="text-muted opacity-25">
                                                     <div class="d-flex justify-content-between align-items-center">
@@ -317,6 +320,13 @@
                                     <span class="input-group-text">$</span>
                                     <input type="text" inputmode="decimal" id="movMonto" name="monto" class="form-control money-input" required>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="movMetodo" class="form-label small fw-bold">¿Cómo fue?</label>
+                                <select id="movMetodo" name="metodo_pago" class="form-select">
+                                    <option value="efectivo">En efectivo (billetes y monedas)</option>
+                                    <option value="transferencia">Por transferencia / banco</option>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="movMotivo" class="form-label small fw-bold">Motivo / Descripción</label>

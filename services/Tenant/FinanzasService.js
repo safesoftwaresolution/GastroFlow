@@ -31,9 +31,14 @@ function variacionPct(actual, anterior) {
  * Suma las filas de getResumenPeriodo de un tipo. `aporte` (true/false) filtra las entradas
  * manuales de dinero (aportes del dueño, no ventas); undefined suma todas las del tipo.
  */
-function sumarResumen(filas, tipo, aporte) {
+function sumarResumen(filas, tipo, aporte, metodo) {
     return (filas || [])
-        .filter(r => r.tipo === tipo && (aporte === undefined || Boolean(Number(r.es_aporte)) === aporte))
+        .filter(
+            r =>
+                r.tipo === tipo &&
+                (aporte === undefined || Boolean(Number(r.es_aporte)) === aporte) &&
+                (metodo === undefined || r.metodo_pago === metodo)
+        )
         .reduce((acc, r) => acc + (Number.parseFloat(r.total) || 0), 0);
 }
 
@@ -82,13 +87,16 @@ class FinanzasService {
      * Registra un movimiento manual (ingreso/egreso) desde el módulo de Finanzas.
      * No requiere una sesión de caja abierta (movimiento administrativo, fuera de turno).
      */
-    static async registrarMovimientoManual(tenantId, { monto, motivo, categoria, tipo, usuario_id }) {
+    static async registrarMovimientoManual(tenantId, { monto, motivo, categoria, tipo, usuario_id, metodo_pago }) {
         const montoNum = Number.parseFloat(monto);
         if (!montoNum || montoNum <= 0) {
             throw new Error('El monto debe ser mayor a 0');
         }
         if (!['entrada', 'salida'].includes(tipo)) {
             throw new Error('Tipo de operación inválido');
+        }
+        if (metodo_pago !== undefined && !['efectivo', 'transferencia'].includes(metodo_pago)) {
+            throw new Error('Método de pago inválido');
         }
 
         const sesion = await CajaRepository.getSesionAbierta(tenantId);
@@ -101,7 +109,8 @@ class FinanzasService {
             motivo: motivo || (tipo === 'salida' ? 'Egreso manual' : 'Ingreso manual'),
             categoria_gasto: categoria || 'General',
             referencia_tipo: 'manual',
-            referencia_id: null
+            referencia_id: null,
+            metodo_pago: metodo_pago || 'efectivo'
         });
     }
 
@@ -154,6 +163,15 @@ class FinanzasService {
         const ingresos = sumarResumen(resumen, 'entrada', false);
         const aportes = sumarResumen(resumen, 'entrada', true);
         const egresosCaja = sumarResumen(resumen, 'salida');
+        // Gastos y aportes manuales de dinero, separados por cómo se pagaron/recibieron.
+        const egresosPorMetodo = {
+            efectivo: sumarResumen(resumen, 'salida', undefined, 'efectivo'),
+            transferencia: sumarResumen(resumen, 'salida', undefined, 'transferencia')
+        };
+        const aportesPorMetodo = {
+            efectivo: sumarResumen(resumen, 'entrada', true, 'efectivo'),
+            transferencia: sumarResumen(resumen, 'entrada', true, 'transferencia')
+        };
         const egresos = egresosCaja + costosFijosPeriodo + proveedoresPeriodo;
         const utilidad = ingresos - egresos;
 
@@ -165,6 +183,8 @@ class FinanzasService {
         return {
             ingresos,
             aportes,
+            egresosPorMetodo,
+            aportesPorMetodo,
             egresosCaja,
             costosFijosPeriodo,
             proveedoresPeriodo,
@@ -267,6 +287,8 @@ class FinanzasService {
                 {
                     ul: [
                         `Caja (compras de inventario, gastos manuales): ${formatMoney(data.egresosCaja)}`,
+                        `   · pagado en efectivo: ${formatMoney(data.egresosPorMetodo.efectivo)}`,
+                        `   · pagado por transferencia: ${formatMoney(data.egresosPorMetodo.transferencia)}`,
                         `Costos fijos del periodo (prorrateado): ${formatMoney(data.costosFijosPeriodo)}`,
                         `Facturas de proveedor del periodo: ${formatMoney(data.proveedoresPeriodo)}`
                     ],

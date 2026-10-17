@@ -77,12 +77,13 @@ class FinanzasController {
     static async registrarMovimiento(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const { monto, motivo, categoria, tipo } = req.body;
+            const { monto, motivo, categoria, tipo, metodo_pago } = req.body;
             const id = await FinanzasService.registrarMovimientoManual(tenantId, {
                 monto,
                 motivo,
                 categoria,
                 tipo,
+                metodo_pago,
                 usuario_id: req.user?.id
             });
             res.status(201).json({ id });

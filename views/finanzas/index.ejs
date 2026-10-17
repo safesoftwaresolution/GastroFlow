@@ -137,6 +137,14 @@
                         <span class="text-muted">Caja (inventario, gastos manuales)</span>
                         <span class="fw-bold">$<%= Number(resumen.egresosCaja).toLocaleString('es-CO') %></span>
                     </div>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom ps-3">
+                        <span class="text-muted"><i class="bi bi-cash-coin me-1"></i>Pagado en efectivo</span>
+                        <span class="fw-bold">$<%= Number(resumen.egresosPorMetodo.efectivo).toLocaleString('es-CO') %></span>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom ps-3">
+                        <span class="text-muted"><i class="bi bi-bank me-1"></i>Pagado por transferencia</span>
+                        <span class="fw-bold">$<%= Number(resumen.egresosPorMetodo.transferencia).toLocaleString('es-CO') %></span>
+                    </div>
                     <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
                         <span class="text-muted">Costos fijos (prorrateado)</span>
                         <span class="fw-bold">$<%= Number(resumen.costosFijosPeriodo).toLocaleString('es-CO') %></span>
@@ -229,6 +237,7 @@
                                     <th class="ps-4">Fecha</th>
                                     <th>Concepto / Motivo</th>
                                     <th>Categoría</th>
+                                    <th>Pago</th>
                                     <th>Referencia</th>
                                     <th class="text-end pe-4">Monto</th>
                                 </tr>
@@ -245,6 +254,15 @@
                                                 <%= m.motivo %>
                                             </td>
                                             <td class="text-muted"><%= m.categoria_gasto %></td>
+                                            <td>
+                                                <% if (m.referencia_tipo === 'venta') { %>
+                                                    <small class="text-muted">—</small>
+                                                <% } else if (m.metodo_pago === 'transferencia') { %>
+                                                    <span class="badge bg-primary-subtle text-primary-emphasis"><i class="bi bi-bank me-1"></i>Transferencia</span>
+                                                <% } else { %>
+                                                    <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-cash-coin me-1"></i>Efectivo</span>
+                                                <% } %>
+                                            </td>
                                             <td><small class="text-muted"><%= m.referencia_tipo %> #<%= m.referencia_id || 'N/A' %></small></td>
                                             <td class="text-end pe-4 fw-bold <%= m.tipo === 'entrada' ? 'text-success' : 'text-danger' %>">
                                                 <%= m.tipo === 'entrada' ? '+' : '-' %>$<%= Number(m.monto).toLocaleString('es-CO') %>
@@ -287,6 +305,14 @@
                                 <span class="input-group-text">$</span>
                                 <input type="text" inputmode="decimal" class="form-control money-input" id="gastoMonto" required placeholder="0">
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="gastoMetodo" class="form-label small fw-bold">¿Cómo se pagó / recibió?</label>
+                            <select class="form-select" id="gastoMetodo">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia / Banco</option>
+                            </select>
+                            <div class="form-text">Si fue en efectivo, afecta la plata física de la caja. Si fue transferencia, afecta el saldo en bancos.</div>
                         </div>
                         <div class="mb-3">
                             <label for="gastoCategoria" class="form-label small fw-bold">Centro de Costo / Categoría</label>

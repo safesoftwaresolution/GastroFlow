@@ -58,7 +58,10 @@ class CajaService {
             Number.parseFloat(stats.entradas) -
             Number.parseFloat(stats.salidas);
         const teoricoTransferencia =
-            Number.parseFloat(sesion.monto_inicial_transferencia) + Number.parseFloat(stats.ventas_transferencia);
+            Number.parseFloat(sesion.monto_inicial_transferencia) +
+            Number.parseFloat(stats.ventas_transferencia) +
+            Number.parseFloat(stats.entradas_transferencia) -
+            Number.parseFloat(stats.salidas_transferencia);
         const montoTeorico = teoricoEfectivo + teoricoTransferencia;
 
         return {
@@ -98,7 +101,8 @@ class CajaService {
             usuarioId,
             data.tipo,
             Number.parseFloat(data.monto),
-            data.motivo
+            data.motivo,
+            data.metodo_pago
         );
     }
 

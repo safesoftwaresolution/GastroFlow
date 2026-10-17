@@ -10,12 +10,22 @@ class FinanzasRepository {
      * Registra un movimiento de dinero (Entrada/Salida)
      */
     static async createMovimiento(tenantId, data) {
-        const { sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id } = data;
+        const {
+            sesion_id,
+            usuario_id,
+            tipo,
+            monto,
+            motivo,
+            categoria_gasto,
+            referencia_tipo,
+            referencia_id,
+            metodo_pago
+        } = data;
 
         const [result] = await db.query(
             `INSERT INTO caja_movimientos 
-            (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id, metodo_pago) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 tenantId,
                 sesion_id || null,
@@ -25,7 +35,8 @@ class FinanzasRepository {
                 motivo,
                 categoria_gasto || 'General',
                 referencia_tipo || 'manual',
-                referencia_id || null
+                referencia_id || null,
+                metodo_pago === 'transferencia' ? 'transferencia' : 'efectivo'
             ]
         );
         return result.insertId;
@@ -40,12 +51,13 @@ class FinanzasRepository {
         const [rows] = await db.query(
             `SELECT 
                 tipo,
+                metodo_pago,
                 (tipo = 'entrada' AND (referencia_tipo IS NULL OR referencia_tipo = 'manual')) AS es_aporte,
                 SUM(monto) as total,
                 COUNT(*) as cantidad
             FROM caja_movimientos
             WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
-            GROUP BY tipo, es_aporte`,
+            GROUP BY tipo, metodo_pago, es_aporte`,
             [tenantId, fechaInicio, fechaFin]
         );
         return rows;

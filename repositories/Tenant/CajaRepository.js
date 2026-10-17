@@ -59,11 +59,18 @@ class CajaRepository {
             [sesionId]
         );
         const [entradas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND ${EXCLUIR_ENTRADAS_VENTA}`,
+            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND metodo_pago = 'efectivo' AND ${EXCLUIR_ENTRADAS_VENTA}`,
             [sesionId]
         );
         const [salidas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'salida'`,
+            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'salida' AND metodo_pago = 'efectivo'`,
+            [sesionId]
+        );
+        // Movimientos por transferencia: no tocan el efectivo físico pero sí el total del turno.
+        const [movTransf] = await db.query(
+            `SELECT COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN monto ELSE -monto END), 0) AS neto
+             FROM caja_movimientos
+             WHERE sesion_id = ? AND metodo_pago = 'transferencia' AND (tipo = 'salida' OR ${EXCLUIR_ENTRADAS_VENTA})`,
             [sesionId]
         );
         const [sesion] = await db.query(
@@ -85,7 +92,8 @@ class CajaRepository {
             sesionId
         ]);
         const vTot = parseFloat(ventasTotales[0]?.total || 0);
-        const teoricoTotal = parseFloat(sesion[0]?.monto_inicial || 0) + vTot + e - s;
+        const teoricoTotal =
+            parseFloat(sesion[0]?.monto_inicial || 0) + vTot + e - s + parseFloat(movTransf[0]?.neto || 0);
 
         const sql = `
             UPDATE caja_sesiones 
@@ -126,12 +134,20 @@ class CajaRepository {
     /**
      * Registra un movimiento manual (Entrada/Salida)
      */
-    static async registrarMovimiento(tenantId, sesionId, usuarioId, tipo, monto, motivo) {
+    static async registrarMovimiento(tenantId, sesionId, usuarioId, tipo, monto, motivo, metodoPago = 'efectivo') {
         const sql = `
-            INSERT INTO caja_movimientos (tenant_id, sesion_id, usuario_id, tipo, monto, motivo)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO caja_movimientos (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, metodo_pago)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await db.query(sql, [tenantId, sesionId, usuarioId, tipo, monto, motivo]);
+        const [result] = await db.query(sql, [
+            tenantId,
+            sesionId,
+            usuarioId,
+            tipo,
+            monto,
+            motivo,
+            metodoPago === 'transferencia' ? 'transferencia' : 'efectivo'
+        ]);
         return result.insertId;
     }
 
@@ -200,14 +216,19 @@ class CajaRepository {
 
         // Sumar movimientos manuales (excluye las entradas 'venta' de FinanzasService,
         // que duplicarían las ventas ya contadas desde la tabla facturas).
-        const [entradas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND ${EXCLUIR_ENTRADAS_VENTA}`,
+        // Separados por método: solo los de efectivo mueven la plata física del arqueo;
+        // los de transferencia mueven el saldo en bancos.
+        const [movs] = await db.query(
+            `SELECT tipo, metodo_pago, SUM(monto) AS total
+             FROM caja_movimientos
+             WHERE sesion_id = ? AND (tipo = 'salida' OR ${EXCLUIR_ENTRADAS_VENTA})
+             GROUP BY tipo, metodo_pago`,
             [sesionId]
         );
-        const [salidas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'salida'`,
-            [sesionId]
-        );
+        const sumMov = (tipo, metodo) =>
+            movs
+                .filter(m => m.tipo === tipo && m.metodo_pago === metodo)
+                .reduce((acc, m) => acc + parseFloat(m.total || 0), 0);
 
         // Efectivo recibido / cambio entregado (solo informativo, no afecta el
         // arqueo). El cambio = efectivo_recibido - total de cada factura en efectivo.
@@ -224,8 +245,10 @@ class CajaRepository {
             ventas_efectivo: parseFloat(ventasEfectivo[0]?.total || 0),
             ventas_transferencia: parseFloat(ventasTransferencia[0]?.total || 0),
             ventas: parseFloat(ventas[0]?.total || 0),
-            entradas: parseFloat(entradas[0]?.total || 0),
-            salidas: parseFloat(salidas[0]?.total || 0),
+            entradas: sumMov('entrada', 'efectivo'),
+            salidas: sumMov('salida', 'efectivo'),
+            entradas_transferencia: sumMov('entrada', 'transferencia'),
+            salidas_transferencia: sumMov('salida', 'transferencia'),
             efectivo_recibido_total: parseFloat(efectivoFlujo[0]?.recibido || 0),
             cambio_entregado_total: parseFloat(efectivoFlujo[0]?.cambio || 0)
         };

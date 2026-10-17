@@ -87,7 +87,8 @@
             monto: MoneyInput.parse(document.getElementById('gastoMonto').value),
             motivo: document.getElementById('gastoMotivo').value,
             categoria: document.getElementById('gastoCategoria').value,
-            tipo: document.getElementById('gastoTipo').value
+            tipo: document.getElementById('gastoTipo').value,
+            metodo_pago: document.getElementById('gastoMetodo').value
         };
 
         if (!payload.monto) return Swal.fire('Aviso', 'Ingrese un monto válido', 'warning');
