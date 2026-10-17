@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../app/Http/Controllers/AuthController');
 const RegistroController = require('../app/Http/Controllers/RegistroController');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const BaseRequest = require('../app/Http/Requests/BaseRequest');
 const LoginRequest = require('../app/Http/Requests/Auth/LoginRequest');
 const ChangePasswordRequest = require('../app/Http/Requests/Auth/ChangePasswordRequest');
@@ -29,7 +29,7 @@ const registroLimiter = rateLimit({
 });
 
 // GET /auth/login - Vista
-router.get('/login', AuthController.showLogin);
+router.get('/login', optionalAuth, AuthController.showLogin);
 
 // POST /auth/login - Logic
 router.post('/login', loginLimiter, BaseRequest.validate(LoginRequest), AuthController.login);
