@@ -331,6 +331,26 @@ class ProductosController {
         }
     }
 
+    // PATCH /productos/:id/disponible
+    static async toggleDisponible(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            const id = Number.parseInt(req.params.id, 10);
+            const disponible = req.body.disponible === true || req.body.disponible === 1 || req.body.disponible === '1';
+            await ProductService.setDisponible(id, tenantId, disponible, req.user?.id);
+            res.json({ message: disponible ? 'Producto activado' : 'Producto desactivado', disponible });
+        } catch (error) {
+            console.error('Error al actualizar disponibilidad:', error);
+            if (error.message === 'Producto no encontrado') {
+                return res.status(404).json({ error: error.message });
+            }
+            res.status(500).json({ error: 'Error al actualizar la disponibilidad' });
+        }
+    }
+
     // PATCH /productos/:id/pide-nota
     static async togglePideNota(req, res) {
         try {

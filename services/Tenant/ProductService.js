@@ -325,6 +325,20 @@ class ProductService {
         return result;
     }
 
+    static async setDisponible(id, tenantId, disponible, usuarioId = null) {
+        const existing = await ProductRepository.findById(id, tenantId);
+        if (!existing) {
+            throw new Error('Producto no encontrado');
+        }
+        const result = await ProductRepository.setDisponible(id, tenantId, disponible);
+        if (Number(Boolean(existing.disponible)) !== Number(Boolean(disponible))) {
+            await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, {
+                disponible: { antes: !!existing.disponible, despues: !!disponible }
+            });
+        }
+        return result;
+    }
+
     static async togglePideNota(id, tenantId, pideNota, usuarioId = null) {
         const existing = await ProductRepository.findById(id, tenantId);
         const result = await ProductRepository.togglePideNota(id, tenantId, pideNota);

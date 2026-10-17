@@ -30,6 +30,13 @@ class AgregarItemService {
             realProductId = await this._getOrCreateMirrorProduct(tenantId, insumoId, precio);
         } else {
             await TenantOwnership.productos(tenantId, realProductId);
+            const [[prodDisp]] = await db.query(
+                'SELECT nombre, disponible FROM productos WHERE id = ? AND tenant_id = ?',
+                [realProductId, tenantId]
+            );
+            if (prodDisp && !prodDisp.disponible) {
+                throw new Error(`"${prodDisp.nombre}" no está disponible por el momento`);
+            }
         }
 
         const [pedidos] = await db.query('SELECT id, mesa_id FROM pedidos WHERE id = ? AND tenant_id = ?', [

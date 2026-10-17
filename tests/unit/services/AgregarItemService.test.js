@@ -29,6 +29,7 @@ describe('AgregarItemService', () => {
 
     it('inserta una fila nueva si no hay ninguna igual todavía pendiente, y sincroniza el precio', async () => {
         db.query
+            .mockResolvedValueOnce([[{ nombre: 'Producto', disponible: 1 }]]) // SELECT disponibilidad del producto
             .mockResolvedValueOnce([[{ id: 10, mesa_id: 1 }]]) // SELECT pedidos
             .mockResolvedValueOnce([[]]) // SELECT existentes -> ninguna
             .mockResolvedValueOnce([{ insertId: 55 }]) // INSERT pedido_items
@@ -49,6 +50,7 @@ describe('AgregarItemService', () => {
 
     it('fusiona con una fila pendiente del mismo producto (misma nota, mismos toppings) en vez de crear otra', async () => {
         db.query
+            .mockResolvedValueOnce([[{ nombre: 'Producto', disponible: 1 }]]) // SELECT disponibilidad del producto
             .mockResolvedValueOnce([[{ id: 10, mesa_id: 1 }]]) // SELECT pedidos
             .mockResolvedValueOnce([[{ id: 8, cantidad: '1.00' }]]) // SELECT existentes -> ya hay una fila pendiente
             .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE pedido_items SET cantidad
@@ -72,6 +74,7 @@ describe('AgregarItemService', () => {
 
     it('busca la fila a fusionar filtrando por estado pendiente, nota y toppings (no cualquier fila del producto)', async () => {
         db.query
+            .mockResolvedValueOnce([[{ nombre: 'Producto', disponible: 1 }]]) // SELECT disponibilidad del producto
             .mockResolvedValueOnce([[{ id: 10, mesa_id: 1 }]])
             .mockResolvedValueOnce([[]])
             .mockResolvedValueOnce([{ insertId: 55 }])
@@ -86,11 +89,18 @@ describe('AgregarItemService', () => {
             nota: 'sin cebolla'
         });
 
-        const [existentesQuery, existentesParams] = db.query.mock.calls[1];
+        const [existentesQuery, existentesParams] = db.query.mock.calls[2];
         expect(existentesQuery).toMatch(/estado = 'pendiente'/);
         expect(existentesQuery).toMatch(/modificadores_hash\s*<=>\s*\?/);
         expect(existentesQuery).toMatch(/nota\s*<=>\s*\?/);
         expect(existentesParams).toEqual([10, 7, null, 'sin cebolla']);
+    });
+
+    it('rechaza agregar un producto desactivado (no disponible)', async () => {
+        db.query.mockResolvedValueOnce([[{ nombre: 'Pollo', disponible: 0 }]]); // SELECT disponibilidad
+        await expect(
+            AgregarItemService.execute({ tenantId: 1, pedidoId: 10, producto_id: 7, cantidad: 1, precio: 5000 })
+        ).rejects.toThrow('no está disponible');
     });
 
     it('rechaza si falta producto_id, cantidad o precio', async () => {
@@ -101,7 +111,9 @@ describe('AgregarItemService', () => {
     });
 
     it('lanza si el pedido no existe', async () => {
-        db.query.mockResolvedValueOnce([[]]); // SELECT pedidos -> vacío
+        db.query
+            .mockResolvedValueOnce([[{ nombre: 'Producto', disponible: 1 }]]) // SELECT disponibilidad
+            .mockResolvedValueOnce([[]]); // SELECT pedidos -> vacío
         await expect(
             AgregarItemService.execute({ tenantId: 1, pedidoId: 999, producto_id: 7, cantidad: 1, precio: 5000 })
         ).rejects.toThrow('Pedido no encontrado');

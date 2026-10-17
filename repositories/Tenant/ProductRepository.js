@@ -11,13 +11,13 @@ class ProductRepository {
      * Get all products with their categories
      * @returns {Promise<Array>} Array of products
      */
-    static async findAll(tenantId) {
+    static async findAll(tenantId, { soloDisponibles = false } = {}) {
         const [productos] = await db.query(
             `
             SELECT p.*, c.nombre as categoria_nombre 
             FROM productos p 
             LEFT JOIN categorias c ON p.categoria_id = c.id 
-            WHERE p.tenant_id = ? AND p.activo = 1
+            WHERE p.tenant_id = ? AND p.activo = 1${soloDisponibles ? ' AND p.disponible = 1' : ''}
             ORDER BY p.nombre
         `,
             [tenantId]
@@ -95,7 +95,7 @@ class ProductRepository {
             (SELECT p.id, p.codigo, p.nombre, p.precio_unidad, p.categoria_id, c.nombre AS categoria_nombre, p.pide_nota, 0 AS is_insumo
             FROM productos p
             LEFT JOIN categorias c ON p.categoria_id = c.id
-            WHERE p.tenant_id = ? AND p.activo = 1 AND (p.nombre LIKE ? OR p.codigo LIKE ?)
+            WHERE p.tenant_id = ? AND p.activo = 1 AND p.disponible = 1 AND (p.nombre LIKE ? OR p.codigo LIKE ?)
               AND NOT EXISTS (
                   SELECT 1 FROM insumos i2
                   INNER JOIN parametros pc2 ON i2.categoria_id = pc2.id
@@ -280,6 +280,14 @@ class ProductRepository {
      * @param {number} tenantId - Tenant ID
      * @param {boolean} pideNota
      */
+    static async setDisponible(id, tenantId, disponible) {
+        const [result] = await db.query(
+            'UPDATE productos SET disponible = ? WHERE id = ? AND tenant_id = ? AND activo = 1',
+            [disponible ? 1 : 0, id, tenantId]
+        );
+        return result;
+    }
+
     static async togglePideNota(id, tenantId, pideNota) {
         const [result] = await db.query('UPDATE productos SET pide_nota = ? WHERE id = ? AND tenant_id = ?', [
             pideNota ? 1 : 0,

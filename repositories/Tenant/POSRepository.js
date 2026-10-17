@@ -10,7 +10,7 @@ class POSRepository {
                     c.id AS categoria_id, c.nombre AS categoria_nombre
              FROM productos p
              LEFT JOIN categorias c ON p.categoria_id = c.id
-             WHERE p.tenant_id = ? AND p.activo = 1
+             WHERE p.tenant_id = ? AND p.activo = 1 AND p.disponible = 1
              ORDER BY p.es_favorito DESC, c.nombre, p.nombre`,
             [tenantId]
         );
