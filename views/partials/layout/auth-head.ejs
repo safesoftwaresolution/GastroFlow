@@ -17,6 +17,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= titulo %></title>
+    <%- include('../_pwa') %>
     <% if (typeof seo !== 'undefined' && seo) { -%>
     <meta name="description" content="<%= seo.description %>">
     <link rel="canonical" href="<%= seo.canonical %>">
