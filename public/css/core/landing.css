@@ -328,7 +328,9 @@ ul { padding: 0; list-style: none; }
   .mock__tag { position: static; display: block; margin-top: 10px; }
 }
 @media (max-width: 420px) {
-  .nav__cta .btn--ghost { display: none; }
+  .nav__cta { gap: 6px; }
+  .nav__cta .btn--sm { padding: 8px 12px; font-size: 13px; }
+  .nav__gratis { display: none; }
   .hero__cta .btn { width: 100%; }
 }
 
