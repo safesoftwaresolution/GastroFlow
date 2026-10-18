@@ -84,17 +84,29 @@ function mostrarDetalles(id) {
                 let filasPagos = filasAbono.concat(filasProducto, filasBono)
                     .join('');
 
+                // Si un superadmin corrigió el desglose de la venta, los abonos originales pueden
+                // ya no cuadrar con el pago final: se avisa y se muestra el desglose vigente.
+                const corregida = sumaCubierta.efectivo > montoEfectivo + 0.01 || sumaCubierta.transferencia > montoTransferencia + 0.01;
                 const restoEfectivo = Math.max(0, montoEfectivo - sumaCubierta.efectivo);
                 const restoTransferencia = Math.max(0, montoTransferencia - sumaCubierta.transferencia);
-                if (restoEfectivo > 0) {
+                if (corregida) {
+                    filasPagos = filasPagos.replace(/<tr>/g, '<tr class="text-muted fila-original">');
+                    if (montoEfectivo > 0) {
+                        filasPagos += '<tr class="table-light fw-semibold"><td><i class="bi bi-check2-circle me-1 text-success"></i>Pago final registrado (Efectivo)</td><td></td><td class="text-end">' + GF.dinero(montoEfectivo) + '</td></tr>';
+                    }
+                    if (montoTransferencia > 0) {
+                        filasPagos += '<tr class="table-light fw-semibold"><td><i class="bi bi-check2-circle me-1 text-success"></i>Pago final registrado (Transferencia)</td><td></td><td class="text-end">' + GF.dinero(montoTransferencia) + '</td></tr>';
+                    }
+                } else if (restoEfectivo > 0) {
                     filasPagos += '<tr><td><i class="bi bi-cash-stack me-1 text-primary"></i>Pago restante al facturar (Efectivo)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">' + GF.dinero(restoEfectivo) + '</td></tr>';
                 }
-                if (restoTransferencia > 0) {
+                if (!corregida && restoTransferencia > 0) {
                     filasPagos += '<tr><td><i class="bi bi-bank me-1 text-primary"></i>Pago restante al facturar (Transferencia)</td><td class="text-muted small">' + fmtFecha(factura.fechaISO || factura.fecha) + '</td><td class="text-end">' + GF.dinero(restoTransferencia) + '</td></tr>';
                 }
 
                 $('#detallesPagos').html(
                     '<h6>Historial de pagos</h6>' +
+                    (corregida ? '<div class="alert alert-warning py-2 small mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Esta venta fue corregida por un administrador. Los abonos en gris son los registros originales y ya no cuadran con el pago final, que es el que cuenta en caja y finanzas.</div>' : '') +
                     '<div class="table-responsive"><table class="table table-sm mb-0"><tbody>' + filasPagos + '</tbody></table></div>'
                 );
             } else {
