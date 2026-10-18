@@ -82,6 +82,19 @@ class ProductManager {
     }
   }
 
+  async toggleDisponible(id, nuevoEstado, input) {
+    try {
+      await GF.api.patch(`/api/productos/${id}/disponible`, { disponible: nuevoEstado }, 'Error al actualizar la disponibilidad');
+      const fila = input.closest('tr');
+      fila.toggleClass('producto-inactivo', !nuevoEstado);
+      fila.find('.badge-no-disponible').prop('hidden', nuevoEstado);
+      GF.toast(nuevoEstado ? 'Producto activado: ya se puede vender' : 'Producto desactivado: no saldrá en carta, POS ni mesas');
+    } catch (error) {
+      input.prop('checked', !nuevoEstado);
+      GF.error(error.message);
+    }
+  }
+
   async togglePideNota(id, nuevoEstado, btn) {
     try {
       await GF.api.patch(`/api/productos/${id}/pide-nota`, { pide_nota: nuevoEstado }, 'Error al actualizar la preferencia de nota');

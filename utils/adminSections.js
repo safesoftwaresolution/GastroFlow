@@ -63,6 +63,7 @@ const ADMIN_SECTIONS = [
         icon: 'bi-headset',
         collapsible: true,
         items: [
+            { key: 'anuncios', label: 'Anuncios', icon: 'bi-megaphone', href: '/admin/anuncios' },
             {
                 key: 'soporte',
                 label: 'Soporte técnico',

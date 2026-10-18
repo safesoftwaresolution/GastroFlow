@@ -68,6 +68,8 @@ router.post(
 router.patch('/:id/favorito', requirePermission('productos.editar'), ProductosController.toggleFavorite);
 
 // PATCH /productos/:id/pide-nota - Toggle "pedir nota para cocina al ordenar"
+router.patch('/:id/disponible', requirePermission('productos.editar'), ProductosController.toggleDisponible);
+
 router.patch('/:id/pide-nota', requirePermission('productos.pide_nota'), ProductosController.togglePideNota);
 
 // POST /productos/upload-image - Upload image to Cloudflare R2

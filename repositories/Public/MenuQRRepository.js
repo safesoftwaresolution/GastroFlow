@@ -73,7 +73,7 @@ class MenuQRRepository {
                 p.id as producto_id, p.nombre, p.descripcion, p.precio_unidad, p.imagen_url, p.codigo, p.pide_nota
             FROM productos p
             JOIN categorias c ON p.categoria_id = c.id
-            WHERE p.tenant_id = ? AND p.activo = 1 AND p.mostrar_en_qr = 1
+            WHERE p.tenant_id = ? AND p.activo = 1 AND p.disponible = 1 AND p.mostrar_en_qr = 1
             ORDER BY c.nombre ASC, p.nombre ASC
         `, [tenantId]);
         return rows;

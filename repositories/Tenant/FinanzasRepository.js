@@ -10,12 +10,22 @@ class FinanzasRepository {
      * Registra un movimiento de dinero (Entrada/Salida)
      */
     static async createMovimiento(tenantId, data) {
-        const { sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id } = data;
+        const {
+            sesion_id,
+            usuario_id,
+            tipo,
+            monto,
+            motivo,
+            categoria_gasto,
+            referencia_tipo,
+            referencia_id,
+            metodo_pago
+        } = data;
 
         const [result] = await db.query(
             `INSERT INTO caja_movimientos 
-            (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id, metodo_pago) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 tenantId,
                 sesion_id || null,
@@ -25,24 +35,29 @@ class FinanzasRepository {
                 motivo,
                 categoria_gasto || 'General',
                 referencia_tipo || 'manual',
-                referencia_id || null
+                referencia_id || null,
+                metodo_pago === 'transferencia' ? 'transferencia' : 'efectivo'
             ]
         );
         return result.insertId;
     }
 
     /**
-     * Obtiene el resumen de ingresos y egresos por periodo
+     * Obtiene el resumen de ingresos y egresos por periodo.
+     * `es_aporte` = 1 marca las entradas manuales de dinero (el dueño inyecta plata a la caja):
+     * NO son ventas y no deben contarse como ingreso ni inflar la utilidad.
      */
     static async getResumenPeriodo(tenantId, fechaInicio, fechaFin) {
         const [rows] = await db.query(
             `SELECT 
                 tipo,
+                metodo_pago,
+                (tipo = 'entrada' AND (referencia_tipo IS NULL OR referencia_tipo = 'manual')) AS es_aporte,
                 SUM(monto) as total,
                 COUNT(*) as cantidad
             FROM caja_movimientos
             WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
-            GROUP BY tipo`,
+            GROUP BY tipo, metodo_pago, es_aporte`,
             [tenantId, fechaInicio, fechaFin]
         );
         return rows;
@@ -72,7 +87,7 @@ class FinanzasRepository {
         const [rows] = await db.query(
             `SELECT
                 ${SQL_COLOMBIA.dia('created_at')} as fecha,
-                SUM(CASE WHEN tipo = 'entrada' THEN monto ELSE 0 END) as ingresos,
+                SUM(CASE WHEN tipo = 'entrada' AND referencia_tipo IS NOT NULL AND referencia_tipo <> 'manual' THEN monto ELSE 0 END) as ingresos,
                 SUM(CASE WHEN tipo = 'salida' THEN monto ELSE 0 END) as egresos
             FROM caja_movimientos
             WHERE tenant_id = ? AND created_at BETWEEN ? AND ?

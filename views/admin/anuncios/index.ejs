@@ -1,0 +1,196 @@
+<%- include('../_shell/_open', {
+    title: 'Anuncios',
+    currentAdminPage: 'anuncios',
+    pageCss: '/css/admin/anuncios.css',
+    extraHead: '<link rel="stylesheet" href="/css/core/anuncio-modal.css?v=' + assetV + '">'
+}) %>
+
+    <div class="admin-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+            <h1><i class="bi bi-megaphone me-2"></i>Anuncios</h1>
+            <p class="mb-0">Modales que ven los restaurantes al entrar: nuevas funcionalidades, actualizaciones, tutoriales o avisos importantes.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="btnNuevoAnuncio"><i class="bi bi-plus-lg me-1"></i>Nuevo anuncio</button>
+    </div>
+
+    <% if (!anuncios.length) { %>
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-megaphone fs-1 d-block mb-2"></i>
+            Todavía no hay anuncios. Crea el primero con "Nuevo anuncio".
+        </div>
+    <% } else { %>
+        <div class="row g-3" id="listaAnuncios">
+            <% const tipoInfo = {
+                funcionalidad: { label: 'Nueva funcionalidad', icon: 'bi-stars' },
+                actualizacion: { label: 'Actualización', icon: 'bi-arrow-repeat' },
+                tutorial: { label: 'Tutorial', icon: 'bi-lightbulb' },
+                aviso: { label: 'Aviso importante', icon: 'bi-exclamation-triangle' }
+            };
+            const planNombre = {};
+            planes.forEach(p => { planNombre[p.id] = p.nombre; }); %>
+            <% anuncios.forEach(a => { const t = tipoInfo[a.tipo] || tipoInfo.funcionalidad; %>
+                <div class="col-12 col-xl-6">
+                    <div class="anuncio-card <%= a.activo ? '' : 'inactivo' %>" data-id="<%= a.id %>">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <span class="anuncio-tipo"><i class="bi <%= t.icon %> me-1"></i><%= t.label %></span>
+                                <h2 class="anuncio-titulo"><%= a.titulo %></h2>
+                            </div>
+                            <div class="form-check form-switch" title="Activar / desactivar">
+                                <input class="form-check-input js-activo" type="checkbox" role="switch" data-id="<%= a.id %>" <%= a.activo ? 'checked' : '' %>>
+                            </div>
+                        </div>
+                        <div class="anuncio-meta">
+                            <span><i class="bi bi-people me-1"></i>
+                                <%= a.planes && a.planes.length ? 'Planes: ' + a.planes.map(id => planNombre[id] || ('#' + id)).join(', ') : 'Todos los planes' %>
+                            </span>
+                            <span><i class="bi bi-person-badge me-1"></i>
+                                <%= a.roles && a.roles.length ? 'Roles: ' + a.roles.join(', ') : 'Todos los roles' %>
+                            </span>
+                            <span><i class="bi bi-arrow-repeat me-1"></i><%= a.frecuencia === 'una_vez' ? 'Una sola vez' : 'Cada vez que inicia sesión' %></span>
+                            <% if (a.fecha_inicio || a.fecha_fin) { %>
+                                <span><i class="bi bi-calendar3 me-1"></i><%= a.fecha_inicio || '…' %> → <%= a.fecha_fin || '…' %></span>
+                            <% } %>
+                        </div>
+                        <div class="anuncio-stats">
+                            <span><strong><%= a.usuarios_vistos %></strong> usuarios lo vieron</span>
+                            <span><strong><%= a.total_clics %></strong> clics en el botón</span>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary js-editar" data-id="<%= a.id %>"><i class="bi bi-pencil me-1"></i>Editar</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger js-eliminar" data-id="<%= a.id %>"><i class="bi bi-trash me-1"></i>Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <!-- Modal crear/editar con vista previa en vivo -->
+    <div class="modal fade" id="modalAnuncio" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAnuncioTitulo">Nuevo anuncio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <form id="formAnuncio" autocomplete="off">
+                                <input type="hidden" id="anuncioId">
+
+                                <label class="form-label fw-bold small">Tipo de modal</label>
+                                <div class="tipo-selector mb-3" id="tipoSelector">
+                                    <label><input type="radio" name="tipo" value="funcionalidad" checked><span><i class="bi bi-stars"></i>Nueva funcionalidad</span></label>
+                                    <label><input type="radio" name="tipo" value="actualizacion"><span><i class="bi bi-arrow-repeat"></i>Actualización</span></label>
+                                    <label><input type="radio" name="tipo" value="tutorial"><span><i class="bi bi-lightbulb"></i>Tutorial</span></label>
+                                    <label><input type="radio" name="tipo" value="aviso"><span><i class="bi bi-exclamation-triangle"></i>Aviso importante</span></label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="fTitulo" class="form-label fw-bold small">Título</label>
+                                    <input type="text" class="form-control" id="fTitulo" maxlength="120" required placeholder="Ej: Ahora puedes desactivar productos">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fCuerpo" class="form-label fw-bold small">Texto</label>
+                                    <textarea class="form-control" id="fCuerpo" rows="3" maxlength="2000" placeholder="Explica en una o dos frases de qué trata."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fItems" class="form-label fw-bold small">Puntos o pasos <span class="text-muted fw-normal">(uno por línea, máx. 10)</span></label>
+                                    <textarea class="form-control" id="fItems" rows="4" placeholder="Activa o desactiva productos desde la lista&#10;Los desactivados no salen en la carta ni en el POS"></textarea>
+                                    <div class="form-text" id="ayudaItems"></div>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <label for="fBotonTexto" class="form-label fw-bold small">Texto del botón <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="text" class="form-control" id="fBotonTexto" maxlength="40" placeholder="Probar ahora">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="fBotonUrl" class="form-label fw-bold small">Enlace del botón</label>
+                                        <input type="text" class="form-control" id="fBotonUrl" maxlength="255" placeholder="/productos">
+                                        <div class="form-text">Ruta interna (/productos) o https://…</div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="fVersion" class="form-label fw-bold small">Versión <span class="text-muted fw-normal">(opcional)</span></label>
+                                        <input type="text" class="form-control" id="fVersion" maxlength="20" placeholder="1.4.0">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="fColor" class="form-label fw-bold small">Color de acento</label>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <input type="color" class="form-control form-control-color" id="fColor" value="#4f46e5">
+                                            <button type="button" class="btn btn-sm btn-link" id="btnColorDefecto">Usar el del tipo</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h6 class="fw-bold">¿Quién lo ve?</h6>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Planes</label>
+                                    <div class="chips" id="chipsPlanes">
+                                        <% planes.forEach(p => { %>
+                                            <label class="chip"><input type="checkbox" name="plan" value="<%= p.id %>"><span><%= p.nombre %></span></label>
+                                        <% }); %>
+                                    </div>
+                                    <div class="form-text">Sin marcar ninguno = todos los planes.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Roles</label>
+                                    <div class="chips" id="chipsRoles">
+                                        <% [['admin','Administrador'],['mesero','Mesero'],['cocinero','Cocinero'],['cajero','Cajero']].forEach(r => { %>
+                                            <label class="chip"><input type="checkbox" name="rol" value="<%= r[0] %>"><span><%= r[1] %></span></label>
+                                        <% }); %>
+                                    </div>
+                                    <div class="form-text">Sin marcar ninguno = todos los roles.</div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <label for="fFrecuencia" class="form-label fw-bold small">¿Cada cuánto se muestra?</label>
+                                        <select class="form-select" id="fFrecuencia">
+                                            <option value="una_vez">Una sola vez por usuario</option>
+                                            <option value="cada_login">Cada vez que inicia sesión</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <label for="fInicio" class="form-label fw-bold small">Desde</label>
+                                        <input type="date" class="form-control" id="fInicio">
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <label for="fFin" class="form-label fw-bold small">Hasta</label>
+                                        <input type="date" class="form-control" id="fFin">
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="fActivo" checked>
+                                    <label class="form-check-label" for="fActivo">Anuncio activo (visible para los usuarios)</label>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="preview-sticky">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold small text-muted">VISTA PREVIA</span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnReplay"><i class="bi bi-arrow-clockwise me-1"></i>Repetir animación</button>
+                                </div>
+                                <div class="preview-stage" id="previewStage"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarAnuncio">Guardar anuncio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="application/json" id="anuncios-data"><%- jsonSeguro(anuncios) %></script>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/core/anuncios.js?v=' + assetV + '"></script><script src="/js/admin/anuncios.js?v=' + assetV + '"></script>'
+}) %>

@@ -159,6 +159,12 @@ ProductManager.prototype.init = function() {
     this.toggleFavorite(id, !esFav, btn);
   });
 
+  // Disponible / no disponible (aparece o no en carta QR, POS y mesas)
+  $(document).on('change', '.toggle-disponible', (e) => {
+    const input = $(e.currentTarget);
+    this.toggleDisponible(input.data('id'), input.is(':checked'), input);
+  });
+
   // "Pedir nota para cocina": toggle
   $(document).on('click', '.btn-toggle-pidenota', (e) => {
     const btn = $(e.currentTarget);

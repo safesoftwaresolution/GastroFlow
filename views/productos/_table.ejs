@@ -25,7 +25,7 @@
                 const catName = producto.categoria_nombre || 'Sin categoría';
                 const catColor = colorMap[catName] || '#64748b';
             %>
-                <tr class="producto-row" data-categoria-id="<%= producto.categoria_id || '' %>" data-producto-id="<%= producto.id %>">
+                <tr class="producto-row <%= producto.disponible === 0 || producto.disponible === false ? 'producto-inactivo' : '' %>" data-categoria-id="<%= producto.categoria_id || '' %>" data-producto-id="<%= producto.id %>">
                     <td data-label="Código" class="code-cell">
                         <%= producto.codigo %>
                     </td>
@@ -35,6 +35,7 @@
                                 <i class="bi <%= producto.es_favorito ? 'bi-star-fill' : 'bi-star' %>"></i>
                             </button>
                             <span><%= producto.nombre %></span>
+                            <span class="badge-no-disponible" <%= producto.disponible === 0 || producto.disponible === false ? '' : 'hidden' %>>No disponible</span>
                         </div>
                     </td>
                     <td data-label="Categoría">
@@ -48,6 +49,12 @@
                     </td>
                     <td data-label="Acciones" style="text-align: center;">
                         <div class="d-flex gap-2 justify-content-center">
+                            <% if (user && user.permisos && user.permisos.includes('productos.editar')) { %>
+                                <% const disp = !(producto.disponible === 0 || producto.disponible === false); %>
+                                <div class="form-check form-switch m-0 d-flex align-items-center" title="<%= disp ? 'Disponible: sale en carta QR, POS y mesas (clic para desactivar)' : 'Desactivado: no sale en carta QR, POS ni mesas (clic para activar)' %>">
+                                    <input class="form-check-input toggle-disponible" type="checkbox" role="switch" data-id="<%= producto.id %>" <%= disp ? 'checked' : '' %> aria-label="Producto disponible">
+                                </div>
+                            <% } %>
                             <% if (user && user.permisos && user.permisos.includes('productos.pide_nota')) { %>
                                 <button class="btn-premium-nota btn-toggle-pidenota <%= producto.pide_nota ? 'active' : '' %>" data-id="<%= producto.id %>" data-pidenota="<%= producto.pide_nota ? 1 : 0 %>" title="<%= producto.pide_nota ? 'Pide nota para cocina al ordenarlo (clic para desactivar)' : 'Activar: pedir nota para cocina al ordenar este producto' %>">
                                     <i class="bi <%= producto.pide_nota ? 'bi-chat-left-text-fill' : 'bi-chat-left-text' %>"></i>

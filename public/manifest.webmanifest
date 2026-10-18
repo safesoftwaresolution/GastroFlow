@@ -3,7 +3,7 @@
   "short_name": "GastroFlow",
   "description": "Gestión de restaurantes: mesas, cocina, caja, inventario y facturación.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/auth/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

@@ -67,7 +67,7 @@ class PedidoQRService {
             const [productosDb] =
                 productoIds.length > 0
                     ? await connection.query(
-                          `SELECT id, precio_unidad, nombre, categoria_id FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1`,
+                          `SELECT id, precio_unidad, nombre, categoria_id FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1 AND disponible = 1`,
                           [productoIds, tenantId]
                       )
                     : [[]];

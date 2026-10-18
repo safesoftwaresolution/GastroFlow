@@ -10,6 +10,11 @@ class AuthController {
     // GET /auth/login
     static async showLogin(req, res) {
         const mensaje = req.query.mensaje || '';
+        // Ya tiene sesión válida (p. ej. abrió la PWA instalada): llevarlo a su módulo en vez de pedir login de nuevo.
+        // Con ?mensaje (sesión inválida / local inactivo) se muestra el login para no crear un bucle de redirecciones.
+        if (req.user && !mensaje) {
+            return res.redirect('/');
+        }
         res.render('auth/login', { title: 'Iniciar Sesión', mensaje });
     }
 

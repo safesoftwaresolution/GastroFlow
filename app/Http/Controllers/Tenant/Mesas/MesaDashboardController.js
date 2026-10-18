@@ -34,7 +34,7 @@ class MesaDashboardController {
             const mesasVirtuales = mesasData.filter(m => m.tipo === 'virtual' && m.estado !== 'libre');
 
             const categorias = await CategoryService.getAllActive(tenantId);
-            const productosSinPromo = await ProductRepository.findAll(tenantId);
+            const productosSinPromo = await ProductRepository.findAll(tenantId, { soloDisponibles: true });
             // Los favoritos de la grilla (fav-grid) se arman con esta misma lista, así
             // que necesitan la promo anotada igual que el buscador (/api/productos/buscar).
             const productos = await PromocionService.anotarProductos(tenantId, productosSinPromo, {
