@@ -12,6 +12,13 @@ toggleBtn.addEventListener('click', () => {
 localStorage.removeItem('auth_token');
 localStorage.removeItem('user');
 
+// Nueva sesión: los anuncios "cada vez que inicien sesión" deben poder volver a salir.
+try {
+    sessionStorage.removeItem('gf_anuncios_vistos');
+} catch (e) {
+    /* sin sessionStorage: no pasa nada */
+}
+
 function showError(msg) {
     const box = document.getElementById('errorAlert');
     document.getElementById('errorMsg').textContent = msg;
