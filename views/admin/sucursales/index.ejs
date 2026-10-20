@@ -1,0 +1,132 @@
+<%- include('../_shell/_open', {
+    title: 'Sucursales',
+    currentAdminPage: 'sucursales'
+}) %>
+
+    <div class="admin-page-header">
+        <h1><i class="bi bi-diagram-3 me-2"></i>Sucursales</h1>
+        <p class="mb-0">Sucursales creadas por los restaurantes (o por ti), agrupadas por restaurante padre. Define cuántas puede crear cada uno.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Sucursales creadas</h5>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Restaurante padre</th><th>Sucursal</th><th>Ciudad</th><th>Plan</th><th>Estado</th></tr></thead>
+                            <tbody>
+                                <% if (!sucursales.length) { %>
+                                    <tr><td colspan="5" class="text-muted text-center py-4">Todavía no hay sucursales.</td></tr>
+                                <% } %>
+                                <% sucursales.forEach(s => { %>
+                                    <tr>
+                                        <td><%= s.padre_nombre %></td>
+                                        <td class="fw-semibold"><a href="/admin/tenants"><%= s.nombre %></a></td>
+                                        <td><%= s.ciudad || '—' %></td>
+                                        <td><%= s.plan_nombre || '—' %></td>
+                                        <td>
+                                            <% if (s.suspendido_por_pago) { %><span class="badge text-bg-warning">Suspendida por pago</span>
+                                            <% } else if (s.activo) { %><span class="badge text-bg-success">Activa</span>
+                                            <% } else { %><span class="badge text-bg-secondary">Inactiva</span><% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-1">Cupo por restaurante</h5>
+                    <p class="text-muted small">0 = el restaurante no ve el módulo de sucursales.</p>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Restaurante</th><th>Sucursales</th><th style="width:140px">Máximo</th><th></th></tr></thead>
+                            <tbody>
+                                <% padres.forEach(p => { %>
+                                    <tr>
+                                        <td><%= p.nombre %></td>
+                                        <td><%= p.sucursales %></td>
+                                        <td><input type="number" class="form-control form-control-sm js-limite" min="0" max="100" data-id="<%= p.id %>" value="<%= p.max_sucursales %>"></td>
+                                        <td><button type="button" class="btn btn-sm btn-outline-primary js-guardar-limite" data-id="<%= p.id %>">Guardar</button></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Crear sucursal</h5>
+                    <form id="formSucursal" class="row g-3" autocomplete="off">
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="sPadre">Restaurante padre</label>
+                            <select class="form-select" id="sPadre" required>
+                                <option value="">Selecciona…</option>
+                                <% padres.filter(p => p.activo).forEach(p => { %>
+                                    <option value="<%= p.id %>"><%= p.nombre %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="sPlan">Plan</label>
+                            <select class="form-select" id="sPlan">
+                                <option value="">Igual al del padre</option>
+                                <% planes.forEach(p => { %>
+                                    <option value="<%= p.id %>"><%= p.nombre %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="sNombre">Nombre de la sucursal</label>
+                            <input class="form-control" id="sNombre" maxlength="100" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small text-muted mb-1" for="sCiudad">Ciudad</label>
+                            <input class="form-control" id="sCiudad" maxlength="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small text-muted mb-1" for="sTelefono">Teléfono</label>
+                            <input class="form-control" id="sTelefono" maxlength="30">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="sDireccion">Dirección</label>
+                            <input class="form-control" id="sDireccion" maxlength="255">
+                        </div>
+                        <div class="col-12"><hr class="my-1"><div class="small fw-semibold">Administrador</div></div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="aNombre">Nombre completo</label>
+                            <input class="form-control" id="aNombre" maxlength="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small text-muted mb-1" for="aUsername">Usuario</label>
+                            <input class="form-control" id="aUsername" maxlength="30" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small text-muted mb-1" for="aPassword">Contraseña</label>
+                            <input class="form-control" id="aPassword" type="password" minlength="8" required autocomplete="new-password">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted mb-1" for="aEmail">Correo</label>
+                            <input class="form-control" id="aEmail" type="email" maxlength="100" required>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-primary" type="submit" id="btnCrear"><i class="bi bi-plus-lg me-1"></i>Crear sucursal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/admin/sucursales.js?v=' + assetV + '"></script>'
+}) %>

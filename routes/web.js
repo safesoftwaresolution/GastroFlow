@@ -240,6 +240,16 @@ router.use(
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/bonos', requireAuthWithTenant, bonosRoutes);
 router.use('/api/fidelizacion', requireAuthWithTenant, require('./tenant/fidelizacion'));
+
+// Sucursales: tenants hijos creados por el restaurante (cupo fijado por el superadmin)
+const SucursalesTenantController = require('../app/Http/Controllers/Tenant/SucursalesController');
+const guardSucursales = [
+    requireAuthWithTenant,
+    requirePermission('sucursales.gestionar'),
+    SucursalesTenantController.exigirPadre
+];
+router.get('/sucursales', ...guardSucursales, SucursalesTenantController.index);
+router.use('/api/sucursales', ...guardSucursales, require('./tenant/sucursales'));
 router.get(
     '/fidelizacion',
     requireAuthWithTenant,
@@ -324,5 +334,6 @@ router.use('/admin/rendimiento', requireSuperadmin, adminRendimientoRoutes);
 router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
 router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
+router.use('/admin/sucursales', requireSuperadmin, require('./admin/sucursales'));
 
 module.exports = router;

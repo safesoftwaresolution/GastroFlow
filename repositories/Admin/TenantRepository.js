@@ -19,7 +19,7 @@ class TenantRepository {
         const [rows] = await db.query(
             `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.logo_url, t.activo, t.plan_id, t.created_at, t.updated_at,
                     t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal,
-                    t.estado_aprobacion, t.motivo_rechazo, t.tamano, t.suspendido_por_pago,
+                    t.estado_aprobacion, t.motivo_rechazo, t.tamano, t.suspendido_por_pago, t.tenant_padre_id, t.max_sucursales,
                     p.id AS plan_id_ref, p.nombre AS plan_nombre, p.slug AS plan_slug, p.descripcion AS plan_descripcion, p.caracteristicas AS plan_caracteristicas
              FROM tenants t
              LEFT JOIN planes p ON t.plan_id = p.id
@@ -44,7 +44,7 @@ class TenantRepository {
         }
         const [rows] = await db.query(
             `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.logo_url, t.activo, t.plan_id, t.created_at, t.updated_at,
-                    t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal, t.tamano, t.suspendido_por_pago,
+                    t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal, t.tamano, t.suspendido_por_pago, t.tenant_padre_id, t.max_sucursales,
                     p.id AS plan_id_ref, p.nombre AS plan_nombre, p.slug AS plan_slug, p.descripcion AS plan_descripcion, p.caracteristicas AS plan_caracteristicas
              FROM tenants t LEFT JOIN planes p ON t.plan_id = p.id WHERE t.id = ? AND t.activo = TRUE`,
             [id]
@@ -128,6 +128,8 @@ class TenantRepository {
             motivo_rechazo: row.motivo_rechazo || null,
             tamano: row.tamano || 'pequeno',
             suspendido_por_pago: Boolean(row.suspendido_por_pago),
+            tenant_padre_id: row.tenant_padre_id ?? null,
+            max_sucursales: Number(row.max_sucursales) || 0,
             plan_id: row.plan_id,
             plan: plan,
             nit: row.nit,
