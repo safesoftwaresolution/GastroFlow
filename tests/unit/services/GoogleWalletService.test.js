@@ -38,6 +38,20 @@ describe('GoogleWalletService', () => {
         process.env = entornoOriginal;
     });
 
+    test('la clave pegada en una variable de entorno tolera saltos de línea reales y \\n como texto', () => {
+        const base = { client_email: 'wallet@proyecto.iam.gserviceaccount.com' };
+        const conSaltosReales = `{"client_email":"${base.client_email}","private_key":"${privateKey}"}`;
+        process.env.GOOGLE_WALLET_KEY_JSON = conSaltosReales;
+        expect(Wallet.config().privateKey).toBe(privateKey);
+
+        const conBarraN = JSON.stringify({ ...base, private_key: privateKey.replace(/\n/g, '\\n') });
+        process.env.GOOGLE_WALLET_KEY_JSON = conBarraN;
+        expect(Wallet.config().privateKey).toBe(privateKey);
+
+        process.env.GOOGLE_WALLET_KEY_JSON = '{no es json';
+        expect(() => Wallet.config()).toThrow(/no es un JSON válido/);
+    });
+
     test('config falla sin ID de emisor', () => {
         delete process.env.GOOGLE_WALLET_ISSUER_ID;
         expect(() => Wallet.config()).toThrow('GOOGLE_WALLET_ISSUER_ID');
@@ -82,7 +96,7 @@ describe('GoogleWalletService', () => {
     test('crearTarjeta actualiza (PATCH) si Google responde 409', async () => {
         global.fetch.mockImplementation(async (url, opts = {}) => {
             llamadas.push({ url, metodo: opts.method });
-            if (url.includes('oauth2')) return respuesta(200, { access_token: 'tok', expires_in: 3600 });
+            if (url.includes('oauth2')) {return respuesta(200, { access_token: 'tok', expires_in: 3600 });}
             return respuesta(opts.method === 'POST' ? 409 : 200, {});
         });
         await Wallet.crearTarjeta({ numeroTarjeta: 'GF1234', nombre: 'Samuel' });
@@ -92,8 +106,8 @@ describe('GoogleWalletService', () => {
     test('fijarSellos limita al total y marca la tarjeta completa', async () => {
         global.fetch.mockImplementation(async (url, opts = {}) => {
             llamadas.push({ url, metodo: opts.method, cuerpo: opts.body && String(opts.body) });
-            if (url.includes('oauth2')) return respuesta(200, { access_token: 'tok', expires_in: 3600 });
-            if (opts.method === 'GET') return respuesta(200, { loyaltyPoints: { balance: { string: '7 / 8' } } });
+            if (url.includes('oauth2')) {return respuesta(200, { access_token: 'tok', expires_in: 3600 });}
+            if (opts.method === 'GET') {return respuesta(200, { loyaltyPoints: { balance: { string: '7 / 8' } } });}
             return respuesta(200, {});
         });
         const r = await Wallet.fijarSellos('GF1234', 99, 'Postre');

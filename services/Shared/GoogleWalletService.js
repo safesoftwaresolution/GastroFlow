@@ -37,7 +37,7 @@ class GoogleWalletService {
         }
         let key;
         if (process.env.GOOGLE_WALLET_KEY_JSON) {
-            key = JSON.parse(process.env.GOOGLE_WALLET_KEY_JSON);
+            key = GoogleWalletService.leerClaveJson(process.env.GOOGLE_WALLET_KEY_JSON);
         } else if (process.env.GOOGLE_WALLET_KEY_PATH) {
             key = JSON.parse(fs.readFileSync(process.env.GOOGLE_WALLET_KEY_PATH, 'utf8'));
         } else {
@@ -52,10 +52,34 @@ class GoogleWalletService {
         return {
             issuerId,
             clientEmail: key.client_email,
-            privateKey: key.private_key,
+            privateKey: GoogleWalletService.normalizarLlavePrivada(key.private_key),
             classId: `${issuerId}.${suffix}`,
             logoUrl: process.env.GOOGLE_WALLET_LOGO_URL || null
         };
+    }
+
+    /**
+     * Lee el JSON de la cuenta de servicio pegado en una variable de entorno. Algunos paneles
+     * convierten los \\n de la llave en saltos de línea reales, lo que vuelve inválido el JSON:
+     * en ese caso se reintenta escapándolos (en un JSON de una sola línea cualquier salto real
+     * está dentro de un texto, así que es seguro).
+     */
+    static leerClaveJson(texto) {
+        const limpio = String(texto).trim().replace(/^'|'$/g, '');
+        try {
+            return JSON.parse(limpio);
+        } catch {
+            try {
+                return JSON.parse(limpio.replace(/\r?\n/g, '\\n'));
+            } catch {
+                throw new Error('GOOGLE_WALLET_KEY_JSON no es un JSON válido (pega el archivo completo de la clave)');
+            }
+        }
+    }
+
+    /** Si la llave llegó con "\\n" como texto en vez de saltos de línea, los restaura. */
+    static normalizarLlavePrivada(llave) {
+        return String(llave).includes('\\n') ? String(llave).replace(/\\n/g, '\n') : llave;
     }
 
     /** Id del objeto (tarjeta de un cliente). Solo letras, números, punto, guion y guion bajo. */
