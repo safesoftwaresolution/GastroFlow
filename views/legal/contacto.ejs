@@ -1,0 +1,76 @@
+<%#
+  Página pública de contacto y soporte (sin sesión). Se llama con: settings
+-%>
+<% const email = 'gastroflow.digital@gmail.com'; %>
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contáctanos y soporte | GastroFlow</title>
+<meta name="description" content="Contacta al equipo de GastroFlow: soporte por correo y WhatsApp para restaurantes.">
+<link rel="canonical" href="https://gastroflow.digital/contacto"/>
+<meta name="theme-color" content="#080b09">
+<link rel="icon" type="image/png" href="/logo.png">
+<%- include('../partials/_analytics') %>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="/js/tailwind-landing.js?v=<%= assetV %>"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+</style>
+</head>
+<body class="bg-background text-on-background">
+
+<header class="sticky top-0 z-[100] w-full bg-surface/80 backdrop-filter backdrop-blur-md border-b border-outline-variant h-16 flex items-center justify-between px-6 md:px-12">
+  <a href="/" class="flex items-center gap-2" style="text-decoration:none;">
+    <span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings:'FILL' 1;">local_fire_department</span>
+    <span class="font-bold text-xl text-primary tracking-tight">GastroFlow</span>
+  </a>
+  <a href="/auth/login" class="text-sm text-on-surface-variant hover:text-primary transition-colors">Iniciar Sesión</a>
+</header>
+
+<section class="max-w-3xl mx-auto px-6 md:px-8 pt-16 pb-6">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-primary text-4xl">support_agent</span>
+    <h1 class="text-3xl font-bold text-on-surface">Contáctanos y soporte</h1>
+  </div>
+  <p class="text-on-surface-variant text-sm">
+    ¿Tienes una duda, un problema con tu cuenta o quieres conocer GastroFlow? Escríbenos y te respondemos lo antes posible.
+  </p>
+</section>
+
+<main class="max-w-3xl mx-auto px-6 md:px-8 pb-20 grid grid-cols-1 md:grid-cols-2 gap-5">
+  <a href="mailto:<%= email %>" class="glass rounded-xl p-6 block md:col-span-2 hover:border-primary transition-colors" style="text-decoration:none;">
+    <span class="material-symbols-outlined text-primary text-3xl mb-2">mail</span>
+    <h2 class="text-lg font-bold text-on-surface mb-1">Correo electrónico</h2>
+    <p class="text-sm text-on-surface-variant mb-2">Soporte técnico, facturación y consultas generales.</p>
+    <span class="text-sm text-primary"><%= email %></span>
+  </a>
+
+  <div class="glass rounded-xl p-6 md:col-span-2">
+    <span class="material-symbols-outlined text-primary text-3xl mb-2">login</span>
+    <h2 class="text-lg font-bold text-on-surface mb-1">¿Ya eres cliente?</h2>
+    <p class="text-sm text-on-surface-variant">
+      Inicia sesión y usa el módulo <strong class="text-on-surface">Soporte</strong> para abrir un ticket y seguir su respuesta desde tu cuenta.
+      <a href="/auth/login" class="text-primary underline">Iniciar sesión</a>
+    </p>
+  </div>
+</main>
+
+<footer class="border-t border-outline-variant py-8 px-6 md:px-12 text-center">
+  <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-on-surface-variant">
+    <a href="/" class="hover:text-primary transition-colors">Inicio</a>
+    <span class="hidden md:inline">·</span>
+    <a href="/legal/privacidad" class="hover:text-primary transition-colors">Privacidad</a>
+    <span class="hidden md:inline">·</span>
+    <a href="/legal/terminos" class="hover:text-primary transition-colors">Términos</a>
+  </div>
+  <p class="mt-4 text-xs text-on-surface-variant">© <%= new Date().getFullYear() %> GastroFlow Technologies. Todos los derechos reservados.</p>
+</footer>
+
+</body>
+</html>
