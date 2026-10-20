@@ -138,6 +138,17 @@ router.get('/legal/reembolsos', async (req, res) => {
     }
 });
 
+// --- CONTACTO Y SOPORTE (público) ---
+router.get('/contacto', async (req, res) => {
+    try {
+        const settings = await LandingSettingsService.getAll();
+        res.render('legal/contacto', { settings });
+    } catch (error) {
+        console.error('Error fetching landing settings for contact page:', error);
+        res.render('legal/contacto', { settings: {} });
+    }
+});
+
 // --- RUTAS DE TENANT (RESTAURANTE) ---
 router.use('/productos', requireAuthWithTenant, requirePlanFeature('productos'), productosRoutes);
 router.use('/perfil', requireAuthWithTenant, perfilRoutes);
