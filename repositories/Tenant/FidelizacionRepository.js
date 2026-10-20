@@ -28,12 +28,38 @@ class FidelizacionRepository {
         return FidelizacionRepository.obtenerPrograma(tenantId);
     }
 
+    static async obtenerProgramaPorTokenInscripcion(token) {
+        const [rows] = await db.query('SELECT * FROM fidelizacion_programas WHERE token_inscripcion = ?', [token]);
+        return rows[0] || null;
+    }
+
+    static async guardarTokenInscripcion(tenantId, token) {
+        await db.query('UPDATE fidelizacion_programas SET token_inscripcion = ? WHERE tenant_id = ?', [
+            token,
+            tenantId
+        ]);
+    }
+
+    /** Cliente del restaurante por teléfono (compara los últimos 10 dígitos, ignora espacios y +57). */
+    static async buscarClientePorTelefono(tenantId, telefono10) {
+        const [rows] = await db.query(
+            `SELECT id, nombre FROM clientes
+             WHERE tenant_id = ? AND telefono IS NOT NULL
+               AND RIGHT(REGEXP_REPLACE(telefono, '[^0-9]', ''), 10) = ?
+             ORDER BY id LIMIT 1`,
+            [tenantId, telefono10]
+        );
+        return rows[0] || null;
+    }
+
     // ---- Tarjetas ----------------------------------------------------------
 
-    static async crearTarjeta({ tenantId, clienteId, numero, tokenPublico }) {
+    static async crearTarjeta({ tenantId, clienteId, numero, tokenPublico, origen = 'caja', ip = null }) {
         const [r] = await db.query(
-            `INSERT INTO fidelizacion_tarjetas (tenant_id, cliente_id, numero, token_publico) VALUES (?, ?, ?, ?)`,
-            [tenantId, clienteId, numero, tokenPublico]
+            `INSERT INTO fidelizacion_tarjetas
+                (tenant_id, cliente_id, numero, token_publico, consentimiento_origen, consentimiento_ip)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [tenantId, clienteId, numero, tokenPublico, origen, ip]
         );
         return r.insertId;
     }

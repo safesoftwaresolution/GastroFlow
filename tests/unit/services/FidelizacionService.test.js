@@ -4,10 +4,12 @@
 jest.mock('../../../config/database', () => ({ getConnection: jest.fn(), query: jest.fn() }));
 jest.mock('../../../repositories/Tenant/FidelizacionRepository');
 jest.mock('../../../services/Shared/GoogleWalletService');
+jest.mock('../../../repositories/Tenant/ClienteRepository');
 jest.mock('../../../services/Tenant/TenantOwnership', () => ({ clientes: jest.fn().mockResolvedValue(true) }));
 
 const db = require('../../../config/database');
 const Repo = require('../../../repositories/Tenant/FidelizacionRepository');
+const ClienteRepository = require('../../../repositories/Tenant/ClienteRepository');
 const Wallet = require('../../../services/Shared/GoogleWalletService');
 const FidelizacionService = require('../../../services/Tenant/FidelizacionService');
 
@@ -245,5 +247,91 @@ describe('vistas públicas', () => {
     test('rechaza tokens con formato inválido sin tocar la BD', async () => {
         expect(await FidelizacionService.vistaPublica('../etc')).toBeNull();
         expect(Repo.obtenerTarjetaPorToken).not.toHaveBeenCalled();
+    });
+});
+
+describe('inscripción por QR', () => {
+    const TOKEN = 'a'.repeat(36);
+    const datos = {
+        nombre: ' Ana  Gómez ',
+        telefono: '+57 300 123 4567',
+        email: '',
+        consentimiento: true,
+        ip: '1.1.1.1'
+    };
+
+    beforeEach(() => {
+        Repo.obtenerProgramaPorTokenInscripcion.mockResolvedValue({ ...programa, tenant_id: 4 });
+    });
+
+    test('normaliza celulares colombianos y rechaza los inválidos', () => {
+        expect(FidelizacionService._normalizarTelefono('+57 300 123 4567')).toBe('3001234567');
+        expect(FidelizacionService._normalizarTelefono('300-123-4567')).toBe('3001234567');
+        expect(FidelizacionService._normalizarTelefono('123')).toBeNull();
+        expect(FidelizacionService._normalizarTelefono('2001234567')).toBeNull();
+    });
+
+    test('token inválido o programa inactivo no sirve', async () => {
+        expect(await FidelizacionService.vistaInscripcion('xx')).toBeNull();
+        Repo.obtenerProgramaPorTokenInscripcion.mockResolvedValue({ ...programa, activo: 0, tenant_id: 4 });
+        expect(await FidelizacionService.vistaInscripcion(TOKEN)).toBeNull();
+    });
+
+    test('exige consentimiento, nombre, celular y correo válido', async () => {
+        await expect(FidelizacionService.inscribirPorQR(TOKEN, { ...datos, consentimiento: false })).rejects.toThrow(
+            /autorizar/
+        );
+        await expect(FidelizacionService.inscribirPorQR(TOKEN, { ...datos, nombre: 'A' })).rejects.toThrow(/nombre/);
+        await expect(FidelizacionService.inscribirPorQR(TOKEN, { ...datos, telefono: '123' })).rejects.toThrow(
+            /celular/
+        );
+        await expect(FidelizacionService.inscribirPorQR(TOKEN, { ...datos, email: 'malo' })).rejects.toThrow(/correo/);
+        expect(Repo.crearTarjeta).not.toHaveBeenCalled();
+    });
+
+    test('crea cliente y tarjeta con origen qr', async () => {
+        Repo.buscarClientePorTelefono.mockResolvedValue(null);
+        ClienteRepository.create.mockResolvedValue({ insertId: 33 });
+        Repo.crearTarjeta.mockResolvedValue(8);
+        Repo.obtenerTarjetaPorId.mockResolvedValue({ ...tarjetaBase, id: 8, token_publico: 'tok' });
+        const r = await FidelizacionService.inscribirPorQR(TOKEN, datos);
+        expect(r).toEqual({ yaInscrito: false, token: 'tok' });
+        expect(ClienteRepository.create).toHaveBeenCalledWith(
+            4,
+            expect.objectContaining({ nombre: 'Ana Gómez', telefono: '3001234567' })
+        );
+        expect(Repo.crearTarjeta).toHaveBeenCalledWith(
+            expect.objectContaining({ tenantId: 4, clienteId: 33, origen: 'qr', ip: '1.1.1.1' })
+        );
+    });
+
+    test('si el celular ya tiene tarjeta no revela su enlace', async () => {
+        Repo.buscarClientePorTelefono.mockResolvedValue({ id: 9 });
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(tarjetaBase);
+        const r = await FidelizacionService.inscribirPorQR(TOKEN, datos);
+        expect(r).toEqual({ yaInscrito: true });
+        expect(Repo.crearTarjeta).not.toHaveBeenCalled();
+    });
+
+    test('reutiliza al cliente existente que aún no tiene tarjeta', async () => {
+        Repo.buscarClientePorTelefono.mockResolvedValue({ id: 9 });
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(null);
+        Repo.crearTarjeta.mockResolvedValue(8);
+        Repo.obtenerTarjetaPorId.mockResolvedValue({ ...tarjetaBase, id: 8, token_publico: 'tok' });
+        await FidelizacionService.inscribirPorQR(TOKEN, datos);
+        expect(ClienteRepository.create).not.toHaveBeenCalled();
+        expect(Repo.crearTarjeta).toHaveBeenCalledWith(expect.objectContaining({ clienteId: 9 }));
+    });
+
+    test('el QR de inscripción requiere programa y guarda el token una sola vez', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(null);
+        await expect(FidelizacionService.obtenerInscripcionQR(4)).rejects.toThrow(/programa/);
+        Repo.obtenerPrograma.mockResolvedValue({ ...programa, token_inscripcion: 'b'.repeat(36) });
+        const r = await FidelizacionService.obtenerInscripcionQR(4);
+        expect(r.url).toContain('/tarjeta/unirse/' + 'b'.repeat(36));
+        expect(r.qr).toMatch(/^data:image\/png/);
+        expect(Repo.guardarTokenInscripcion).not.toHaveBeenCalled();
+        await FidelizacionService.obtenerInscripcionQR(4, { regenerar: true });
+        expect(Repo.guardarTokenInscripcion).toHaveBeenCalledTimes(1);
     });
 });

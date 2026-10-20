@@ -30,6 +30,24 @@ class FidelizacionController {
         }
     }
 
+    // GET /api/fidelizacion/inscripcion -> { url, qr } para imprimir el QR de autoinscripción
+    static async inscripcion(req, res) {
+        try {
+            res.json(await FidelizacionService.obtenerInscripcionQR(tenantDe(req)));
+        } catch (error) {
+            responderError(res, error, 'No se pudo generar el QR de inscripción');
+        }
+    }
+
+    // POST /api/fidelizacion/inscripcion/regenerar: invalida el QR anterior (p. ej. si se filtró)
+    static async regenerarInscripcion(req, res) {
+        try {
+            res.json(await FidelizacionService.obtenerInscripcionQR(tenantDe(req), { regenerar: true }));
+        } catch (error) {
+            responderError(res, error, 'No se pudo regenerar el QR de inscripción');
+        }
+    }
+
     // GET /api/fidelizacion/tarjetas?q=
     static async listar(req, res) {
         try {

@@ -13,7 +13,18 @@ const limitador = rateLimit({
     message: 'Demasiadas consultas. Espera unos minutos e intenta de nuevo.'
 });
 
-// Rutas base: /tarjeta
+// El alta es más estricta: crea registros, así que se limita mucho más por IP.
+const limitadorAlta = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Demasiados intentos de inscripción. Intenta de nuevo en un rato.'
+});
+
+// Rutas base: /tarjeta  (las de /unirse van primero)
+router.get('/unirse/:token', limitador, TarjetaPublicaController.formulario);
+router.post('/unirse/:token', limitadorAlta, TarjetaPublicaController.inscribir);
 router.get('/:token', limitador, TarjetaPublicaController.show);
 router.get('/:token/wallet', limitador, TarjetaPublicaController.wallet);
 

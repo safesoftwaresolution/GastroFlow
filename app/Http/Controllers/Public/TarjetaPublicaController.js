@@ -11,9 +11,75 @@ const pagina = (titulo, cuerpo) => `<!doctype html><html lang="es"><head><meta c
 h1{font-size:1.2rem;margin:0 0 4px}p{color:#a9c4b8;margin:6px 0}.sellos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0}
 .s{width:34px;height:34px;border-radius:50%;border:2px solid #0b6e4f}.s.on{background:#0b6e4f}
 .btn{display:block;background:#00dfa2;color:#04231a;font-weight:700;text-decoration:none;padding:14px;border-radius:999px;margin-top:20px}
-.pr{background:#0b6e4f33;border-radius:12px;padding:10px;margin-top:12px}</style></head><body><div class="c">${cuerpo}</div></body></html>`;
+.pr{background:#0b6e4f33;border-radius:12px;padding:10px;margin-top:12px}
+form{text-align:left;margin-top:16px}label{display:block;font-size:.85rem;color:#a9c4b8;margin-top:12px}input:not([type=checkbox]){display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:12px;border-radius:10px;border:1px solid #2c4a3d;background:#0f1a15;color:#e8f3ee;font-size:1rem}
+.chk{display:flex;gap:10px;align-items:flex-start;line-height:1.35}.chk input{margin-top:3px}.chk a{color:#00dfa2}.hp{position:absolute;left:-9999px}.err{background:#7a1f1f55;border-radius:10px;padding:10px}button.btn{width:100%;border:0;font-size:1rem;cursor:pointer}</style></head><body><div class="c">${cuerpo}</div></body></html>`;
+
+const formularioHtml = (token, v, { error = '', valores = {} } = {}) => `<h1>${esc(v.restaurante)}</h1>
+<p>Únete a nuestra tarjeta de sellos: completa ${esc(v.total)} y gana <b>${esc(v.premio)}</b>.</p>
+${error ? `<p class="err">${esc(error)}</p>` : ''}
+<form method="post" action="/tarjeta/unirse/${esc(token)}" autocomplete="on">
+<label>Nombre<input name="nombre" required maxlength="80" autocomplete="name" value="${esc(valores.nombre)}"></label>
+<label>Celular<input name="telefono" required inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567" value="${esc(valores.telefono)}"></label>
+<label>Correo (opcional)<input name="email" type="email" maxlength="120" autocomplete="email" value="${esc(valores.email)}"></label>
+<input class="hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+<label class="chk"><input type="checkbox" name="consentimiento" value="1" required>
+<span>Autorizo a <b>${esc(v.restaurante)}</b> a tratar mis datos (nombre, celular y correo) para administrar mi tarjeta de sellos y premios y avisarme de mis sellos. Puedo pedir que consulten, corrijan o eliminen mis datos en cualquier momento en el restaurante. Más información en la <a href="/legal/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
+<button class="btn" type="submit">Crear mi tarjeta</button>
+</form>`;
 
 class TarjetaPublicaController {
+    // GET /tarjeta/unirse/:token
+    static async formulario(req, res) {
+        try {
+            res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+            const v = await FidelizacionService.vistaInscripcion(req.params.token);
+            if (!v) {
+                return res.status(404).send(pagina('Enlace no válido', '<h1>Enlace no válido</h1><p>Este QR ya no está activo. Pide uno nuevo en el restaurante.</p>'));
+            }
+            res.send(pagina(`Tarjeta ${v.restaurante}`, formularioHtml(req.params.token, v)));
+        } catch (error) {
+            console.error('Error en TarjetaPublicaController.formulario:', error);
+            res.status(500).send(pagina('Error', '<h1>Error</h1><p>Intenta de nuevo en un momento.</p>'));
+        }
+    }
+
+    // POST /tarjeta/unirse/:token
+    static async inscribir(req, res) {
+        res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+        const { token } = req.params;
+        try {
+            // Campo trampa: las personas no lo ven; los bots lo llenan. Se responde "ok" sin crear nada.
+            if (req.body.web) {
+                return res.send(pagina('Listo', '<h1>¡Listo!</h1><p>Tu tarjeta está en camino.</p>'));
+            }
+            const r = await FidelizacionService.inscribirPorQR(token, {
+                nombre: req.body.nombre,
+                telefono: req.body.telefono,
+                email: req.body.email,
+                consentimiento: req.body.consentimiento === '1',
+                ip: req.ip
+            });
+            if (r.yaInscrito) {
+                return res.send(
+                    pagina(
+                        'Ya tienes tarjeta',
+                        '<h1>Ya tienes tarjeta</h1><p>Este celular ya está inscrito. Pide tu enlace en caja si lo necesitas.</p>'
+                    )
+                );
+            }
+            res.redirect(303, `/tarjeta/${r.token}`);
+        } catch (error) {
+            const v = await FidelizacionService.vistaInscripcion(token).catch(() => null);
+            if (!v) {
+                return res.status(404).send(pagina('Enlace no válido', '<h1>Enlace no válido</h1>'));
+            }
+            res.status(400).send(
+                pagina(`Tarjeta ${v.restaurante}`, formularioHtml(token, v, { error: error.message, valores: req.body }))
+            );
+        }
+    }
+
     // GET /tarjeta/:token
     static async show(req, res) {
         try {

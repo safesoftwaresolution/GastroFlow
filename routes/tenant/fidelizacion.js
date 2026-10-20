@@ -7,6 +7,13 @@ const { requirePermission } = require('../../middleware/auth');
 router.get('/programa', requirePermission('fidelizacion.ver'), FidelizacionController.programa);
 router.put('/programa', requirePermission('fidelizacion.gestionar'), FidelizacionController.guardarPrograma);
 
+router.get('/inscripcion', requirePermission('fidelizacion.gestionar'), FidelizacionController.inscripcion);
+router.post(
+    '/inscripcion/regenerar',
+    requirePermission('fidelizacion.gestionar'),
+    FidelizacionController.regenerarInscripcion
+);
+
 router.get('/tarjetas', requirePermission('fidelizacion.ver'), FidelizacionController.listar);
 router.post('/tarjetas', requirePermission('fidelizacion.gestionar'), FidelizacionController.inscribir);
 // Antes de /:id para que "cliente" no se tome como id

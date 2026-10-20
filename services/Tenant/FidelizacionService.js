@@ -7,8 +7,10 @@
  * - Un cliente solo tiene tarjeta si la pidió (consentimiento explícito, Ley 1581/2012).
  */
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const db = require('../../config/database');
 const FidelizacionRepository = require('../../repositories/Tenant/FidelizacionRepository');
+const ClienteRepository = require('../../repositories/Tenant/ClienteRepository');
 const GoogleWalletService = require('../Shared/GoogleWalletService');
 const TenantOwnership = require('./TenantOwnership');
 
@@ -19,6 +21,8 @@ const PROGRAMA_POR_DEFECTO = {
     premio: 'Premio de la casa',
     activo: 0
 };
+
+const TOKEN_RE = /^[a-f0-9]{36}$/;
 
 const walletConfigurado = () => {
     try {
@@ -83,11 +87,22 @@ class FidelizacionService {
             return { tarjeta: FidelizacionService._publica(existente), nueva: false };
         }
 
+        return FidelizacionService._crearTarjetaNueva(tenantId, clienteId, { origen: 'caja' });
+    }
+
+    static async _crearTarjetaNueva(tenantId, clienteId, { origen, ip = null }) {
         for (let intento = 0; intento < 5; intento++) {
             const numero = `GF${crypto.randomInt(10000000, 99999999)}`;
             const tokenPublico = crypto.randomBytes(18).toString('hex');
             try {
-                const id = await FidelizacionRepository.crearTarjeta({ tenantId, clienteId, numero, tokenPublico });
+                const id = await FidelizacionRepository.crearTarjeta({
+                    tenantId,
+                    clienteId,
+                    numero,
+                    tokenPublico,
+                    origen,
+                    ip
+                });
                 const tarjeta = await FidelizacionRepository.obtenerTarjetaPorId(tenantId, id);
                 return { tarjeta: FidelizacionService._publica(tarjeta), nueva: true };
             } catch (error) {
@@ -101,6 +116,105 @@ class FidelizacionService {
             }
         }
         throw new Error('No se pudo generar la tarjeta, intenta de nuevo');
+    }
+
+    // ---- Autoinscripción por QR --------------------------------------------
+
+    static urlInscripcion(token) {
+        const base = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+        return `${base}/tarjeta/unirse/${token}`;
+    }
+
+    /** Enlace y QR (imagen) que el restaurante imprime. Crea el token la primera vez. */
+    static async obtenerInscripcionQR(tenantId, { regenerar = false } = {}) {
+        const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
+        if (!programa) {
+            throw new Error('Primero configura el programa de sellos');
+        }
+        let token = programa.token_inscripcion;
+        if (!token || regenerar) {
+            token = crypto.randomBytes(18).toString('hex');
+            await FidelizacionRepository.guardarTokenInscripcion(tenantId, token);
+        }
+        const url = FidelizacionService.urlInscripcion(token);
+        const qr = await QRCode.toDataURL(url, { margin: 2, width: 600 });
+        return { url, qr, activo: Boolean(programa.activo) };
+    }
+
+    /** Datos para pintar el formulario público (o null si el enlace no sirve). */
+    static async vistaInscripcion(token) {
+        if (!TOKEN_RE.test(String(token))) {
+            return null;
+        }
+        const programa = await FidelizacionRepository.obtenerProgramaPorTokenInscripcion(token);
+        if (!programa || !programa.activo) {
+            return null;
+        }
+        return {
+            restaurante: await FidelizacionService._nombreRestaurante(programa.tenant_id),
+            total: programa.sellos_requeridos,
+            premio: programa.premio
+        };
+    }
+
+    /**
+     * Inscripción hecha por el propio cliente desde el QR. Crea (o reutiliza) su ficha de
+     * cliente y su tarjeta. Si ese teléfono ya tiene tarjeta NO se devuelve su enlace: sin
+     * verificar el teléfono, cualquiera podría abrir la tarjeta de otra persona.
+     */
+    static async inscribirPorQR(token, { nombre, telefono, email, consentimiento, ip }) {
+        const vista = await FidelizacionService.vistaInscripcion(token);
+        if (!vista) {
+            throw new Error('Este enlace de inscripción no es válido o ya no está activo');
+        }
+        if (!consentimiento) {
+            throw new Error('Debes autorizar el tratamiento de tus datos para recibir la tarjeta');
+        }
+
+        const nombreLimpio = String(nombre || '')
+            .trim()
+            .replace(/\s+/g, ' ');
+        if (nombreLimpio.length < 2 || nombreLimpio.length > 80) {
+            throw new Error('Escribe tu nombre');
+        }
+        const tel = FidelizacionService._normalizarTelefono(telefono);
+        if (!tel) {
+            throw new Error('Escribe un celular colombiano válido (10 dígitos)');
+        }
+        const correo = String(email || '')
+            .trim()
+            .toLowerCase();
+        if (correo && (correo.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo))) {
+            throw new Error('El correo no es válido');
+        }
+
+        const programa = await FidelizacionRepository.obtenerProgramaPorTokenInscripcion(token);
+        const tenantId = programa.tenant_id;
+
+        let cliente = await FidelizacionRepository.buscarClientePorTelefono(tenantId, tel);
+        if (cliente) {
+            const existente = await FidelizacionRepository.obtenerTarjetaPorCliente(tenantId, cliente.id);
+            if (existente) {
+                return { yaInscrito: true };
+            }
+        } else {
+            const r = await ClienteRepository.create(tenantId, {
+                nombre: nombreLimpio,
+                telefono: tel,
+                email: correo || null
+            });
+            cliente = { id: r.insertId };
+        }
+
+        const { tarjeta } = await FidelizacionService._crearTarjetaNueva(tenantId, cliente.id, { origen: 'qr', ip });
+        return { yaInscrito: false, token: tarjeta.token_publico };
+    }
+
+    /** Devuelve los 10 dígitos del celular colombiano o null. */
+    static _normalizarTelefono(valor) {
+        const digitos = String(valor || '').replace(/\D/g, '');
+        const sin57 = digitos.length === 12 && digitos.startsWith('57') ? digitos.slice(2) : digitos;
+        return /^3\d{9}$/.test(sin57) ? sin57 : null;
     }
 
     static async listar(tenantId, filtros = {}) {
