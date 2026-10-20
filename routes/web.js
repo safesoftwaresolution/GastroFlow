@@ -240,6 +240,12 @@ router.use(
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/bonos', requireAuthWithTenant, bonosRoutes);
 router.use('/api/fidelizacion', requireAuthWithTenant, require('./tenant/fidelizacion'));
+router.get(
+    '/fidelizacion',
+    requireAuthWithTenant,
+    requirePermission('fidelizacion.ver'),
+    require('../app/Http/Controllers/Tenant/FidelizacionController').index
+);
 // Consulta liviana de saldo por código, usada desde el checkout de Mesas/POS al
 // redimir: solo requiere estar autenticado en el tenant (no bonos.ver/gestionar),
 // igual que cualquiera que pueda facturar ya puede registrar un abono.

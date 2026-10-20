@@ -12,6 +12,17 @@ const responderError = (res, error, mensajePorDefecto) => {
 };
 
 class FidelizacionController {
+    // GET /fidelizacion (página de administración)
+    static index(req, res) {
+        const permisos = req.user?.permisos || [];
+        const esSuperadmin = String(req.user?.rol || '').toLowerCase() === 'superadmin';
+        res.render('fidelizacion/index', {
+            user: req.user,
+            tenant: req.tenant,
+            puedeGestionar: esSuperadmin || permisos.includes('fidelizacion.gestionar')
+        });
+    }
+
     // GET /api/fidelizacion/programa
     static async programa(req, res) {
         try {
