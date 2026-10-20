@@ -1,0 +1,94 @@
+const FidelizacionService = require('../../../../services/Tenant/FidelizacionService');
+
+const tenantDe = req => req.tenant?.id;
+
+// Los errores de validación del servicio son mensajes pensados para el usuario (400).
+const responderError = (res, error, mensajePorDefecto) => {
+    const status = /no encontrad/i.test(error.message) ? 404 : 400;
+    if (!error.message) {
+        console.error(mensajePorDefecto, error);
+    }
+    res.status(status).json({ error: error.message || mensajePorDefecto });
+};
+
+class FidelizacionController {
+    // GET /api/fidelizacion/programa
+    static async programa(req, res) {
+        try {
+            res.json(await FidelizacionService.obtenerPrograma(tenantDe(req)));
+        } catch (error) {
+            responderError(res, error, 'No se pudo obtener el programa');
+        }
+    }
+
+    // PUT /api/fidelizacion/programa
+    static async guardarPrograma(req, res) {
+        try {
+            res.json(await FidelizacionService.guardarPrograma(tenantDe(req), req.body));
+        } catch (error) {
+            responderError(res, error, 'No se pudo guardar el programa');
+        }
+    }
+
+    // GET /api/fidelizacion/tarjetas?q=
+    static async listar(req, res) {
+        try {
+            res.json(await FidelizacionService.listar(tenantDe(req), { q: req.query.q }));
+        } catch (error) {
+            responderError(res, error, 'No se pudieron listar las tarjetas');
+        }
+    }
+
+    // GET /api/fidelizacion/tarjetas/cliente/:clienteId (lo usa el POS al elegir cliente)
+    static async porCliente(req, res) {
+        try {
+            const tarjeta = await FidelizacionService.obtenerPorCliente(tenantDe(req), Number(req.params.clienteId));
+            res.json({ tarjeta });
+        } catch (error) {
+            responderError(res, error, 'No se pudo consultar la tarjeta');
+        }
+    }
+
+    // POST /api/fidelizacion/tarjetas { cliente_id, consentimiento }
+    static async inscribir(req, res) {
+        try {
+            const r = await FidelizacionService.inscribir(tenantDe(req), {
+                clienteId: Number(req.body.cliente_id),
+                consentimiento: req.body.consentimiento === true || req.body.consentimiento === 'true'
+            });
+            res.status(r.nueva ? 201 : 200).json(r);
+        } catch (error) {
+            responderError(res, error, 'No se pudo inscribir al cliente');
+        }
+    }
+
+    // GET /api/fidelizacion/tarjetas/:id
+    static async detalle(req, res) {
+        try {
+            res.json(await FidelizacionService.detalle(tenantDe(req), Number(req.params.id)));
+        } catch (error) {
+            responderError(res, error, 'No se pudo obtener la tarjeta');
+        }
+    }
+
+    // POST /api/fidelizacion/tarjetas/:id/canjear
+    static async canjear(req, res) {
+        try {
+            res.json(await FidelizacionService.canjear(tenantDe(req), Number(req.params.id), req.user?.id));
+        } catch (error) {
+            responderError(res, error, 'No se pudo canjear el premio');
+        }
+    }
+
+    // GET /api/fidelizacion/tarjetas/:id/wallet -> { enlace }
+    static async wallet(req, res) {
+        try {
+            const enlace = await FidelizacionService.enlaceWallet(tenantDe(req), Number(req.params.id));
+            res.json({ enlace });
+        } catch (error) {
+            responderError(res, error, 'No se pudo generar el enlace de Wallet');
+        }
+    }
+}
+
+module.exports = FidelizacionController;

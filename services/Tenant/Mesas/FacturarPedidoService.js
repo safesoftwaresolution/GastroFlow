@@ -6,6 +6,7 @@ const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoR
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
 const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
+const FidelizacionService = require('../FidelizacionService');
 const InventarioService = require('../InventarioService');
 const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
 const TaxService = require('../../Shared/TaxService');
@@ -243,6 +244,16 @@ class FacturarPedidoService {
             // la venta si falla), así que hacerlo tras el commit no cambia la
             // semántica.
             await FacturarPedidoService._descontarInventario(tenantId, lineasFactura, facturaId);
+
+            // Sello de fidelización: después del commit y sin lanzar nunca; si algo falla,
+            // la venta ya está cobrada y el sello es idempotente por factura.
+            await FidelizacionService.sellarPorFactura({
+                tenantId,
+                facturaId,
+                clienteId: cliente_id,
+                total: totalConPropina,
+                usuarioId
+            });
 
             await FacturarPedidoService._ejecutarEfectosSecundariosPostVenta({
                 tenantId,

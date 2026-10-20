@@ -1,0 +1,249 @@
+/**
+ * Tests unitarios de FidelizacionService (repositorios, BD y Wallet simulados).
+ */
+jest.mock('../../../config/database', () => ({ getConnection: jest.fn(), query: jest.fn() }));
+jest.mock('../../../repositories/Tenant/FidelizacionRepository');
+jest.mock('../../../services/Shared/GoogleWalletService');
+jest.mock('../../../services/Tenant/TenantOwnership', () => ({ clientes: jest.fn().mockResolvedValue(true) }));
+
+const db = require('../../../config/database');
+const Repo = require('../../../repositories/Tenant/FidelizacionRepository');
+const Wallet = require('../../../services/Shared/GoogleWalletService');
+const FidelizacionService = require('../../../services/Tenant/FidelizacionService');
+
+const programa = { sellos_requeridos: 3, monto_minimo: 10000, premio: 'Postre', activo: 1 };
+const tarjetaBase = {
+    id: 7,
+    cliente_id: 5,
+    estado: 'activa',
+    sellos: 0,
+    sellos_historicos: 0,
+    premios_disponibles: 0,
+    premios_canjeados: 0
+};
+let conn;
+
+beforeEach(() => {
+    jest.resetAllMocks();
+    conn = { beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn() };
+    db.getConnection.mockResolvedValue(conn);
+    db.query.mockResolvedValue([[{ nombre: 'La Brasa' }]]);
+    Wallet.config.mockImplementation(() => {
+        throw new Error('sin wallet');
+    });
+});
+
+describe('guardarPrograma', () => {
+    test('valida sellos entre 2 y 20', async () => {
+        await expect(FidelizacionService.guardarPrograma(1, { sellos_requeridos: 1, premio: 'x' })).rejects.toThrow(
+            /entre 2 y 20/
+        );
+        await expect(FidelizacionService.guardarPrograma(1, { sellos_requeridos: 21, premio: 'x' })).rejects.toThrow();
+    });
+
+    test('exige premio y monto no negativo', async () => {
+        await expect(FidelizacionService.guardarPrograma(1, { sellos_requeridos: 8, premio: ' ' })).rejects.toThrow(
+            /premio/
+        );
+        await expect(
+            FidelizacionService.guardarPrograma(1, { sellos_requeridos: 8, premio: 'x', monto_minimo: -1 })
+        ).rejects.toThrow(/negativo/);
+    });
+
+    test('guarda con valores normalizados', async () => {
+        Repo.guardarPrograma.mockResolvedValue({ ok: true });
+        await FidelizacionService.guardarPrograma(1, {
+            sellos_requeridos: '8',
+            premio: ' Postre ',
+            monto_minimo: '15000'
+        });
+        expect(Repo.guardarPrograma).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ sellosRequeridos: 8, premio: 'Postre', montoMinimo: 15000, activo: true })
+        );
+    });
+});
+
+describe('inscribir', () => {
+    test('exige consentimiento', async () => {
+        await expect(FidelizacionService.inscribir(1, { clienteId: 5, consentimiento: false })).rejects.toThrow(
+            /autorizar/
+        );
+        expect(Repo.crearTarjeta).not.toHaveBeenCalled();
+    });
+
+    test('exige programa activo', async () => {
+        Repo.obtenerPrograma.mockResolvedValue({ ...programa, activo: 0 });
+        await expect(FidelizacionService.inscribir(1, { clienteId: 5, consentimiento: true })).rejects.toThrow(
+            /activa/
+        );
+    });
+
+    test('no duplica la tarjeta de un cliente', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(tarjetaBase);
+        const r = await FidelizacionService.inscribir(1, { clienteId: 5, consentimiento: true });
+        expect(r.nueva).toBe(false);
+        expect(Repo.crearTarjeta).not.toHaveBeenCalled();
+    });
+
+    test('crea la tarjeta nueva', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(null);
+        Repo.crearTarjeta.mockResolvedValue(7);
+        Repo.obtenerTarjetaPorId.mockResolvedValue(tarjetaBase);
+        const r = await FidelizacionService.inscribir(1, { clienteId: 5, consentimiento: true });
+        expect(r.nueva).toBe(true);
+        expect(Repo.crearTarjeta.mock.calls[0][0].numero).toMatch(/^GF\d{8}$/);
+        expect(Repo.crearTarjeta.mock.calls[0][0].tokenPublico).toMatch(/^[a-f0-9]{36}$/);
+    });
+});
+
+describe('sellarPorFactura', () => {
+    test('ignora facturas sin cliente, programa inactivo o monto bajo', async () => {
+        expect(
+            (await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 1, clienteId: null, total: 50000 }))
+                .motivo
+        ).toBe('sin_cliente');
+        Repo.obtenerPrograma.mockResolvedValue({ ...programa, activo: 0 });
+        expect(
+            (await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 1, clienteId: 5, total: 50000 }))
+                .motivo
+        ).toBe('programa_inactivo');
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        expect(
+            (await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 1, clienteId: 5, total: 9999 }))
+                .motivo
+        ).toBe('monto_insuficiente');
+    });
+
+    test('sin tarjeta no sella ni falla', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(null);
+        const r = await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 1, clienteId: 5, total: 20000 });
+        expect(r).toEqual({ sellado: false, motivo: 'sin_tarjeta' });
+        expect(conn.rollback).toHaveBeenCalled();
+    });
+
+    test('suma un sello', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(tarjetaBase);
+        Repo.registrarMovimiento.mockResolvedValue(true);
+        const r = await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 9, clienteId: 5, total: 20000 });
+        expect(r).toMatchObject({ sellado: true, sellos: 1, premioGanado: false });
+        expect(Repo.actualizarContadores).toHaveBeenCalledWith(
+            conn,
+            7,
+            expect.objectContaining({ sellos: 1, sellosHistoricos: 1 })
+        );
+        expect(conn.commit).toHaveBeenCalled();
+    });
+
+    test('la misma factura no suma dos veces', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(tarjetaBase);
+        Repo.registrarMovimiento.mockResolvedValue(false);
+        const r = await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 9, clienteId: 5, total: 20000 });
+        expect(r.motivo).toBe('ya_sellada');
+        expect(Repo.actualizarContadores).not.toHaveBeenCalled();
+    });
+
+    test('al completar reinicia sellos y suma un premio disponible', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue({ ...tarjetaBase, sellos: 2, sellos_historicos: 2 });
+        Repo.registrarMovimiento.mockResolvedValue(true);
+        const r = await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 9, clienteId: 5, total: 20000 });
+        expect(r).toMatchObject({ sellado: true, sellos: 0, premiosDisponibles: 1, premioGanado: true });
+        expect(Repo.registrarMovimiento).toHaveBeenCalledWith(conn, expect.objectContaining({ tipo: 'premio_ganado' }));
+    });
+
+    test('un error interno no se propaga (la venta ya está cobrada)', async () => {
+        Repo.obtenerPrograma.mockRejectedValue(new Error('BD caída'));
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        const r = await FidelizacionService.sellarPorFactura({ tenantId: 1, facturaId: 9, clienteId: 5, total: 20000 });
+        expect(r).toEqual({ sellado: false, motivo: 'error' });
+    });
+});
+
+describe('canjear', () => {
+    test('rechaza si no hay premios', async () => {
+        Repo.obtenerTarjetaPorId.mockResolvedValue(tarjetaBase);
+        await expect(FidelizacionService.canjear(1, 7, 3)).rejects.toThrow(/no tiene premios/);
+        expect(conn.rollback).toHaveBeenCalled();
+    });
+
+    test('descuenta un premio y suma canjeados', async () => {
+        Repo.obtenerTarjetaPorId.mockResolvedValue({ ...tarjetaBase, premios_disponibles: 2 });
+        Repo.listarMovimientos.mockResolvedValue([]);
+        await FidelizacionService.canjear(1, 7, 3);
+        expect(Repo.actualizarContadores).toHaveBeenCalledWith(
+            conn,
+            7,
+            expect.objectContaining({ premiosDisponibles: 1, premiosCanjeados: 1 })
+        );
+        expect(Repo.registrarMovimiento).toHaveBeenCalledWith(
+            conn,
+            expect.objectContaining({ tipo: 'canje', usuarioId: 3 })
+        );
+    });
+});
+
+describe('Wallet', () => {
+    test('sin Wallet configurado no falla y lo informa', async () => {
+        const r = await FidelizacionService.sincronizarWallet(1, 7);
+        expect(r).toEqual({ sincronizada: false, motivo: 'wallet_no_configurado' });
+    });
+
+    test('crea el pase la primera vez y avisa al ganar premio', async () => {
+        Wallet.config.mockReturnValue({});
+        Repo.obtenerTarjetaPorId.mockResolvedValue({
+            ...tarjetaBase,
+            numero: 'GF1',
+            token_publico: 't',
+            cliente_nombre: 'Ana'
+        });
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Wallet.crearTarjeta.mockResolvedValue({ enlace: 'https://pay.google.com/x' });
+        Wallet.enviarMensaje.mockResolvedValue({});
+        const r = await FidelizacionService.sincronizarWallet(1, 7, { avisar: true });
+        expect(r).toEqual({ sincronizada: true, enlace: 'https://pay.google.com/x' });
+        expect(Wallet.enviarMensaje).toHaveBeenCalledWith(
+            'GF1',
+            expect.any(String),
+            expect.stringContaining('Postre'),
+            true
+        );
+        expect(Repo.marcarSincronizada).toHaveBeenCalledWith(7);
+    });
+
+    test('si ya existía en Google solo actualiza (PATCH)', async () => {
+        Wallet.config.mockReturnValue({});
+        Repo.obtenerTarjetaPorId.mockResolvedValue({
+            ...tarjetaBase,
+            numero: 'GF1',
+            cliente_nombre: 'Ana',
+            wallet_sincronizada_at: new Date()
+        });
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Wallet.actualizarTarjeta.mockResolvedValue({});
+        Wallet.enlaceDeTarjeta.mockReturnValue('https://pay.google.com/y');
+        const r = await FidelizacionService.sincronizarWallet(1, 7);
+        expect(r.enlace).toBe('https://pay.google.com/y');
+        expect(Wallet.crearTarjeta).not.toHaveBeenCalled();
+    });
+
+    test('un fallo de Wallet no lanza excepción', async () => {
+        Wallet.config.mockReturnValue({});
+        Repo.obtenerTarjetaPorId.mockRejectedValue(new Error('boom'));
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        const r = await FidelizacionService.sincronizarWallet(1, 7);
+        expect(r.sincronizada).toBe(false);
+    });
+});
+
+describe('vistas públicas', () => {
+    test('rechaza tokens con formato inválido sin tocar la BD', async () => {
+        expect(await FidelizacionService.vistaPublica('../etc')).toBeNull();
+        expect(Repo.obtenerTarjetaPorToken).not.toHaveBeenCalled();
+    });
+});

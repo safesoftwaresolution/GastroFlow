@@ -94,6 +94,8 @@ router.use('/qr', require('./qr'));
 router.use('/api/qr', require('./qr_api'));
 // Página pública del bono (la abre el QR del comprobante): sin login, acotada por token.
 router.use('/bono', require('./bono_publico'));
+// Tarjeta de sellos del cliente (la abre desde el enlace/QR): sin login, acotada por token.
+router.use('/tarjeta', require('./tarjeta_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 
@@ -237,6 +239,7 @@ router.use(
 );
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/bonos', requireAuthWithTenant, bonosRoutes);
+router.use('/api/fidelizacion', requireAuthWithTenant, require('./tenant/fidelizacion'));
 // Consulta liviana de saldo por código, usada desde el checkout de Mesas/POS al
 // redimir: solo requiere estar autenticado en el tenant (no bonos.ver/gestionar),
 // igual que cualquiera que pueda facturar ya puede registrar un abono.
