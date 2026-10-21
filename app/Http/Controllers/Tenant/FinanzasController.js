@@ -1,6 +1,6 @@
 const FinanzasService = require('../../../../services/Tenant/FinanzasService');
 const TemaRepository = require('../../../../repositories/Shared/TemaRepository');
-const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
+const { toFechaISOUtc, hoyColombia } = require('../../../../utils/dateHelpers');
 const ParametroService = require('../../../../services/Shared/ParametroService');
 
 class FinanzasController {
@@ -32,6 +32,7 @@ class FinanzasController {
                 resumen: data,
                 categorias,
                 dias,
+                hoy: hoyColombia(),
                 toFechaISOUtc,
                 allowedByPlan: res.locals.allowedByPlan || {}
             });
@@ -77,13 +78,14 @@ class FinanzasController {
     static async registrarMovimiento(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const { monto, motivo, categoria, tipo, metodo_pago } = req.body;
+            const { monto, motivo, categoria, tipo, metodo_pago, fecha } = req.body;
             const id = await FinanzasService.registrarMovimientoManual(tenantId, {
                 monto,
                 motivo,
                 categoria,
                 tipo,
                 metodo_pago,
+                fecha,
                 usuario_id: req.user?.id
             });
             res.status(201).json({ id });

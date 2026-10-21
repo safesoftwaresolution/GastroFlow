@@ -88,16 +88,18 @@
             motivo: document.getElementById('gastoMotivo').value,
             categoria: document.getElementById('gastoCategoria').value,
             tipo: document.getElementById('gastoTipo').value,
-            metodo_pago: document.getElementById('gastoMetodo').value
+            metodo_pago: document.getElementById('gastoMetodo').value,
+            fecha: document.getElementById('gastoFecha').value
         };
 
         if (!payload.monto) return Swal.fire('Aviso', 'Ingrese un monto válido', 'warning');
+        if (!payload.fecha) return Swal.fire('Aviso', 'Indique la fecha de la transacción', 'warning');
 
         try {
             await GF.api('/finanzas/api/movimientos', { method: 'POST', body: payload }, 'No se pudo completar la operación');
             Swal.fire({
                 title: 'Registro Exitoso',
-                text: 'La operación ha sido asentada en el libro diario.',
+                text: 'La operación quedó asentada en el libro diario con la fecha indicada.',
                 icon: 'success',
                 confirmButtonColor: '#0f172a'
             }).then(function () { location.reload(); });
