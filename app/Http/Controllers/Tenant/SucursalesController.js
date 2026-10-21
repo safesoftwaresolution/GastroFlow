@@ -1,4 +1,5 @@
 const SucursalService = require('../../../../services/Shared/SucursalService');
+const ConsolidadoSucursalesService = require('../../../../services/Shared/ConsolidadoSucursalesService');
 
 // Solo un tenant que no sea sucursal y tenga cupo habilitado por el superadmin.
 const puedeGestionar = tenant => !!tenant && !tenant.tenant_padre_id && tenant.max_sucursales > 0;
@@ -32,6 +33,21 @@ class SucursalesTenantController {
     // GET /sucursales
     static index(req, res) {
         res.render('sucursales/index', { user: req.user, tenant: req.tenant });
+    }
+
+    // GET /sucursales/consolidado
+    static consolidadoPage(req, res) {
+        res.render('sucursales/consolidado', { user: req.user, tenant: req.tenant });
+    }
+
+    // GET /api/sucursales/consolidado?desde=&hasta=
+    static async consolidado(req, res) {
+        try {
+            const { desde, hasta } = req.query;
+            res.json(await ConsolidadoSucursalesService.generar(req.tenant.id, desde, hasta));
+        } catch (error) {
+            responderError(res, error, 'No se pudo generar el consolidado');
+        }
     }
 
     // GET /api/sucursales

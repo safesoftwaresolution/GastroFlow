@@ -249,6 +249,7 @@ const guardSucursales = [
     SucursalesTenantController.exigirPadre
 ];
 router.get('/sucursales', ...guardSucursales, SucursalesTenantController.index);
+router.get('/sucursales/consolidado', ...guardSucursales, SucursalesTenantController.consolidadoPage);
 router.use('/api/sucursales', ...guardSucursales, require('./tenant/sucursales'));
 router.get(
     '/fidelizacion',
