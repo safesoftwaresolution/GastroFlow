@@ -151,6 +151,27 @@ class SucursalService {
     }
 
     /**
+     * Valida que el padre pueda entrar a esa sucursal con su propio usuario (cambio de contexto).
+     * No emite el token: eso lo hace el controlador.
+     */
+    static async validarEntrada({ padreId, sucursalId, userId = null }) {
+        const sucursal = await SucursalRepository.obtenerSucursalDelPadre(padreId, sucursalId);
+        if (!sucursal) {
+            throw error('Sucursal no encontrada', 404);
+        }
+        if (!sucursal.activo) {
+            throw error(
+                sucursal.suspendido_por_pago
+                    ? 'La sucursal está suspendida por falta de pago'
+                    : 'La sucursal está desactivada. Actívala para entrar.',
+                409
+            );
+        }
+        await auditar(padreId, userId, 'sucursal_acceso', `sucursal_id=${sucursalId}`);
+        return { id: sucursal.id, nombre: sucursal.nombre };
+    }
+
+    /**
      * El padre define una contraseña temporal para el administrador de una de sus sucursales.
      * Queda obligado a cambiarla en su próximo ingreso.
      */

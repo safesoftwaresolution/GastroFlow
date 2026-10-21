@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const { ROLES } = require('../../../utils/constants');
 const { getTenantBlockedMessage, getBloqueoPorPadre } = require('../../../utils/tenantMessages');
 const logger = require('../../../utils/logger');
+const { setAuthCookie } = require('../../../utils/authCookie');
 const { getClientIp } = require('../../../utils/clientIp');
 
 class AuthController {
@@ -61,12 +62,7 @@ class AuthController {
                 }
             }
 
-            res.cookie('auth_token', result.token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 24 * 60 * 60 * 1000
-            });
+            setAuthCookie(res, result.token);
 
             logger.audit('login.success', {
                 username,
@@ -109,6 +105,27 @@ class AuthController {
         }
         res.clearCookie('auth_token');
         res.json({ success: true, message: 'Sesión cerrada' });
+    }
+
+    // POST /auth/volver-principal: de una sucursal de vuelta a su restaurante (el de la BD, no el del token)
+    static async volverPrincipal(req, res) {
+        try {
+            const usuario = await authService.getUserById(req.user.id);
+            if (!usuario || !usuario.tenant_id) {
+                return res.status(400).json({ error: 'Tu usuario no pertenece a un restaurante' });
+            }
+            setAuthCookie(res, authService.emitirSesion(usuario, usuario.tenant_id));
+            logger.audit('sucursal.volver_principal', {
+                userId: usuario.id,
+                from_tenant_id: req.user.tenant_id,
+                tenant_id: usuario.tenant_id,
+                ip: getClientIp(req)
+            });
+            res.json({ success: true, redirect: '/sucursales' });
+        } catch (error) {
+            logger.error('Error en volver-principal', { error: error.message, userId: req.user?.id });
+            res.status(500).json({ error: 'No se pudo volver al restaurante principal' });
+        }
     }
 
     // GET /auth/me

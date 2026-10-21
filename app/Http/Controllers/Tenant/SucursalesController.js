@@ -1,5 +1,8 @@
 const SucursalService = require('../../../../services/Shared/SucursalService');
 const ConsolidadoSucursalesService = require('../../../../services/Shared/ConsolidadoSucursalesService');
+const AuthService = require('../../../../services/Shared/AuthService');
+const { setAuthCookie } = require('../../../../utils/authCookie');
+const logger = require('../../../../utils/logger');
 
 // Solo un tenant que no sea sucursal y tenga cupo habilitado por el superadmin.
 const puedeGestionar = tenant => !!tenant && !tenant.tenant_padre_id && tenant.max_sucursales > 0;
@@ -75,6 +78,31 @@ class SucursalesTenantController {
             res.status(201).json(creada);
         } catch (error) {
             responderError(res, error, 'No se pudo crear la sucursal');
+        }
+    }
+
+    // POST /api/sucursales/:id/entrar: el dueño pasa a operar la sucursal con su mismo usuario
+    static async entrar(req, res) {
+        try {
+            const sucursalId = idDe(req);
+            if (!sucursalId) {
+                return res.status(400).json({ error: 'Sucursal inválida' });
+            }
+            const usuario = await AuthService.getUserById(req.user.id);
+            // El tenant de origen del usuario (BD) debe ser este restaurante: nunca el del token.
+            if (!usuario || Number(usuario.tenant_id) !== Number(req.tenant.id)) {
+                return res.status(403).json({ error: 'No puedes entrar a esta sucursal' });
+            }
+            const sucursal = await SucursalService.validarEntrada({
+                padreId: req.tenant.id,
+                sucursalId,
+                userId: usuario.id
+            });
+            setAuthCookie(res, AuthService.emitirSesion(usuario, sucursal.id));
+            logger.audit('sucursal.entrar', { userId: usuario.id, tenant_id: req.tenant.id, sucursal_id: sucursal.id });
+            res.json({ success: true, nombre: sucursal.nombre, redirect: '/' });
+        } catch (error) {
+            responderError(res, error, 'No se pudo entrar a la sucursal');
         }
     }
 

@@ -151,6 +151,24 @@ function generateToken(payload) {
 }
 
 /**
+ * Token de sesión de un usuario ya cargado (getUserById) para un tenant dado. Lo usan el cambio
+ * de contexto (entrar a una sucursal / volver al principal): el usuario es el mismo, solo cambia
+ * el tenant_id del JWT.
+ * @param {Object} usuario - Resultado de getUserById
+ * @param {number} tenantId
+ */
+function emitirSesion(usuario, tenantId) {
+    return generateToken({
+        id: usuario.id,
+        username: usuario.username,
+        rol: usuario.rol,
+        roles: usuario.roles,
+        permisos: usuario.permisos,
+        tenant_id: tenantId
+    });
+}
+
+/**
  * Verify JWT token
  * @param {string} token - JWT token
  * @returns {Object} Decoded token payload or null if invalid
@@ -323,6 +341,7 @@ async function changePassword(userId, currentPassword, newPassword) {
 module.exports = {
     authenticateUser,
     generateToken,
+    emitirSesion,
     verifyToken,
     getUserById,
     hashPassword,

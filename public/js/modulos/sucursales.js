@@ -30,6 +30,11 @@
                                   : '<span class="badge text-bg-secondary">Inactiva</span>'
                         }</td>
                         <td class="text-end text-nowrap">
+                            ${
+                                s.activo
+                                    ? `<button type="button" class="btn btn-sm btn-primary js-entrar" data-id="${s.id}"><i class="bi bi-box-arrow-in-right me-1"></i>Entrar</button>`
+                                    : ''
+                            }
                             <button type="button" class="btn btn-sm btn-outline-secondary js-password" data-id="${s.id}" data-nombre="${GF.escapeHtml(s.nombre)}" title="Definir contraseña temporal"><i class="bi bi-key"></i></button>
                             ${
                                 s.suspendido_por_pago
@@ -47,8 +52,22 @@
     $('tbodySucursales').addEventListener('click', async ev => {
         const btnEstado = ev.target.closest('.js-estado');
         const btnPass = ev.target.closest('.js-password');
+        const btnEntrar = ev.target.closest('.js-entrar');
         try {
-            if (btnEstado) {
+            if (btnEntrar) {
+                GF.cargando(btnEntrar, true);
+                try {
+                    const r = await GF.api.post(
+                        `/api/sucursales/${btnEntrar.dataset.id}/entrar`,
+                        {},
+                        'No se pudo entrar a la sucursal'
+                    );
+                    window.location.href = r.redirect || '/';
+                } catch (e) {
+                    GF.cargando(btnEntrar, false);
+                    throw e;
+                }
+            } else if (btnEstado) {
                 const activar = btnEstado.dataset.activo !== '1';
                 const ok = await GF.confirmar(
                     activar

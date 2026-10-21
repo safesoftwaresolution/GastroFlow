@@ -52,6 +52,9 @@ router.get('/logout', AuthController.logout);
 // POST /auth/logout - API
 router.post('/logout', AuthController.logoutPost);
 
+// POST /auth/volver-principal - Salir del contexto de una sucursal
+router.post('/volver-principal', requireAuth, AuthController.volverPrincipal);
+
 // GET /auth/me - Profile API
 router.get('/me', requireAuth, AuthController.me);
 

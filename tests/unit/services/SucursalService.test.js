@@ -172,6 +172,39 @@ describe('SucursalService', () => {
         });
     });
 
+    describe('validarEntrada', () => {
+        it('deja entrar a una sucursal propia activa y audita el acceso', async () => {
+            SucursalRepository.obtenerSucursalDelPadre.mockResolvedValue({ id: 7, nombre: 'Norte', activo: 1 });
+            await expect(SucursalService.validarEntrada({ padreId: 1, sucursalId: 7, userId: 9 })).resolves.toEqual({
+                id: 7,
+                nombre: 'Norte'
+            });
+            expect(TenantAuditService.log).toHaveBeenCalledWith(
+                expect.objectContaining({ tenantId: 1, userId: 9, accion: 'sucursal_acceso' })
+            );
+        });
+
+        it('404 si la sucursal no es de ese padre', async () => {
+            SucursalRepository.obtenerSucursalDelPadre.mockResolvedValue(null);
+            await expect(SucursalService.validarEntrada({ padreId: 1, sucursalId: 99 })).rejects.toMatchObject({
+                status: 404
+            });
+            expect(TenantAuditService.log).not.toHaveBeenCalled();
+        });
+
+        it('409 si está desactivada o suspendida por pago', async () => {
+            SucursalRepository.obtenerSucursalDelPadre.mockResolvedValue({ id: 7, activo: 0, suspendido_por_pago: 0 });
+            await expect(SucursalService.validarEntrada({ padreId: 1, sucursalId: 7 })).rejects.toMatchObject({
+                status: 409,
+                message: expect.stringMatching(/desactivada/)
+            });
+            SucursalRepository.obtenerSucursalDelPadre.mockResolvedValue({ id: 7, activo: 0, suspendido_por_pago: 1 });
+            await expect(SucursalService.validarEntrada({ padreId: 1, sucursalId: 7 })).rejects.toMatchObject({
+                message: expect.stringMatching(/falta de pago/)
+            });
+        });
+    });
+
     describe('fijarLimite', () => {
         it('guarda el límite e invalida el caché del tenant', async () => {
             SucursalRepository.fijarLimite.mockResolvedValue(1);

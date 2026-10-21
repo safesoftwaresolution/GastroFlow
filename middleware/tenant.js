@@ -8,7 +8,12 @@ const TenantRepository = require('../repositories/Admin/TenantRepository');
 const AddonRepository = require('../repositories/Admin/AddonRepository');
 const AuthService = require('../services/Shared/AuthService');
 const CacheService = require('../services/Shared/CacheService');
-const { getAllowedByPlan, getAllowedForUser } = require('../utils/planPermissions');
+const {
+    getAllowedByPlan,
+    getAllowedForUser,
+    planHasModule,
+    PERMISSION_TO_MODULE
+} = require('../utils/planPermissions');
 const { getTenantBlockedMessage, getBloqueoPorPadre } = require('../utils/tenantMessages');
 
 /** TTL del contexto de tenant (usuario/permisos, tenant, add-ons) en el CacheService en memoria. */
@@ -79,6 +84,7 @@ async function attachTenantContext(req, res, next) {
             return res.redirect('/onboarding/crear-local');
         }
 
+        let usuarioFresco = null;
         if (rol !== 'superadmin' && req.user.id) {
             const userCacheKey = `user:ctx:${req.user.id}`;
             let freshUser = CacheService.get(userCacheKey);
@@ -88,6 +94,7 @@ async function attachTenantContext(req, res, next) {
                     CacheService.set(userCacheKey, freshUser, CONTEXT_TTL_SECONDS);
                 }
             }
+            usuarioFresco = freshUser;
             // getUserById solo devuelve usuarios activos: null = desactivado o eliminado. El JWT
             // sigue siendo válido hasta 24h, así que sin este rechazo un empleado dado de baja
             // conservaría acceso.
@@ -120,6 +127,7 @@ async function attachTenantContext(req, res, next) {
         }
 
         let tenantId = req.user.tenant_id;
+        const tenantIdDelToken = tenantId;
 
         // If user has no tenant_id (old token or legacy user), use default tenant
         if (tenantId === null || tenantId === undefined) {
@@ -145,6 +153,34 @@ async function attachTenantContext(req, res, next) {
             );
         }
 
+        // Contexto de sucursal: el admin del restaurante padre entra a una sucursal con su mismo
+        // usuario y el JWT trae el tenant de la sucursal. Solo vale si esa sucursal es HIJA del
+        // tenant de origen guardado en la BD (no el que afirma el token); cualquier otro tenant
+        // distinto al propio se rechaza.
+        let contextoSucursal = null;
+        if (
+            usuarioFresco &&
+            tenantIdDelToken !== null &&
+            tenantIdDelToken !== undefined &&
+            usuarioFresco.tenant_id !== null &&
+            usuarioFresco.tenant_id !== undefined &&
+            Number(tenantIdDelToken) !== Number(usuarioFresco.tenant_id)
+        ) {
+            if (Number(cachedTenant.tenant_padre_id) !== Number(usuarioFresco.tenant_id)) {
+                res.clearCookie('auth_token');
+                if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                    return res
+                        .status(403)
+                        .json({ error: 'Sesión no válida para este restaurante', redirect: '/auth/login' });
+                }
+                return res.redirect(
+                    '/auth/login?mensaje=' + encodeURIComponent('Tu sesión no es válida para este restaurante.')
+                );
+            }
+            const principal = await getCachedTenant(usuarioFresco.tenant_id);
+            contextoSucursal = { principalNombre: principal?.nombre || '' };
+        }
+
         // Inactivo por sí mismo, o sucursal cuyo restaurante padre está desactivado/suspendido.
         const msgBloqueo = !cachedTenant.activo
             ? getTenantBlockedMessage(cachedTenant)
@@ -162,6 +198,18 @@ async function attachTenantContext(req, res, next) {
         // mismo valor y no se pisan entre sí.
         const tenant = cachedTenant;
         tenant.addonSlugs = await getAddonSlugs(tenant.id);
+
+        if (contextoSucursal) {
+            // Los permisos del usuario se calculan con el plan de SU restaurante; en la sucursal
+            // solo valen los de módulos que el plan (o add-ons) de la sucursal incluye.
+            // Copia nueva: req.user.permisos es el arreglo cacheado compartido.
+            req.user.permisos = (req.user.permisos || []).filter(p => {
+                const modulo = PERMISSION_TO_MODULE[p];
+                return !modulo || planHasModule(tenant.plan || null, modulo, tenant.addonSlugs);
+            });
+            req.contextoSucursal = contextoSucursal;
+            res.locals.contextoSucursal = { nombre: tenant.nombre, principalNombre: contextoSucursal.principalNombre };
+        }
 
         req.tenant = tenant;
         res.locals.tenant = tenant;

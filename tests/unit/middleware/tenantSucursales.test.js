@@ -36,9 +36,16 @@ const usuario = (extra = {}) => ({
     ...extra
 });
 
-const ejecutar = async ({ xhr = false, ctx } = {}) => {
+const ejecutar = async ({ xhr = false, ctx, tokenTenant = 2 } = {}) => {
     CacheService.set('user:ctx:5', ctx, 45);
-    const req = { user: { id: 5, rol: 'admin', tenant_id: 2 }, headers: {}, xhr, query: {}, baseUrl: '', path: '' };
+    const req = {
+        user: { id: 5, rol: 'admin', tenant_id: tokenTenant },
+        headers: {},
+        xhr,
+        query: {},
+        baseUrl: '',
+        path: ''
+    };
     const res = createRes();
     const next = jest.fn();
     await attachTenantContext(req, res, next);
@@ -111,6 +118,84 @@ describe('middleware/tenant con sucursales', () => {
                 /desactivada/
             );
             await expect(getBloqueoPorPadre(hijaX, async () => null)).resolves.toMatch(/no existe/);
+        });
+    });
+
+    describe('contexto de sucursal (dueño entra a una sucursal con su mismo usuario)', () => {
+        // Usuario de la BD: pertenece al restaurante 1 (padre). El token dice tenant 2 (la sucursal).
+        const dueno = (extra = {}) =>
+            usuario({ tenant_id: 1, permisos: ['productos.ver', 'analitica.ver', 'facturacion.ver'], ...extra });
+        const padre = {
+            id: 1,
+            nombre: 'Matriz',
+            activo: true,
+            tenant_padre_id: null,
+            plan: { slug: 'premium', caracteristicas: [] }
+        };
+        const hija = (extra = {}) => ({
+            id: 2,
+            nombre: 'Norte',
+            activo: true,
+            tenant_padre_id: 1,
+            plan: { slug: 'basico', nombre: 'Basico', caracteristicas: ['productos'] },
+            ...extra
+        });
+        const repo = (...tenants) =>
+            TenantRepository.findById.mockImplementation(async id => tenants.find(t => t.id === id) || null);
+
+        it('permite operar la sucursal hija y marca el contexto', async () => {
+            repo(padre, hija());
+            const { req, res, next } = await ejecutar({ ctx: dueno() });
+            expect(next).toHaveBeenCalled();
+            expect(req.tenant.id).toBe(2);
+            expect(req.contextoSucursal).toEqual({ principalNombre: 'Matriz' });
+            expect(res.locals.contextoSucursal).toEqual({ nombre: 'Norte', principalNombre: 'Matriz' });
+        });
+
+        it('en la sucursal solo valen los permisos de módulos de SU plan', async () => {
+            repo(padre, hija());
+            const { req } = await ejecutar({ ctx: dueno() });
+            // analitica no está en el plan de la sucursal; productos y facturacion.ver (sin módulo) sí
+            expect(req.user.permisos).toEqual(['productos.ver', 'facturacion.ver']);
+        });
+
+        it('no muta el arreglo de permisos cacheado del usuario', async () => {
+            repo(padre, hija());
+            const ctx = dueno();
+            await ejecutar({ ctx });
+            expect(ctx.permisos).toEqual(['productos.ver', 'analitica.ver', 'facturacion.ver']);
+        });
+
+        it('rechaza un tenant que no es hijo del restaurante del usuario (JSON)', async () => {
+            const ajena = hija({ tenant_padre_id: 99 });
+            repo(padre, ajena);
+            const { res, next } = await ejecutar({ xhr: true, ctx: dueno() });
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.clearCookie).toHaveBeenCalledWith('auth_token');
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('rechaza un tenant independiente distinto al propio (redirect a login)', async () => {
+            repo(padre, { id: 2, nombre: 'Otro', activo: true, tenant_padre_id: null, plan: null });
+            const { res, next } = await ejecutar({ ctx: dueno() });
+            expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login?mensaje='));
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('sin contexto (token = tenant propio) no marca contexto ni filtra permisos', async () => {
+            repo(padre);
+            const { req, res, next } = await ejecutar({ ctx: dueno(), tokenTenant: 1 });
+            expect(next).toHaveBeenCalled();
+            expect(req.contextoSucursal).toBeUndefined();
+            expect(res.locals.contextoSucursal).toBeUndefined();
+            expect(req.user.permisos).toContain('analitica.ver');
+        });
+
+        it('la sucursal desactivada sigue bloqueada aunque entre el dueño', async () => {
+            repo(padre, hija({ activo: false }));
+            const { res, next } = await ejecutar({ xhr: true, ctx: dueno() });
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(next).not.toHaveBeenCalled();
         });
     });
 });
