@@ -151,6 +151,17 @@ class TenantCRUDService {
     }
 
     static async deleteTenant(id) {
+        // Borrar un padre con sucursales las dejaría huérfanas (y el borrado desactiva las FK).
+        const [[hijas]] = await db.query('SELECT COUNT(*) AS c FROM tenants WHERE tenant_padre_id = ?', [id]);
+        if (Number(hijas.c) > 0) {
+            throw Object.assign(
+                new Error(
+                    'Este restaurante tiene ' + hijas.c + ' sucursal(es). Elimínalas o desactívalas antes de borrarlo.'
+                ),
+                { status: 409 }
+            );
+        }
+
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();

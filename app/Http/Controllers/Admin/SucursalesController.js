@@ -56,7 +56,11 @@ class SucursalesAdminController {
     // PUT /admin/sucursales/limite/:id
     static async fijarLimite(req, res) {
         try {
-            const max = await SucursalService.fijarLimite(Number.parseInt(req.params.id, 10), req.body?.max_sucursales);
+            const max = await SucursalService.fijarLimite(
+                Number.parseInt(req.params.id, 10),
+                req.body?.max_sucursales,
+                req.user.id
+            );
             res.json({ max_sucursales: max });
         } catch (error) {
             responderError(res, error, 'No se pudo guardar el límite');

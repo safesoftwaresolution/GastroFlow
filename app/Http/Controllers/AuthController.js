@@ -2,7 +2,7 @@ const authService = require('../../../services/Shared/AuthService');
 const TenantRepository = require('../../../repositories/Admin/TenantRepository');
 const { validationResult } = require('express-validator');
 const { ROLES } = require('../../../utils/constants');
-const { getTenantBlockedMessage } = require('../../../utils/tenantMessages');
+const { getTenantBlockedMessage, getBloqueoPorPadre } = require('../../../utils/tenantMessages');
 const logger = require('../../../utils/logger');
 const { getClientIp } = require('../../../utils/clientIp');
 
@@ -44,8 +44,12 @@ class AuthController {
             const rol = String(result.user.rol || '').toLowerCase();
             if (tenantId !== null && tenantId !== undefined && rol !== ROLES.SUPERADMIN) {
                 const tenant = await TenantRepository.findById(tenantId);
-                if (tenant && !tenant.activo) {
-                    const msg = getTenantBlockedMessage(tenant);
+                const msgBloqueo = !tenant
+                    ? null
+                    : !tenant.activo
+                      ? getTenantBlockedMessage(tenant)
+                      : await getBloqueoPorPadre(tenant, id => TenantRepository.findById(id));
+                if (msgBloqueo) {
                     logger.audit('login.blocked', {
                         username,
                         ip,
@@ -53,7 +57,7 @@ class AuthController {
                         reason: 'tenant_inactive',
                         tenant_id: tenantId
                     });
-                    return res.status(403).json({ error: msg });
+                    return res.status(403).json({ error: msgBloqueo });
                 }
             }
 
@@ -126,7 +130,8 @@ class AuthController {
         res.render('auth/cambiar-password', {
             title: 'Cambiar contraseña',
             user: req.user,
-            success: req.query.ok === '1'
+            success: req.query.ok === '1',
+            obligatorio: req.query.obligatorio === '1'
         });
     }
 

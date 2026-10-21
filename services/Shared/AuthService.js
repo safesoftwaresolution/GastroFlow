@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
 const { JWT_CONFIG } = require('../../utils/constants');
 const logger = require('../../utils/logger');
+const CacheService = require('./CacheService');
 
 // Authentication service
 // Handles user authentication, token generation and password management
@@ -171,7 +172,7 @@ async function getUserById(userId) {
     try {
         const [users] = await db.query(
             `
-            SELECT u.id, u.username, u.email, u.nombre_completo, u.rol_id, u.tenant_id,
+            SELECT u.id, u.username, u.email, u.nombre_completo, u.rol_id, u.tenant_id, u.debe_cambiar_password,
                    r.nombre AS rol_nombre, r.descripcion AS rol_descripcion,
                    pl.slug AS plan_slug
             FROM usuarios u
@@ -230,7 +231,8 @@ async function getUserById(userId) {
             rol: user.rol_nombre,
             roles: userRoles.names,
             permisos,
-            tenant_id: user.tenant_id
+            tenant_id: user.tenant_id,
+            debe_cambiar_password: Boolean(user.debe_cambiar_password)
         };
     } catch (error) {
         logger.error('Error in getUserById', { error: error.message, userId });
@@ -301,8 +303,16 @@ async function changePassword(userId, currentPassword, newPassword) {
         if (!valid) {
             return { success: false, message: 'Contraseña actual incorrecta.' };
         }
+        if (currentPassword === newPassword) {
+            return { success: false, message: 'La nueva contraseña debe ser distinta a la actual.' };
+        }
         const newHash = await hashPassword(newPassword);
-        await db.query('UPDATE usuarios SET password_hash = ? WHERE id = ?', [newHash, userId]);
+        await db.query('UPDATE usuarios SET password_hash = ?, debe_cambiar_password = 0 WHERE id = ?', [
+            newHash,
+            userId
+        ]);
+        // El contexto cacheado del usuario aún trae debe_cambiar_password = 1 hasta 45 s
+        CacheService.delete(`user:ctx:${userId}`);
         return { success: true };
     } catch (error) {
         logger.error('Error in changePassword', { error: error.message, userId });

@@ -11,7 +11,7 @@
         var id = btn.dataset.id;
         var input = document.querySelector('.js-limite[data-id="' + id + '"]');
         GF.cargando(btn, true);
-        GF.put('/admin/sucursales/limite/' + id, { max_sucursales: Number(input.value) }, 'No se pudo guardar el límite')
+        GF.api.put('/admin/sucursales/limite/' + id, { max_sucursales: Number(input.value) }, 'No se pudo guardar el límite')
             .then(function () {
                 GF.toast('Límite guardado');
             })
@@ -27,7 +27,7 @@
         ev.preventDefault();
         var btn = $('btnCrear');
         GF.cargando(btn, true);
-        GF.post(
+        GF.api.post(
             '/admin/sucursales',
             {
                 padre_id: $('sPadre').value,

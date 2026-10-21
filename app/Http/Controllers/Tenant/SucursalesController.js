@@ -11,6 +11,12 @@ const responderError = (res, error, mensajePorDefecto) => {
     return res.status(500).json({ error: mensajePorDefecto });
 };
 
+// El id de la URL se valida como entero positivo; la pertenencia al padre la verifica el servicio.
+const idDe = req => {
+    const id = Number(req.params.id);
+    return Number.isInteger(id) && id > 0 ? id : null;
+};
+
 class SucursalesTenantController {
     // Guard de las rutas: el padre sale de la sesión, nunca del body/params.
     static exigirPadre(req, res, next) {
@@ -53,6 +59,46 @@ class SucursalesTenantController {
             res.status(201).json(creada);
         } catch (error) {
             responderError(res, error, 'No se pudo crear la sucursal');
+        }
+    }
+
+    // PATCH /api/sucursales/:id/activo
+    static async cambiarEstado(req, res) {
+        try {
+            const sucursalId = idDe(req);
+            if (!sucursalId) {
+                return res.status(400).json({ error: 'Sucursal inválida' });
+            }
+            const activo = req.body?.activo === true || req.body?.activo === 'true' || req.body?.activo === 1;
+            res.json(
+                await SucursalService.cambiarEstado({
+                    padreId: req.tenant.id,
+                    sucursalId,
+                    activo,
+                    userId: req.user.id
+                })
+            );
+        } catch (error) {
+            responderError(res, error, 'No se pudo cambiar el estado de la sucursal');
+        }
+    }
+
+    // POST /api/sucursales/:id/password
+    static async resetearPassword(req, res) {
+        try {
+            const sucursalId = idDe(req);
+            if (!sucursalId) {
+                return res.status(400).json({ error: 'Sucursal inválida' });
+            }
+            await SucursalService.resetearPasswordAdmin({
+                padreId: req.tenant.id,
+                sucursalId,
+                password: req.body?.password,
+                userId: req.user.id
+            });
+            res.json({ message: 'Contraseña temporal definida. Deberá cambiarla al ingresar.' });
+        } catch (error) {
+            responderError(res, error, 'No se pudo restablecer la contraseña');
         }
     }
 }

@@ -35,7 +35,10 @@ class SucursalRepository {
                     t.suspendido_por_pago, t.created_at,
                     (SELECT u.username FROM usuarios u
                        WHERE u.tenant_id = t.id AND u.rol_id = (SELECT id FROM roles WHERE nombre = 'admin')
-                       ORDER BY u.id LIMIT 1) AS admin_username
+                       ORDER BY u.id LIMIT 1) AS admin_username,
+                    (SELECT u.debe_cambiar_password FROM usuarios u
+                       WHERE u.tenant_id = t.id AND u.rol_id = (SELECT id FROM roles WHERE nombre = 'admin')
+                       ORDER BY u.id LIMIT 1) AS admin_debe_cambiar
              FROM tenants t
              WHERE t.tenant_padre_id = ?
              ORDER BY t.created_at DESC`,
@@ -66,6 +69,42 @@ class SucursalRepository {
              ORDER BY t.nombre`
         );
         return rows;
+    }
+
+    /** Una sucursal solo si pertenece a ese padre (nunca confiar en el id suelto). */
+    static async obtenerSucursalDelPadre(padreId, sucursalId) {
+        const [rows] = await db.query(
+            'SELECT id, nombre, activo, suspendido_por_pago FROM tenants WHERE id = ? AND tenant_padre_id = ?',
+            [sucursalId, padreId]
+        );
+        return rows[0] || null;
+    }
+
+    static async fijarActivo(sucursalId, padreId, activo) {
+        const [result] = await db.query('UPDATE tenants SET activo = ? WHERE id = ? AND tenant_padre_id = ?', [
+            activo ? 1 : 0,
+            sucursalId,
+            padreId
+        ]);
+        return result.affectedRows;
+    }
+
+    /** Administrador principal de la sucursal: el primer usuario con rol admin. */
+    static async adminPrincipalId(sucursalId) {
+        const [rows] = await db.query(
+            "SELECT id FROM usuarios WHERE tenant_id = ? AND rol_id = (SELECT id FROM roles WHERE nombre = 'admin') ORDER BY id LIMIT 1",
+            [sucursalId]
+        );
+        return rows[0]?.id ?? null;
+    }
+
+    /** Nueva contrasena temporal: obliga a cambiarla en el siguiente ingreso. */
+    static async resetearPassword(usuarioId, sucursalId, passwordHash) {
+        const [result] = await db.query(
+            'UPDATE usuarios SET password_hash = ?, debe_cambiar_password = 1 WHERE id = ? AND tenant_id = ?',
+            [passwordHash, usuarioId, sucursalId]
+        );
+        return result.affectedRows;
     }
 
     static async fijarLimite(id, max) {
@@ -129,8 +168,9 @@ class SucursalRepository {
             const tenantId = tenantRes.insertId;
 
             const [userRes] = await connection.query(
-                `INSERT INTO usuarios (username, password_hash, email, nombre_completo, rol_id, tenant_id, activo)
-                 VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
+                `INSERT INTO usuarios (username, password_hash, email, nombre_completo, rol_id, tenant_id, activo,
+                                      debe_cambiar_password)
+                 VALUES (?, ?, ?, ?, ?, ?, TRUE, 1)`,
                 [admin.username, admin.passwordHash, admin.email, admin.nombre_completo, rolAdminId, tenantId]
             );
             await connection.query('INSERT INTO usuario_roles (user_id, rol_id) VALUES (?, ?)', [

@@ -9,7 +9,7 @@ const AddonRepository = require('../repositories/Admin/AddonRepository');
 const AuthService = require('../services/Shared/AuthService');
 const CacheService = require('../services/Shared/CacheService');
 const { getAllowedByPlan, getAllowedForUser } = require('../utils/planPermissions');
-const { getTenantBlockedMessage } = require('../utils/tenantMessages');
+const { getTenantBlockedMessage, getBloqueoPorPadre } = require('../utils/tenantMessages');
 
 /** TTL del contexto de tenant (usuario/permisos, tenant, add-ons) en el CacheService en memoria. */
 const CONTEXT_TTL_SECONDS = 45;
@@ -98,6 +98,17 @@ async function attachTenantContext(req, res, next) {
                 }
                 return res.redirect('/auth/login?mensaje=' + encodeURIComponent('Tu sesión ya no es válida.'));
             }
+            // Contraseña temporal (admin de una sucursal nueva o reseteada por su padre): no usa
+            // ningún módulo hasta cambiarla. /auth/cambiar-password no pasa por este middleware.
+            if (freshUser.debe_cambiar_password) {
+                const destino = '/auth/cambiar-password?obligatorio=1';
+                if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                    return res
+                        .status(403)
+                        .json({ error: 'Debes cambiar tu contraseña para continuar', redirect: destino });
+                }
+                return res.redirect(destino);
+            }
             if (Array.isArray(freshUser.permisos)) {
                 req.user.permisos = freshUser.permisos;
             }
@@ -134,14 +145,16 @@ async function attachTenantContext(req, res, next) {
             );
         }
 
-        if (!cachedTenant.activo) {
-            const msg = getTenantBlockedMessage(cachedTenant);
-            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
-                res.clearCookie('auth_token');
-                return res.status(403).json({ error: msg, redirect: '/auth/login' });
-            }
+        // Inactivo por sí mismo, o sucursal cuyo restaurante padre está desactivado/suspendido.
+        const msgBloqueo = !cachedTenant.activo
+            ? getTenantBlockedMessage(cachedTenant)
+            : await getBloqueoPorPadre(cachedTenant, getCachedTenant);
+        if (msgBloqueo) {
             res.clearCookie('auth_token');
-            return res.redirect('/auth/login?mensaje=' + encodeURIComponent(msg));
+            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                return res.status(403).json({ error: msgBloqueo, redirect: '/auth/login' });
+            }
+            return res.redirect('/auth/login?mensaje=' + encodeURIComponent(msgBloqueo));
         }
 
         // addonSlugs es a nivel tenant (mismo valor para cualquier request de ese tenant),
