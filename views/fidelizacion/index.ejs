@@ -1,4 +1,5 @@
 <%- include('../partials/layout/head', { titulo: 'Fidelización - ' + tenant.nombre }) %>
+    <link rel="stylesheet" href="/css/modulos/fidelizacion.css?v=<%= assetV %>">
 </head>
 
 <body class="bg-light">
@@ -65,10 +66,63 @@
                                 <button class="btn btn-outline-secondary" type="button" id="btnCopiarQr" title="Copiar enlace"><i class="bi bi-clipboard"></i></button>
                             </div>
                             <div class="d-flex gap-2 justify-content-center flex-wrap">
-                                <a class="btn btn-sm btn-outline-primary" id="btnDescargarQr" download="qr-fidelizacion.png"><i class="bi bi-download me-1"></i>Descargar</a>
+                                <a class="btn btn-sm btn-primary" href="/api/fidelizacion/inscripcion/tarjeta.pdf" target="_blank" rel="noopener"><i class="bi bi-printer me-1"></i>Tarjeta para imprimir</a>
+                                <a class="btn btn-sm btn-outline-primary" id="btnDescargarQr" download="qr-fidelizacion.png"><i class="bi bi-download me-1"></i>Solo el QR</a>
                                 <button class="btn btn-sm btn-outline-danger" type="button" id="btnRegenerarQr"><i class="bi bi-arrow-repeat me-1"></i>Generar QR nuevo</button>
                             </div>
                             <div class="form-text mt-2">"Generar QR nuevo" deja de funcionar el anterior (úsalo si se filtró o se imprimió mal).</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diseño de la tarjeta: se guarda junto con el programa (mismo formulario) -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">Diseño de la tarjeta</h5>
+                        <p class="text-muted small mb-0">
+                            Así verán tu tarjeta tus clientes en Google Wallet, y es el mismo diseño de la tarjeta con QR que imprimes.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" type="submit" form="formPrograma" id="btnGuardarDiseno">
+                        <i class="bi bi-check2 me-1"></i>Guardar diseño
+                    </button>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="fid-disenos" id="disenos" role="radiogroup" aria-label="Diseños de tarjeta">
+                            <div class="text-muted small">Cargando diseños…</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="fid-previa">
+                            <img id="disenoPrevia" alt="Vista previa de la tarjeta en Wallet" class="img-fluid rounded-3 border">
+                            <div class="mt-3">
+                                <label class="form-label small text-muted mb-1" for="pLema">Lema (opcional)</label>
+                                <input class="form-control" id="pLema" maxlength="60" placeholder="Ej: Sabor de casa desde 1998">
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-3">
+                                <input type="color" class="form-control form-control-color" id="pColor" value="#7c3f1d" title="Color de acento">
+                                <label class="small text-muted mb-0" for="pColor">Color de acento</label>
+                                <button class="btn btn-sm btn-link ms-auto" type="button" id="btnColorOriginal">Color original</button>
+                            </div>
+                            <div class="mt-3">
+                                <div class="form-label small text-muted mb-1">Logo en la tarjeta</div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="pMostrarLogo" checked>
+                                    <label class="form-check-label small" for="pMostrarLogo">Mostrar logo</label>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap" id="logoControles">
+                                    <img id="logoMuestra" alt="" class="fid-logo-muestra d-none">
+                                    <label class="btn btn-sm btn-outline-primary mb-0" for="inputLogo"><i class="bi bi-upload me-1"></i>Subir logo propio</label>
+                                    <input type="file" id="inputLogo" class="d-none" accept="image/png,image/jpeg,image/webp,image/gif">
+                                    <button class="btn btn-sm btn-outline-secondary d-none" type="button" id="btnLogoNegocio">Usar el logo del negocio</button>
+                                </div>
+                                <div class="form-text" id="logoAyuda"></div>
+                            </div>
                         </div>
                     </div>
                 </div>

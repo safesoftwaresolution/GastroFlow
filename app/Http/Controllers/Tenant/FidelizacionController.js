@@ -59,6 +59,48 @@ class FidelizacionController {
         }
     }
 
+    // GET /api/fidelizacion/inscripcion/tarjeta.pdf -> tarjeta imprimible con el diseño del local y su QR
+    static async tarjetaQrPdf(req, res) {
+        try {
+            const buffer = await FidelizacionService.tarjetaQrPdf(tenantDe(req));
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'inline; filename="tarjeta-fidelizacion.pdf"');
+            res.send(buffer);
+        } catch (error) {
+            responderError(res, error, 'No se pudo generar la tarjeta imprimible');
+        }
+    }
+
+    // GET /api/fidelizacion/disenos -> catálogo de diseños con miniatura
+    static async disenos(req, res) {
+        try {
+            res.json(await FidelizacionService.listarDisenos(tenantDe(req)));
+        } catch (error) {
+            responderError(res, error, 'No se pudieron cargar los diseños');
+        }
+    }
+
+    // POST /api/fidelizacion/logo (multipart, campo "logo") -> { url } del logo propio de la tarjeta en R2
+    static async subirLogo(req, res) {
+        try {
+            res.status(201).json(await FidelizacionService.subirLogo(req.file));
+        } catch (error) {
+            responderError(res, error, 'No se pudo subir el logo');
+        }
+    }
+
+    // GET /api/fidelizacion/diseno/vista-previa?diseno=&color=&lema=&premio=&logo=&sinlogo=&sellos=&total= -> SVG (se usa en <img>)
+    static async vistaPreviaDiseno(req, res) {
+        try {
+            const svg = await FidelizacionService.vistaPreviaDiseno(tenantDe(req), req.query);
+            res.setHeader('Content-Type', 'image/svg+xml');
+            res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+            res.send(svg);
+        } catch (error) {
+            responderError(res, error, 'No se pudo generar la vista previa');
+        }
+    }
+
     // GET /api/fidelizacion/tarjetas?q=
     static async listar(req, res) {
         try {
