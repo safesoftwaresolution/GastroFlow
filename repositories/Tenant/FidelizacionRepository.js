@@ -17,15 +17,41 @@ class FidelizacionRepository {
         return rows[0] || null;
     }
 
-    static async guardarPrograma(tenantId, { nombre, sellosRequeridos, montoMinimo, premio, activo }) {
+    static async guardarPrograma(
+        tenantId,
+        { nombre, sellosRequeridos, montoMinimo, premio, activo, diseno, color, lema, logoUrl, mostrarLogo }
+    ) {
         await db.query(
-            `INSERT INTO fidelizacion_programas (tenant_id, nombre, sellos_requeridos, monto_minimo, premio, activo)
-             VALUES (?, ?, ?, ?, ?, ?)
+            `INSERT INTO fidelizacion_programas
+                (tenant_id, nombre, sellos_requeridos, monto_minimo, premio, activo, diseno, color, lema, logo_url, mostrar_logo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), sellos_requeridos = VALUES(sellos_requeridos),
-                monto_minimo = VALUES(monto_minimo), premio = VALUES(premio), activo = VALUES(activo)`,
-            [tenantId, nombre, sellosRequeridos, montoMinimo, premio, activo ? 1 : 0]
+                monto_minimo = VALUES(monto_minimo), premio = VALUES(premio), activo = VALUES(activo),
+                diseno = VALUES(diseno), color = VALUES(color), lema = VALUES(lema),
+                logo_url = VALUES(logo_url), mostrar_logo = VALUES(mostrar_logo)`,
+            [
+                tenantId,
+                nombre,
+                sellosRequeridos,
+                montoMinimo,
+                premio,
+                activo ? 1 : 0,
+                diseno,
+                color,
+                lema,
+                logoUrl,
+                mostrarLogo ? 1 : 0
+            ]
         );
         return FidelizacionRepository.obtenerPrograma(tenantId);
+    }
+
+    /** Caché { firma, urls: { "<sellos>": url } } de las imágenes del pase de Wallet. */
+    static async guardarImagenesWallet(tenantId, imagenes) {
+        await db.query('UPDATE fidelizacion_programas SET wallet_imagenes = ? WHERE tenant_id = ?', [
+            JSON.stringify(imagenes),
+            tenantId
+        ]);
     }
 
     static async obtenerProgramaPorTokenInscripcion(token) {

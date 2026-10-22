@@ -82,6 +82,18 @@ class GoogleWalletService {
         return String(llave).includes('\\n') ? String(llave).replace(/\\n/g, '\n') : llave;
     }
 
+    /**
+     * Clase propia de cada restaurante: así cada local tiene su color, logo e imagen en el pase.
+     * Sin tenantId devuelve la clase compartida de la prueba de concepto (wallet-demo).
+     */
+    static classIdPara(cfg, tenantId) {
+        if (!tenantId) {
+            return cfg.classId;
+        }
+        const sufijo = process.env.GOOGLE_WALLET_CLASS_SUFFIX || 'gastroflow_sellos';
+        return `${cfg.issuerId}.${sufijo}_t${Number.parseInt(tenantId, 10)}`;
+    }
+
     /** Id del objeto (tarjeta de un cliente). Solo letras, números, punto, guion y guion bajo. */
     static objectId(cfg, numeroTarjeta) {
         const limpio = String(numeroTarjeta)
@@ -140,7 +152,7 @@ class GoogleWalletService {
 
     static cuerpoClase(cfg, opciones = {}) {
         const cuerpo = {
-            id: cfg.classId,
+            id: opciones.classId || cfg.classId,
             issuerName: opciones.restaurante || 'GastroFlow',
             programName: opciones.programa || 'Tarjeta de sellos',
             countryCode: 'CO',
@@ -156,24 +168,30 @@ class GoogleWalletService {
                 contentDescription: { defaultValue: { language: 'es', value: 'Logo del restaurante' } }
             };
         }
+        if (opciones.heroUrl) {
+            cuerpo.heroImage = {
+                sourceUri: { uri: opciones.heroUrl },
+                contentDescription: { defaultValue: { language: 'es', value: 'Diseño de la tarjeta de sellos' } }
+            };
+        }
         return cuerpo;
     }
 
     /** Crea la clase si no existe; si existe, la actualiza (PATCH). No toca reviewStatus. */
-    static async asegurarClase(opciones) {
+    static async asegurarClase(opciones = {}) {
         const cfg = GoogleWalletService.config();
         const cuerpo = GoogleWalletService.cuerpoClase(cfg, opciones);
-        const ruta = `/loyaltyClass/${encodeURIComponent(cfg.classId)}`;
+        const ruta = `/loyaltyClass/${encodeURIComponent(cuerpo.id)}`;
         const existe = await GoogleWalletService.llamar(cfg, 'GET', ruta);
         if (existe.status === 404) {
             const creada = await GoogleWalletService.llamar(cfg, 'POST', '/loyaltyClass', {
                 ...cuerpo,
                 reviewStatus: 'UNDER_REVIEW'
             });
-            return { accion: 'creada', status: creada.status, classId: cfg.classId };
+            return { accion: 'creada', status: creada.status, classId: cuerpo.id };
         }
         await GoogleWalletService.llamar(cfg, 'PATCH', ruta, cuerpo);
-        return { accion: 'actualizada', status: 200, classId: cfg.classId };
+        return { accion: 'actualizada', status: 200, classId: cuerpo.id };
     }
 
     // ---- Objeto (tarjeta de un cliente) ----------------------------------------
@@ -208,11 +226,13 @@ class GoogleWalletService {
             premio,
             urlTarjeta,
             premiosDisponibles = 0,
-            restaurante
+            restaurante,
+            classId,
+            heroUrl
         } = datos;
         const cuerpo = {
             id: GoogleWalletService.objectId(cfg, numeroTarjeta),
-            classId: cfg.classId,
+            classId: classId || cfg.classId,
             state: 'ACTIVE',
             accountId: String(numeroTarjeta),
             accountName: nombre || 'Cliente',
@@ -229,7 +249,18 @@ class GoogleWalletService {
         if (urlTarjeta) {
             cuerpo.linksModuleData = { uris: [{ id: 'tarjeta', uri: urlTarjeta, description: 'Ver mi tarjeta' }] };
         }
+        if (heroUrl) {
+            cuerpo.heroImage = GoogleWalletService.imagenHero(heroUrl);
+        }
         return cuerpo;
+    }
+
+    /** Imagen grande del pase (la que muestra los sellos). */
+    static imagenHero(uri) {
+        return {
+            sourceUri: { uri },
+            contentDescription: { defaultValue: { language: 'es', value: 'Sellos de tu tarjeta' } }
+        };
     }
 
     /** Crea la tarjeta de un cliente (o la actualiza si ya existía). */
@@ -238,7 +269,9 @@ class GoogleWalletService {
         const cuerpo = GoogleWalletService.cuerpoObjeto(cfg, datos);
         const r = await GoogleWalletService.llamar(cfg, 'POST', '/loyaltyObject', cuerpo);
         if (r.status === 409) {
-            await GoogleWalletService.llamar(cfg, 'PATCH', `/loyaltyObject/${encodeURIComponent(cuerpo.id)}`, cuerpo);
+            // La clase de un objeto ya creado no se cambia: se actualiza el resto.
+            const { classId: _classId, ...sinClase } = cuerpo;
+            await GoogleWalletService.llamar(cfg, 'PATCH', `/loyaltyObject/${encodeURIComponent(cuerpo.id)}`, sinClase);
         }
         return { objectId: cuerpo.id, enlace: GoogleWalletService.enlaceGuardar(cfg, cuerpo.id) };
     }
@@ -260,10 +293,13 @@ class GoogleWalletService {
      * Actualiza el contador de una tarjeta ya creada sin consultarla antes: la base de datos
      * de GastroFlow es la fuente de verdad, Wallet solo refleja lo que ya sabemos.
      */
-    static async actualizarTarjeta(numeroTarjeta, { sellos, total, premio, premiosDisponibles = 0, restaurante }) {
+    static async actualizarTarjeta(
+        numeroTarjeta,
+        { sellos, total, premio, premiosDisponibles = 0, restaurante, heroUrl }
+    ) {
         const cfg = GoogleWalletService.config();
         const id = GoogleWalletService.objectId(cfg, numeroTarjeta);
-        const r = await GoogleWalletService.llamar(cfg, 'PATCH', `/loyaltyObject/${encodeURIComponent(id)}`, {
+        const cuerpo = {
             loyaltyPoints: { label: 'Sellos', balance: { string: `${sellos} / ${total}` } },
             textModulesData: GoogleWalletService.modulosTexto({
                 sellos,
@@ -272,7 +308,11 @@ class GoogleWalletService {
                 premiosDisponibles,
                 restaurante
             })
-        });
+        };
+        if (heroUrl) {
+            cuerpo.heroImage = GoogleWalletService.imagenHero(heroUrl);
+        }
+        const r = await GoogleWalletService.llamar(cfg, 'PATCH', `/loyaltyObject/${encodeURIComponent(id)}`, cuerpo);
         if (r.status === 404) {
             throw new Error(`No existe la tarjeta ${numeroTarjeta} en Wallet`);
         }

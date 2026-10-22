@@ -7,22 +7,58 @@
  * - Un cliente solo tiene tarjeta si la pidió (consentimiento explícito, Ley 1581/2012).
  */
 const crypto = require('crypto');
+const sharp = require('sharp');
 const QRCode = require('qrcode');
 const db = require('../../config/database');
 const FidelizacionRepository = require('../../repositories/Tenant/FidelizacionRepository');
 const ClienteRepository = require('../../repositories/Tenant/ClienteRepository');
 const GoogleWalletService = require('../Shared/GoogleWalletService');
 const TenantOwnership = require('./TenantOwnership');
+const TenantRepository = require('../../repositories/Admin/TenantRepository');
+const R2StorageService = require('./R2StorageService');
+const FidelizacionDisenos = require('./FidelizacionDisenos');
+const FidelizacionTarjetaPdf = require('./FidelizacionTarjetaPdf');
+const { formatMoney } = require('../../utils/money');
 
 const PROGRAMA_POR_DEFECTO = {
     nombre: 'Tarjeta de sellos',
     sellos_requeridos: 8,
     monto_minimo: 0,
     premio: 'Premio de la casa',
-    activo: 0
+    activo: 0,
+    diseno: 'cafe',
+    color: null,
+    lema: null,
+    logo_url: null,
+    mostrar_logo: 1
 };
 
 const TOKEN_RE = /^[a-f0-9]{36}$/;
+
+const CARPETA_LOGOS = 'fidelizacion/logos';
+
+/** Solo se aceptan logos que subimos nosotros a R2 (evita que nos hagan descargar URLs ajenas). */
+const esLogoPropio = url => {
+    const base = R2StorageService.publicUrl;
+    if (!url || !base || typeof url !== 'string' || url.length > 500 || /[\s"'<>]/.test(url)) {
+        return false;
+    }
+    return url.startsWith(`${base.endsWith('/') ? base : `${base}/`}${CARPETA_LOGOS}/`);
+};
+
+// Evita generar dos veces la misma imagen y llamar a Google por una clase que no cambió.
+const imagenesEnCurso = new Map();
+const clasesAsegurables = new Map();
+
+/** URLs ya generadas { "<sellos>": url }; vacío si no hay caché o es de otro diseño. */
+const leerImagenesWallet = (programa, firma) => {
+    try {
+        const cache = programa?.wallet_imagenes ? JSON.parse(programa.wallet_imagenes) : null;
+        return cache?.firma === firma && cache.urls ? cache.urls : {};
+    } catch {
+        return {};
+    }
+};
 
 const walletConfigurado = () => {
     try {
@@ -62,13 +98,128 @@ class FidelizacionService {
         if (!nombre) {
             throw new Error('Indica el nombre del programa');
         }
-        return FidelizacionRepository.guardarPrograma(tenantId, {
+        const color = datos.color ? String(datos.color).trim() : null;
+        if (color && !FidelizacionDisenos.colorValido(color)) {
+            throw new Error('El color debe tener el formato #RRGGBB');
+        }
+        const logoUrl = datos.logo_url ? String(datos.logo_url).trim() : null;
+        if (logoUrl && !esLogoPropio(logoUrl)) {
+            throw new Error('El logo no es válido: súbelo de nuevo desde esta pantalla');
+        }
+        const anterior = await FidelizacionRepository.obtenerPrograma(tenantId);
+        const guardado = await FidelizacionRepository.guardarPrograma(tenantId, {
             nombre,
             sellosRequeridos,
             montoMinimo,
             premio,
-            activo: datos.activo === undefined ? true : Boolean(datos.activo)
+            activo: datos.activo === undefined ? true : Boolean(datos.activo),
+            diseno: FidelizacionDisenos.disenoValido(datos.diseno),
+            color,
+            lema:
+                String(datos.lema || '')
+                    .trim()
+                    .slice(0, 60) || null,
+            logoUrl,
+            mostrarLogo: datos.mostrar_logo === undefined ? true : Boolean(datos.mostrar_logo)
         });
+        // Si cambió o quitó el logo propio, el archivo anterior ya no se usa.
+        if (anterior?.logo_url && anterior.logo_url !== logoUrl) {
+            R2StorageService.deleteFile(anterior.logo_url).catch(() => {});
+        }
+        // Deja lista la clase y las imágenes del pase sin hacer esperar al usuario.
+        FidelizacionService.prepararWallet(tenantId).catch(() => {});
+        return guardado;
+    }
+
+    // ---- Diseño de la tarjeta ------------------------------------------------
+
+    /** Sube el logo propio de la tarjeta a R2 (PNG de hasta 512 px). El programa lo guarda al "Guardar diseño". */
+    static async subirLogo(archivo) {
+        if (!archivo?.buffer) {
+            throw new Error('Selecciona una imagen');
+        }
+        let png;
+        try {
+            png = await sharp(archivo.buffer)
+                .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+                .png()
+                .toBuffer();
+        } catch {
+            throw new Error('El archivo no es una imagen válida');
+        }
+        try {
+            return { url: await R2StorageService.uploadFile(png, 'logo.png', 'image/png', CARPETA_LOGOS) };
+        } catch {
+            throw new Error('No se pudo guardar el logo: revisa que el almacenamiento de imágenes esté configurado');
+        }
+    }
+
+    /**
+     * Lo necesario para pintar la tarjeta de un programa (guardado o borrador): acento, textos
+     * y de dónde sale el logo (el propio de la tarjeta, o el del negocio).
+     */
+    static async _contextoDiseno(tenantId, programa) {
+        const tenant = await TenantRepository.findById(tenantId);
+        const diseno = FidelizacionDisenos.disenoValido(programa?.diseno);
+        const color = FidelizacionDisenos.colorAcento(diseno, programa?.color);
+        const mostrarLogo = !['0', 'false', 'no'].includes(String(programa?.mostrar_logo ?? 1));
+        const logoFuente = mostrarLogo ? programa?.logo_url || tenant?.logo_src || null : null;
+        return {
+            tenant,
+            diseno,
+            color,
+            fondoWallet: FidelizacionDisenos.fondoWallet(diseno, color),
+            restaurante: tenant?.nombre || 'Restaurante',
+            lema: programa?.lema || '',
+            premio: programa?.premio || PROGRAMA_POR_DEFECTO.premio,
+            total: programa?.sellos_requeridos || PROGRAMA_POR_DEFECTO.sellos_requeridos,
+            logoFuente,
+            // Wallet solo trae logos por URL https pública
+            logoPublico: /^https:\/\//.test(logoFuente || '') ? logoFuente : null
+        };
+    }
+
+    /** Datos listos para FidelizacionDisenos.componer / aPng (con el logo ya convertido). */
+    static async _datosTarjeta(ctx, extra = {}) {
+        return {
+            diseno: ctx.diseno,
+            color: ctx.color,
+            restaurante: ctx.restaurante,
+            lema: ctx.lema,
+            premio: ctx.premio,
+            total: ctx.total,
+            logo: await FidelizacionDisenos.cargarLogo(ctx.logoFuente),
+            ...extra
+        };
+    }
+
+    /** Catálogo de diseños con miniaturas (con el logo y los textos del local) para el selector. */
+    static async listarDisenos(tenantId) {
+        const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
+        const ctx = await FidelizacionService._contextoDiseno(tenantId, programa);
+        const datos = await FidelizacionService._datosTarjeta(ctx);
+        return {
+            disenos: FidelizacionDisenos.listarParaUI(datos),
+            logoNegocio: Boolean(ctx.tenant?.logo_src)
+        };
+    }
+
+    /** SVG de vista previa de un borrador (diseño, color, lema, logo...) que aún no se ha guardado. */
+    static async vistaPreviaDiseno(tenantId, q = {}) {
+        const base = (await FidelizacionRepository.obtenerPrograma(tenantId)) || PROGRAMA_POR_DEFECTO;
+        const borrador = {
+            ...base,
+            diseno: q.diseno,
+            color: FidelizacionDisenos.colorValido(q.color) ? q.color : null,
+            lema: String(q.lema ?? '').slice(0, 60),
+            premio: String(q.premio || base.premio).slice(0, 120),
+            sellos_requeridos: Number.parseInt(q.total, 10) || base.sellos_requeridos,
+            logo_url: esLogoPropio(q.logo) ? q.logo : null,
+            mostrar_logo: q.sinlogo === '1' ? 0 : 1
+        };
+        const ctx = await FidelizacionService._contextoDiseno(tenantId, borrador);
+        const datos = await FidelizacionService._datosTarjeta(ctx, { sellos: Number.parseInt(q.sellos, 10) || 0 });
+        return FidelizacionDisenos.componer(datos);
     }
 
     // ---- Tarjetas ----------------------------------------------------------
@@ -139,6 +290,25 @@ class FidelizacionService {
         const url = FidelizacionService.urlInscripcion(token);
         const qr = await QRCode.toDataURL(url, { margin: 2, width: 600 });
         return { url, qr, activo: Boolean(programa.activo) };
+    }
+
+    /** PDF imprimible (tarjeta con el diseño del local y su QR de inscripción). */
+    static async tarjetaQrPdf(tenantId) {
+        const { qr } = await FidelizacionService.obtenerInscripcionQR(tenantId);
+        const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
+        const ctx = await FidelizacionService._contextoDiseno(tenantId, programa);
+        const regla =
+            Number(programa.monto_minimo) > 0
+                ? `Cada compra desde ${formatMoney(programa.monto_minimo)} suma un sello.`
+                : 'Cada compra suma un sello.';
+        const datos = await FidelizacionService._datosTarjeta(ctx, {
+            modo: 'impreso',
+            programa: programa.nombre,
+            regla,
+            qr
+        });
+        // x2 para que el texto y el QR salgan nítidos al imprimir
+        return FidelizacionTarjetaPdf.render(await FidelizacionDisenos.aPng(datos, 2), ctx.restaurante);
     }
 
     /** Datos para pintar el formulario público (o null si el enlace no sirve). */
@@ -372,6 +542,90 @@ class FidelizacionService {
 
     // ---- Google Wallet -------------------------------------------------------
 
+    /**
+     * URL pública de la imagen del pase con N sellos pintados. Se genera una vez por
+     * (diseño, color, total, sellos) y se guarda en el programa: cambiar el diseño la invalida.
+     * Devuelve null si no hay almacenamiento (R2) o falla: el pase sale igual, sin imagen.
+     */
+    static async _imagenWallet(tenantId, programa, ctx, sellos) {
+        const total = programa.sellos_requeridos;
+        const n = Math.max(0, Math.min(Number(sellos) || 0, total));
+        // Todo lo que se ve en la imagen: si cambia algo, las anteriores dejan de servir.
+        const firma = crypto
+            .createHash('sha1')
+            .update(
+                JSON.stringify([ctx.diseno, ctx.color, ctx.restaurante, ctx.lema, ctx.premio, total, ctx.logoFuente])
+            )
+            .digest('hex')
+            .slice(0, 16);
+        const urlsGuardadas = leerImagenesWallet(programa, firma);
+        if (urlsGuardadas[n]) {
+            return urlsGuardadas[n];
+        }
+        const clave = `${tenantId}|${firma}|${n}`;
+        if (!imagenesEnCurso.has(clave)) {
+            imagenesEnCurso.set(
+                clave,
+                (async () => {
+                    const png = await FidelizacionDisenos.aPng(
+                        await FidelizacionService._datosTarjeta(ctx, { sellos: n })
+                    );
+                    const url = await R2StorageService.uploadFile(png, `sellos-${n}.png`, 'image/png', 'fidelizacion');
+                    // Relee el programa: otra imagen pudo guardarse mientras esta se generaba.
+                    const actual = await FidelizacionRepository.obtenerPrograma(tenantId);
+                    await FidelizacionRepository.guardarImagenesWallet(tenantId, {
+                        firma,
+                        urls: { ...leerImagenesWallet(actual, firma), [n]: url }
+                    });
+                    return url;
+                })().finally(() => imagenesEnCurso.delete(clave))
+            );
+        }
+        try {
+            return await imagenesEnCurso.get(clave);
+        } catch (error) {
+            console.error('Fidelización: no se pudo generar la imagen del pase:', error.message);
+            return null;
+        }
+    }
+
+    /** Crea o actualiza la clase de Wallet del restaurante (solo si su diseño cambió desde la última vez). */
+    static async _asegurarClaseWallet(tenantId, programa, ctx) {
+        const cfg = GoogleWalletService.config();
+        const classId = GoogleWalletService.classIdPara(cfg, tenantId);
+        const heroUrl = await FidelizacionService._imagenWallet(tenantId, programa, ctx, 0);
+        const firma = [ctx.fondoWallet, ctx.restaurante, programa.nombre, ctx.logoPublico, heroUrl].join('|');
+        if (clasesAsegurables.get(tenantId) !== firma) {
+            await GoogleWalletService.asegurarClase({
+                classId,
+                restaurante: ctx.restaurante,
+                programa: programa.nombre,
+                color: ctx.fondoWallet,
+                logoUrl: ctx.logoPublico,
+                heroUrl
+            });
+            clasesAsegurables.set(tenantId, firma);
+        }
+        return classId;
+    }
+
+    /** Deja lista la clase del restaurante y la imagen base tras guardar el programa. Nunca lanza. */
+    static async prepararWallet(tenantId) {
+        if (!walletConfigurado()) {
+            return;
+        }
+        try {
+            const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
+            if (!programa) {
+                return;
+            }
+            const ctx = await FidelizacionService._contextoDiseno(tenantId, programa);
+            await FidelizacionService._asegurarClaseWallet(tenantId, programa, ctx);
+        } catch (error) {
+            console.error('Fidelización: no se pudo preparar Wallet:', error.message);
+        }
+    }
+
     /** Crea o actualiza la tarjeta en Wallet con los datos actuales. Devuelve el enlace de guardado. */
     static async sincronizarWallet(tenantId, tarjetaId, { avisar = false } = {}) {
         if (!walletConfigurado()) {
@@ -383,7 +637,11 @@ class FidelizacionService {
                 throw new Error('Tarjeta no encontrada');
             }
             const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
-            const restaurante = await FidelizacionService._nombreRestaurante(tenantId);
+            const ctx = await FidelizacionService._contextoDiseno(tenantId, programa);
+            const restaurante = ctx.restaurante;
+            // Con premio por canjear la tarjeta se ve completa.
+            const sellosVisibles = tarjeta.premios_disponibles > 0 ? programa.sellos_requeridos : tarjeta.sellos;
+            const heroUrl = await FidelizacionService._imagenWallet(tenantId, programa, ctx, sellosVisibles);
             const datos = {
                 numeroTarjeta: tarjeta.numero,
                 nombre: tarjeta.cliente_nombre,
@@ -392,7 +650,8 @@ class FidelizacionService {
                 total: programa.sellos_requeridos,
                 premio: programa.premio,
                 premiosDisponibles: tarjeta.premios_disponibles,
-                restaurante
+                restaurante,
+                heroUrl
             };
             let enlace;
             if (tarjeta.wallet_sincronizada_at) {
@@ -403,13 +662,17 @@ class FidelizacionService {
                         total: datos.total,
                         premio: datos.premio,
                         premiosDisponibles: datos.premiosDisponibles,
-                        restaurante: datos.restaurante
+                        restaurante: datos.restaurante,
+                        heroUrl
                     });
                     enlace = GoogleWalletService.enlaceDeTarjeta(tarjeta.numero);
                 } catch {
+                    datos.classId = await FidelizacionService._asegurarClaseWallet(tenantId, programa, ctx);
                     enlace = (await GoogleWalletService.crearTarjeta(datos)).enlace;
                 }
             } else {
+                // Tarjeta nueva: primero la clase del restaurante (su color, logo e imagen), luego el pase.
+                datos.classId = await FidelizacionService._asegurarClaseWallet(tenantId, programa, ctx);
                 // POST y, si ya existía, PATCH.
                 enlace = (await GoogleWalletService.crearTarjeta(datos)).enlace;
             }

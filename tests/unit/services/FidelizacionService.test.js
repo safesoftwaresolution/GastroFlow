@@ -6,6 +6,22 @@ jest.mock('../../../repositories/Tenant/FidelizacionRepository');
 jest.mock('../../../services/Shared/GoogleWalletService');
 jest.mock('../../../repositories/Tenant/ClienteRepository');
 jest.mock('../../../services/Tenant/TenantOwnership', () => ({ clientes: jest.fn().mockResolvedValue(true) }));
+// Funciones simples (no jest.fn): resetAllMocks no las toca. Sin R2 la imagen del pase simplemente no se sube.
+jest.mock('../../../services/Tenant/R2StorageService', () => ({
+    publicUrl: undefined,
+    uploadFile: async () => {
+        throw new Error('sin R2 en tests');
+    },
+    deleteFile: async () => {}
+}));
+jest.mock('../../../repositories/Admin/TenantRepository', () => ({
+    findById: async () => ({ nombre: 'Don Pepe', config: {} })
+}));
+jest.mock('../../../services/Tenant/FidelizacionDisenos', () => ({
+    ...jest.requireActual('../../../services/Tenant/FidelizacionDisenos'),
+    aPng: async () => Buffer.from('png'),
+    cargarLogo: async () => null
+}));
 
 const db = require('../../../config/database');
 const Repo = require('../../../repositories/Tenant/FidelizacionRepository');
@@ -333,5 +349,29 @@ describe('inscripción por QR', () => {
         expect(Repo.guardarTokenInscripcion).not.toHaveBeenCalled();
         await FidelizacionService.obtenerInscripcionQR(4, { regenerar: true });
         expect(Repo.guardarTokenInscripcion).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('diseño de la tarjeta', () => {
+    const base = { sellos_requeridos: 8, premio: 'Postre' };
+
+    test('rechaza un logo que no es de nuestro almacenamiento', async () => {
+        await expect(
+            FidelizacionService.guardarPrograma(1, { ...base, logo_url: 'https://ajeno.com/logo.png' })
+        ).rejects.toThrow(/logo no es válido/);
+    });
+
+    test('rechaza un color que no es #RRGGBB', async () => {
+        await expect(FidelizacionService.guardarPrograma(1, { ...base, color: 'rojo' })).rejects.toThrow(/#RRGGBB/);
+    });
+
+    test('un id de diseño desconocido se guarda como el de por defecto, con lema recortado', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(null);
+        Repo.guardarPrograma.mockResolvedValue({});
+        await FidelizacionService.guardarPrograma(1, { ...base, diseno: 'navidad', lema: `  ${'x'.repeat(80)} ` });
+        expect(Repo.guardarPrograma).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ diseno: 'cafe', lema: 'x'.repeat(60), mostrarLogo: true, logoUrl: null })
+        );
     });
 });
