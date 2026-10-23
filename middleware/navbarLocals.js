@@ -58,6 +58,9 @@ module.exports = function navbarLocals(req, res, next) {
                 caja: hp('caja.ver') && cs('caja'),
                 finanzas: hp('finanzas.ver'),
                 bonos: hp('bonos.ver'),
+                fidelizacion: hp('fidelizacion.ver'),
+                sucursales:
+                    hp('sucursales.gestionar') && !!tenant && !tenant.tenant_padre_id && tenant.max_sucursales > 0,
                 promociones: hp('promociones.ver'),
                 combos: hp('combos.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),

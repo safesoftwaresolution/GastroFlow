@@ -87,10 +87,17 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   Auth itself is JWT via cookie (`auth_token`) or `Authorization: Bearer`, verified in `AuthService`.
 
 - **Migrations**: plain numbered SQL files in `database/migrations/` (`NNN_description.sql`, zero-padded,
-  currently up to `110`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
+  currently up to `119`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
   `schema_migrations` table, in filename order — add a new one as the next number, don't edit past ones.
   `config/env.js` validates required env vars (`JWT_SECRET` ≥ 32 chars, DB vars unless `MYSQL_URL`/
   `DATABASE_URL` is set) at process boot and throws before the app starts if they're missing/weak.
+
+- **Sucursales** (`docs/modulos/19_sucursales.md`): a branch is a normal tenant with `tenants.tenant_padre_id`
+  (one level; `NULL` = independent). The parent's admin can "enter" a branch with the same user: the JWT's
+  `tenant_id` becomes the branch's, and `attachTenantContext` only accepts a token tenant different from the
+  user's DB tenant if it is that tenant's child — never trust the token's tenant alone. Branch is blocked
+  when its parent is inactive/suspended (`getBloqueoPorPadre`). Never take the parent id from the request,
+  only from the session (`req.tenant.id`).
 
 - **Realtime** is Server-Sent Events, not WebSockets: `services/Shared/RealtimeEvents.js` is an in-process
   `EventEmitter` bus (`orderCreated`, `mesaSolicitud`, ...) that feeds Cocina/Mesas/POS/Dashboard through

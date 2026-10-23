@@ -57,3 +57,7 @@ resources/mysql-portable/*
 
 
 .sonarlint/
+# Google Wallet: llaves de la cuenta de servicio (NUNCA al repositorio)
+secrets/
+*.wallet-key.json
+google-wallet-key*.json

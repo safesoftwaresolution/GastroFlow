@@ -18,4 +18,24 @@ function getTenantBlockedMessage(tenant) {
     return `Tu restaurante "${nombre}" está desactivado. Contacta al administrador.`;
 }
 
-module.exports = { getTenantBlockedMessage };
+/**
+ * Una sucursal depende de su restaurante padre: si el padre está desactivado o suspendido por
+ * pago, la sucursal tampoco puede operar (al revés no aplica). Devuelve el mensaje de bloqueo
+ * o null. `buscarTenant` resuelve un tenant por id (con caché en el middleware).
+ */
+async function getBloqueoPorPadre(tenant, buscarTenant) {
+    if (!tenant?.tenant_padre_id) {
+        return null;
+    }
+    const padre = await buscarTenant(tenant.tenant_padre_id);
+    if (!padre) {
+        return `La cuenta principal de "${tenant.nombre}" no existe. Contacta al administrador.`;
+    }
+    if (!padre.activo) {
+        const motivo = padre.suspendido_por_pago ? 'suspendida por falta de pago' : 'desactivada';
+        return `La cuenta principal "${padre.nombre}" está ${motivo}, por eso "${tenant.nombre}" no está disponible. Contacta al administrador.`;
+    }
+    return null;
+}
+
+module.exports = { getTenantBlockedMessage, getBloqueoPorPadre };

@@ -42,6 +42,13 @@
                 const iso = toFechaISOUtc(f);
                 return iso ? new Date(iso).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '';
             };
+            // Fecha real de la transacción ('YYYY-MM-DD', día Colombia) -> 'dd/mm/aaaa'.
+            const fechaDia = d => (d ? d.split('-').reverse().join('/') : '');
+            // Día Colombia en que se guardó el registro (created_at, UTC).
+            const diaRegistro = f => {
+                const iso = toFechaISOUtc(f);
+                return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : '';
+            };
             // Badge de variación vs. el periodo anterior (mismo largo, inmediatamente antes).
             const variacionBadge = (pct, bienSiSube = true) => {
                 if (pct === null || pct === undefined) return '';
@@ -228,7 +235,8 @@
             <div class="col-12 mt-4">
                 <div class="card card-finance">
                     <div class="card-header bg-white py-3">
-                        <h6 class="fw-bold mb-0">Libro Diario - Últimas Transacciones</h6>
+                        <h6 class="fw-bold mb-0">Libro Diario</h6>
+                        <small class="text-muted">Transacciones del <%= fechaDia(resumen.desde) %> al <%= fechaDia(resumen.hasta) %>, ordenadas por la fecha real de cada una (no por cuándo se registraron).</small>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-finance table-hover mb-0">
@@ -246,7 +254,14 @@
                                 <% if (resumen.movimientos && resumen.movimientos.length > 0) { %>
                                     <% resumen.movimientos.forEach(m => { %>
                                         <tr>
-                                            <td class="ps-4 text-muted"><%= fechaHoraColombia(m.created_at) %></td>
+                                            <td class="ps-4 text-muted">
+                                                <div class="fw-semibold text-body"><%= fechaDia(m.fecha) %></div>
+                                                <% if (m.fecha !== diaRegistro(m.created_at)) { %>
+                                                    <div style="font-size:.72rem">Registrado el <%= fechaHoraColombia(m.created_at) %></div>
+                                                <% } else { %>
+                                                    <div style="font-size:.72rem"><%= new Date(toFechaISOUtc(m.created_at)).toLocaleTimeString('es-CO', { timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit' }) %></div>
+                                                <% } %>
+                                            </td>
                                             <td>
                                                 <span class="badge badge-type <%= m.tipo === 'entrada' ? 'bg-success' : 'bg-danger' %> me-2">
                                                     <%= m.tipo.toUpperCase() %>
@@ -271,7 +286,7 @@
                                     <% }) %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">No hay transacciones recientes.</td>
+                                        <td colspan="5" class="text-center py-4 text-muted">No hay transacciones en este periodo.</td>
                                     </tr>
                                 <% } %>
                             </tbody>
@@ -298,6 +313,11 @@
                                 <option value="salida">EGRESO (Gasto / Pago)</option>
                                 <option value="entrada">INGRESO (Inyección / Otro)</option>
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="gastoFecha" class="form-label small fw-bold">Fecha de la transacción</label>
+                            <input type="date" class="form-control" id="gastoFecha" value="<%= hoy %>" max="<%= hoy %>" required>
+                            <div class="form-text">La fecha real de la factura o del pago, no la de hoy si fue antes. Así cuenta en el día correcto del libro diario y de la gráfica.</div>
                         </div>
                         <div class="mb-3">
                             <label for="gastoMonto" class="form-label small fw-bold">Monto del Movimiento</label>

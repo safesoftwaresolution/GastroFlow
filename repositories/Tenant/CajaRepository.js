@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const { hoyColombia } = require('../../utils/dateHelpers');
 
 // Los movimientos con referencia_tipo = 'venta' los crea FinanzasService por
 // CADA factura (para el módulo de Finanzas). El arqueo de caja NO debe sumarlos
@@ -136,8 +137,8 @@ class CajaRepository {
      */
     static async registrarMovimiento(tenantId, sesionId, usuarioId, tipo, monto, motivo, metodoPago = 'efectivo') {
         const sql = `
-            INSERT INTO caja_movimientos (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, metodo_pago)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO caja_movimientos (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, metodo_pago, fecha_movimiento)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const [result] = await db.query(sql, [
             tenantId,
@@ -146,7 +147,8 @@ class CajaRepository {
             tipo,
             monto,
             motivo,
-            metodoPago === 'transferencia' ? 'transferencia' : 'efectivo'
+            metodoPago === 'transferencia' ? 'transferencia' : 'efectivo',
+            hoyColombia()
         ]);
         return result.insertId;
     }
@@ -183,15 +185,16 @@ class CajaRepository {
 
         const [result] = await conn.query(
             `INSERT INTO caja_movimientos
-                (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id)
-             VALUES (?, ?, ?, 'salida', ?, ?, 'Servicio externo', 'servicio_externo', ?)`,
+                (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id, fecha_movimiento)
+             VALUES (?, ?, ?, 'salida', ?, ?, 'Servicio externo', 'servicio_externo', ?, ?)`,
             [
                 tenantId,
                 sesionId,
                 usuarioId,
                 montoNum,
                 `Pago servicio externo (ej. domicilio) - Factura #${numeroFactura ?? facturaId}`,
-                facturaId
+                facturaId,
+                hoyColombia()
             ]
         );
         return result.insertId;

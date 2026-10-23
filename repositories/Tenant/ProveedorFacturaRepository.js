@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const { toFechaDia } = require('../../utils/dateHelpers');
 
 class ProveedorFacturaRepository {
     /**
@@ -85,6 +86,16 @@ class ProveedorFacturaRepository {
                     WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ?`;
         const [[row]] = await db.query(sql, [tenantId, desdeDia, hastaDia]);
         return Number.parseFloat(row.total) || 0;
+    }
+
+    /** Facturas de proveedor por día de emisión (fecha real de la factura), para la gráfica de Finanzas. */
+    static async sumaPorDia(tenantId, desdeDia, hastaDia) {
+        const sql = `SELECT fecha_emision AS dia, COALESCE(SUM(monto_total), 0) AS total
+                    FROM proveedor_facturas
+                    WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ?
+                    GROUP BY fecha_emision`;
+        const [rows] = await db.query(sql, [tenantId, desdeDia, hastaDia]);
+        return rows.map(r => ({ dia: toFechaDia(r.dia), total: Number.parseFloat(r.total) || 0 }));
     }
 
     static async delete(id, tenantId) {

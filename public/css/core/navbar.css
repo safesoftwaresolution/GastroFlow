@@ -164,7 +164,53 @@
     flex-shrink: 0;
 }
 
+/* Secciones del menú: sin caja en escritorio (la barra queda igual), plegables en móvil */
+.nav-grupo,
+.nav-grupo-items {
+    display: contents;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 @media (max-width: 991px) {
+    .nav-grupo {
+        display: block;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .nav-grupo-h {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        background: none;
+        border: 0;
+        color: rgba(255, 255, 255, .7);
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: .7rem .75rem;
+    }
+
+    .nav-grupo-h i {
+        transition: transform .2s;
+    }
+
+    .nav-grupo.abierto .nav-grupo-h i {
+        transform: rotate(180deg);
+    }
+
+    .nav-grupo-items {
+        display: none;
+        padding: 0 0 .4rem .5rem;
+    }
+
+    .nav-grupo.abierto .nav-grupo-items {
+        display: block;
+    }
+
     .navbar-brand {
         max-width: 120px;
     }

@@ -5,7 +5,6 @@
 const FinanzasRepository = require('../../repositories/Tenant/FinanzasRepository');
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
 const ProveedorFacturaRepository = require('../../repositories/Tenant/ProveedorFacturaRepository');
-const db = require('../../config/database');
 const { hoyColombia, sumarDias, rangoUtcColombia } = require('../../utils/dateHelpers');
 const PdfMaker = require('../Shared/PdfMaker');
 const {
@@ -40,6 +39,40 @@ function sumarResumen(filas, tipo, aporte, metodo) {
                 (metodo === undefined || r.metodo_pago === metodo)
         )
         .reduce((acc, r) => acc + (Number.parseFloat(r.total) || 0), 0);
+}
+
+// Un movimiento manual no puede llevar una fecha más vieja que esto (típico error de digitación).
+const MAX_DIAS_ATRAS = 1826;
+
+/**
+ * Fecha real de una transacción manual ('YYYY-MM-DD', día Colombia). Vacía = hoy. Debe ser un día
+ * real, no futuro y no más de ~5 años atrás.
+ */
+function resolverFechaMovimiento(fecha) {
+    const hoy = hoyColombia();
+    if (fecha === undefined || fecha === null || fecha === '') {
+        return hoy;
+    }
+    const f = String(fecha).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || Number.isNaN(Date.parse(`${f}T12:00:00Z`)) || sumarDias(f, 0) !== f) {
+        throw new Error('La fecha de la transacción no es válida');
+    }
+    if (f > hoy) {
+        throw new Error('La fecha de la transacción no puede ser futura');
+    }
+    if (f < sumarDias(hoy, -MAX_DIAS_ATRAS)) {
+        throw new Error('La fecha de la transacción es demasiado antigua (máximo 5 años atrás)');
+    }
+    return f;
+}
+
+/** Días 'YYYY-MM-DD' de desde a hasta, ambos inclusive. */
+function diasDelRango(desde, hasta) {
+    const dias = [];
+    for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
+        dias.push(d);
+    }
+    return dias;
 }
 
 class FinanzasService {
@@ -87,7 +120,10 @@ class FinanzasService {
      * Registra un movimiento manual (ingreso/egreso) desde el módulo de Finanzas.
      * No requiere una sesión de caja abierta (movimiento administrativo, fuera de turno).
      */
-    static async registrarMovimientoManual(tenantId, { monto, motivo, categoria, tipo, usuario_id, metodo_pago }) {
+    static async registrarMovimientoManual(
+        tenantId,
+        { monto, motivo, categoria, tipo, usuario_id, metodo_pago, fecha }
+    ) {
         const montoNum = Number.parseFloat(monto);
         if (!montoNum || montoNum <= 0) {
             throw new Error('El monto debe ser mayor a 0');
@@ -99,7 +135,11 @@ class FinanzasService {
             throw new Error('Método de pago inválido');
         }
 
-        const sesion = await CajaRepository.getSesionAbierta(tenantId);
+        const fechaMovimiento = resolverFechaMovimiento(fecha);
+
+        // Solo un movimiento de HOY entra al turno de caja abierto: uno con fecha pasada ya ocurrió fuera
+        // de este turno y no debe descuadrar el arqueo de hoy.
+        const sesion = fechaMovimiento === hoyColombia() ? await CajaRepository.getSesionAbierta(tenantId) : null;
 
         return await FinanzasRepository.createMovimiento(tenantId, {
             sesion_id: sesion ? sesion.id : null,
@@ -110,7 +150,8 @@ class FinanzasService {
             categoria_gasto: categoria || 'General',
             referencia_tipo: 'manual',
             referencia_id: null,
-            metodo_pago: metodo_pago || 'efectivo'
+            metodo_pago: metodo_pago || 'efectivo',
+            fecha_movimiento: fechaMovimiento
         });
     }
 
@@ -132,31 +173,42 @@ class FinanzasService {
         // Periodo anterior, de la misma longitud, inmediatamente antes -- para las comparativas.
         const finAnteriorDia = sumarDias(inicioDia, -1);
         const inicioAnteriorDia = sumarDias(finAnteriorDia, -(dias - 1));
-        const { utcDesde: utcDesdeAnt, utcHasta: utcHastaAnt } = rangoUtcColombia(inicioAnteriorDia, finAnteriorDia);
 
         const [
             resumen,
             resumenAnterior,
             porCategoria,
-            historico,
+            historicoCaja,
             costosFijosMensual,
             proveedoresPeriodo,
             proveedoresPeriodoAnterior,
             desglosePago,
             cuentasPorPagar,
-            [movimientos]
+            movimientos,
+            proveedoresPorDia
         ] = await Promise.all([
-            FinanzasRepository.getResumenPeriodo(tenantId, utcDesde, utcHasta),
-            FinanzasRepository.getResumenPeriodo(tenantId, utcDesdeAnt, utcHastaAnt),
-            FinanzasRepository.getPorCategoria(tenantId, 'salida', utcDesde, utcHasta),
-            FinanzasRepository.getHistoricoDiario(tenantId, utcDesde, utcHasta),
+            FinanzasRepository.getResumenPeriodo(tenantId, inicioDia, hoyDia),
+            FinanzasRepository.getResumenPeriodo(tenantId, inicioAnteriorDia, finAnteriorDia),
+            FinanzasRepository.getPorCategoria(tenantId, 'salida', inicioDia, hoyDia),
+            FinanzasRepository.getHistoricoDiario(tenantId, inicioDia, hoyDia),
             FinanzasRepository.getCostosFijosActivosMensual(tenantId),
             ProveedorFacturaRepository.sumaPorPeriodo(tenantId, inicioDia, hoyDia),
             ProveedorFacturaRepository.sumaPorPeriodo(tenantId, inicioAnteriorDia, finAnteriorDia),
             FinanzasRepository.getDesglosePorFormaPago(tenantId, utcDesde, utcHasta),
             ProveedorFacturaRepository.findPendientes(tenantId),
-            db.query(`SELECT * FROM caja_movimientos WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 10`, [tenantId])
+            FinanzasRepository.getMovimientosPeriodo(tenantId, inicioDia, hoyDia),
+            ProveedorFacturaRepository.sumaPorDia(tenantId, inicioDia, hoyDia)
         ]);
+
+        // Serie diaria por la fecha REAL de cada movimiento (y de cada factura de proveedor), con los
+        // días sin movimiento en cero para que el eje del tiempo sea fiel.
+        const caja = new Map(historicoCaja.map(h => [h.fecha, h]));
+        const provDia = new Map(proveedoresPorDia.map(p => [p.dia, p.total]));
+        const historico = diasDelRango(inicioDia, hoyDia).map(fecha => ({
+            fecha,
+            ingresos: caja.get(fecha)?.ingresos || 0,
+            egresos: (caja.get(fecha)?.egresos || 0) + (provDia.get(fecha) || 0)
+        }));
 
         const costosFijosPeriodo = (costosFijosMensual / 30) * dias;
 
@@ -198,6 +250,8 @@ class FinanzasService {
             gastosPorCategoria: porCategoria,
             historico,
             movimientos,
+            desde: inicioDia,
+            hasta: hoyDia,
             dias
         };
     }

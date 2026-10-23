@@ -34,6 +34,15 @@
                 href="/admin/soporte"><i class="bi bi-headset"></i>Soporte</a></li>
                 <% } else { %>
 
+                    <%
+                    /* En móvil los enlaces se agrupan en secciones plegables (nav-grupo); en escritorio los
+                       grupos no generan caja (display: contents) y la barra se ve igual. */
+                    const hayComercial = nav.can.finanzas || nav.can.bonos || nav.can.fidelizacion || nav.can.sucursales || nav.can.promociones || nav.can.combos;
+                    const hayCatalogo = nav.can.productos || nav.can.clientes || (nav.can.inventario && !nav.can.proveedores && !nav.can.recetas);
+                %>
+                    <li class="nav-grupo">
+                        <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Operación</span><i class="bi bi-chevron-down"></i></button>
+                        <ul class="nav-grupo-items">
                     <% if (nav.can.dashboard) { %>
                         <li class="nav-item"><a class="nav-link" href="/dashboard"><i
                                     class="bi bi-speedometer2"></i>Dashboard</a></li>
@@ -62,6 +71,18 @@
                                                                 class="bi bi-wallet2"></i>Caja</a></li>
                                                     <% } %>
 
+                                                <% if (nav.can.cocina) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/cocina"><i
+                                                                class="bi bi-fire"></i>Cocina</a></li>
+                                                    <% } %>
+                        </ul>
+                    </li>
+
+                    <% if (hayComercial) { %>
+                    <li class="nav-grupo">
+                        <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Comercial y gestión</span><i class="bi bi-chevron-down"></i></button>
+                        <ul class="nav-grupo-items">
+                    <% } %>
                                                 <% if (nav.can.finanzas) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/finanzas"><i
                                                                 class="bi bi-pie-chart"></i>Finanzas</a></li>
@@ -70,6 +91,16 @@
                                                 <% if (nav.can.bonos) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/bonos"><i
                                                                 class="bi bi-gift"></i>Bonos</a></li>
+                                                    <% } %>
+
+                                                <% if (nav.can.fidelizacion) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/fidelizacion"><i
+                                                                class="bi bi-stars"></i>Fidelización</a></li>
+                                                    <% } %>
+
+                                                <% if (nav.can.sucursales) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/sucursales"><i
+                                                                class="bi bi-diagram-3"></i>Sucursales</a></li>
                                                     <% } %>
 
                                                 <% if (nav.can.promociones) { %>
@@ -82,13 +113,18 @@
                                                                 class="bi bi-box-seam"></i>Combos</a></li>
                                                     <% } %>
 
-                                                        <% if (nav.can.cocina) { %>
-                                                            <li class="nav-item"><a class="nav-link" href="/cocina"><i
-                                                                        class="bi bi-fire"></i>Cocina</a></li>
-                                                            <% } %>
+                                                <% if (hayComercial) { %>
+                        </ul>
+                    </li>
+                    <% } %>
 
                                                                 <div class="ndiv d-none d-lg-flex"></div>
 
+                    <% if (hayCatalogo) { %>
+                    <li class="nav-grupo">
+                        <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Catálogo y clientes</span><i class="bi bi-chevron-down"></i></button>
+                        <ul class="nav-grupo-items">
+                    <% } %>
                                                                 <% if (nav.can.productos) { %>
                                                                     <li class="nav-item"><a class="nav-link"
                                                                             href="/productos"><i
@@ -112,6 +148,11 @@
                                                                                                 class="bi bi-boxes"></i>Inventario</a>
                                                                                     </li>
                                                                                     <% } %>
+
+                    <% if (hayCatalogo) { %>
+                        </ul>
+                    </li>
+                    <% } %>
 
                                                                                         <% if (nav.hasMas) { %>
                                                                                             <div

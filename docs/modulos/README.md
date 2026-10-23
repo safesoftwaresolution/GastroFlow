@@ -27,6 +27,7 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 
 ## 🌐 Integraciones y SaaS Global
 * **[11. Panel de Superadmin](11_superadmin.md):** Gestión multi-tenant, planes de suscripción globales, creación y bloqueo de sucursales.
+* **[19. Sucursales](19_sucursales.md):** Sucursales ligadas a un restaurante padre: creación con su administrador, control del dueño, consolidado de ventas y cambio de sucursal con un solo login.
 * **[13. Suscripción y Cobro Automático (Wompi)](13_suscripcion_wompi.md):** Cobro mensual de la suscripción de cada tenant vía pasarela Wompi.
 * **[10. Integración de WhatsApp Bot](10_whatsapp_bot.md):** ❌ *Eliminado (2026-09).* Se documenta solo como referencia histórica.
 

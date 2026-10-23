@@ -2,11 +2,20 @@
 <link rel="stylesheet" href="/css/core/tablas-responsive.css?v=<%= assetV %>">
 <script src="/js/core/gf.js?v=<%= assetV %>"></script>
 <script src="/js/core/tablas-responsive.js?v=<%= assetV %>" defer></script>
+<script src="/js/core/navbar-grupos.js?v=<%= assetV %>" defer></script>
 <%- include('_navbar_styles') %>
 <link rel="stylesheet" href="/css/core/anuncio-modal.css?v=<%= assetV %>">
 <script src="/js/core/anuncios.js?v=<%= assetV %>" defer></script>
 <script defer>document.addEventListener('DOMContentLoaded', function () { if (window.GFAnuncios) window.GFAnuncios.iniciar(); });</script>
 
+    <% if (typeof contextoSucursal !== 'undefined' && contextoSucursal) { %>
+    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 py-2 px-3 small" style="background:#fef3c7;color:#92400e;border-bottom:1px solid #fde68a;">
+        <i class="bi bi-diagram-3"></i>
+        <span>Estás administrando la sucursal <strong><%= contextoSucursal.nombre %></strong><% if (contextoSucursal.principalNombre) { %> de <%= contextoSucursal.principalNombre %><% } %>.</span>
+        <button type="button" class="btn btn-sm btn-warning js-volver-principal py-0">Volver al principal</button>
+    </div>
+    <script src="/js/core/sucursal-contexto.js?v=<%= assetV %>" defer></script>
+    <% } %>
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container-fluid gap-2">
 

@@ -164,7 +164,10 @@ class TenantsController {
             res.status(200).json({ success: true, message: 'Restaurante eliminado permanentemente.' });
         } catch (error) {
             console.error('Error al eliminar tenant:', error);
-            res.status(500).json({ success: false, message: error.message || 'Error al eliminar restaurante.' });
+            res.status(error.status || 500).json({
+                success: false,
+                message: error.message || 'Error al eliminar restaurante.'
+            });
         }
     }
 
